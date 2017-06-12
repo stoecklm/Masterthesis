@@ -1,0 +1,548 @@
+#                                               -*- Autoconf -*-
+# Process this file with autoconf to produce a configure script.
+
+#------------------------------------------------------------------------------#
+AC_PREREQ(2.63)
+AC_INIT(
+        [scafes],
+        [m4_normalize(esyscmd([cat VERSION]))],
+        [scafes-support@fusionforge.zih.tu-dresden.de],
+        [scafes])
+
+#------------------------------------------------------------------------------#
+AC_CONFIG_SRCDIR([LICENSE])
+AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_MACRO_DIR(config/m4)
+AC_CANONICAL_TARGET
+###AC_CANONICAL_SYSTEM
+
+#------------------------------------------------------------------------------#
+# Distribute software?
+AC_ARG_ENABLE(
+        dist,
+        [AC_HELP_STRING([--enable-dist=@<:@no/yes@:>@],
+                [Enable to distribute software @<:@default=yes@:>@])],
+        [distributeSoftware=$enableval],
+        [distributeSoftware=yes]
+)
+AM_CONDITIONAL(AMDISTRIBUTESOFTWARE, test "$distributeSoftware" = "yes")
+
+#------------------------------------------------------------------------------#
+AM_INIT_AUTOMAKE([foreign -Wall -Werror dist-bzip2 dist-zip subdir-objects])
+
+#------------------------------------------------------------------------------#
+if test "$distributeSoftware" = "no"; then
+    AM_MAINTAINER_MODE([enable])
+else
+    AM_MAINTAINER_MODE([disable])
+fi
+
+#------------------------------------------------------------------------------#
+## http://airs.com/ian/configure/configure_2.html [KF, 03/26/2015]
+AM_CONFIG_HEADER(config.h)
+AX_PREFIX_CONFIG_H(src/ScaFES_Config.hpp) # Requires autoconf >= 2.62
+
+#------------------------------------------------------------------------------#
+# If Automake supports silent rules, enable them.
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+
+#------------------------------------------------------------------------------#
+# Get libtool version number.
+SCAFES_VERSION_LIBRARY=m4_normalize(esyscmd([cat LIBTOOL_VERSION]))
+AC_SUBST([SCAFES_VERSION_LIBRARY])
+
+#------------------------------------------------------------------------------#
+# Check for programs.
+# fix automake 1.12 bug
+m4_pattern_allow([AM_PROG_AR])
+m4_pattern_allow([AC_MSG_WARN])
+AM_PROG_AR
+
+LT_INIT
+AC_PROG_CXX # Check for C++ compiler.
+
+AC_LANG([C++]) # Use the C++ compiler for the following checks.
+
+AX_CXX_COMPILE_STDCXX_11(noext)
+
+AC_PROG_CXXCPP
+AC_PROG_INSTALL # Sets INSTALL to name of an install program.
+AC_PROG_MAKE_SET
+AM_PROG_LIBTOOL
+
+AC_CHECK_FUNCS([gettimeofday])
+
+#------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------#
+### Checks for optional libraries:
+### n.b. this test always follows the same pattern:
+### ---> ENABLE=no: Do not bother.
+### ---> ENABLE=yes or ENABLE=default:
+###      Do the check:
+###       * SUCCESS: AM_DEFINE, AM_CONDITIONAL
+###       * FAILURE:
+###            * ENABLE=yes) AC_MSG_ERROR
+###            * ENABLE=default) Leave it at that.
+
+#------------------------------------------------------------------------------#
+### Check for optional library Boost
+have_boost="unknown";
+AC_MSG_CHECKING([if optional library Boost is wanted.])
+AC_ARG_ENABLE(
+        [boost],
+        [AS_HELP_STRING([--enable-boost=@<:@yes/no@:>@],
+                [Enable Boost @<:@default=yes@:>@])],
+        [want_boost=$enableval],
+        [want_boost=yes]
+)
+AC_MSG_RESULT([$want_boost])
+if test x$want_boost != xno ; then
+    AX_BOOST_BASE([1.42],[have_boost=yes],[have_boost=no])
+fi
+if test x$want_boost = xyes ; then
+if test x$have_boost != xyes ; then
+    AC_MSG_ERROR(Bailing out since Boost was explicitly desired.)
+fi
+fi
+AM_CONDITIONAL(AMHAVEBOOST, test "$have_boost" = "yes")
+
+#------------------------------------------------------------------------------#
+### Check for necessary library BOOST.Program_Options.
+have_boost_program_options="unknown";
+if test x$want_boost != xno ; then
+    AX_BOOST_PROGRAM_OPTIONS
+    if test "x$BOOST_PROGRAM_OPTIONS_LIB" = "x" ; then
+        have_boost_program_options=no;
+    else
+        have_boost_program_options=yes;
+    fi
+fi
+if test x$want_boost = xyes ; then
+if test x$have_boost_program_options != xyes ; then
+    AC_MSG_ERROR(Bailing out since Boost.Program_Options is needed.)
+fi
+fi
+AM_CONDITIONAL(AMHAVEBOOSTPROGRAMOPTIONS,
+               test "$have_boost_program_options" = "yes")
+
+#------------------------------------------------------------------------------#
+### Check for necessary library BOOST.Regex.
+have_boost_regex="unknown";
+if test x$want_boost != xno ; then
+    AX_BOOST_REGEX
+    if test "x$BOOST_REGEX_LIB" = "x" ; then
+        have_boost_regex=no;
+    else
+        have_boost_regex=yes;
+    fi
+fi
+if test x$want_boost = xyes ; then
+if test x$have_boost_regex != xyes ; then
+    AC_MSG_ERROR(Bailing out since Boost.Regex is needed.)
+fi
+fi
+AM_CONDITIONAL(AMHAVEBOOSTREGEX,
+               test "$have_boost_regex" = "yes")
+
+#------------------------------------------------------------------------------#
+### Check for optional library Boost.Serialization.
+have_boost_serialization="unknown";
+AC_MSG_CHECKING([if optional library Boost.Serialization is wanted.])
+AC_ARG_ENABLE(
+        [boost-serialization],
+        [AS_HELP_STRING([--enable-boost-serialization=@<:@yes/no@:>@],
+                [Enable Boost.Serialization @<:@default=yes@:>@])],
+        [want_boost_serialization=$enableval],
+        [want_boost_serialization=yes]
+)
+AC_MSG_RESULT([$want_boost_serialization])
+if test x$want_boost_serialization != xno ; then
+    AX_BOOST_SERIALIZATION
+    if test "x$BOOST_SERIALIZATION_LIB" = "x" ; then
+        have_boost_serialization=no;
+    else
+        have_boost_serialization=yes;
+    fi
+fi
+if test x$want_boost_serialization = xyes ; then
+if test x$have_boost_serialization != xyes ; then
+    AC_MSG_ERROR(Bailing out since Boost.Serialization was explicitly desired.)
+fi
+fi
+AM_CONDITIONAL(AMHAVEBOOSTSERIALIZATION, test "$have_boost_serialization" = "yes")
+
+#------------------------------------------------------------------------------#
+### Check for optional library MPI.
+have_mpi="unknown";
+AC_MSG_CHECKING([if optional library MPI is wanted.])
+AC_ARG_ENABLE(
+        [mpi],
+        [AS_HELP_STRING([--enable-mpi=@<:@yes/no@:>@],
+                [Enable MPI @<:@default=yes@:>@])],
+        [want_mpi=$enableval],
+        [want_mpi=yes]
+)
+AC_MSG_RESULT([$want_mpi])
+if test x$want_mpi != xno ; then
+AX_GLEAN_MPILIB([have_mpi=yes],
+                [AC_MSG_WARN(*** MPI not found. *** ); have_mpi=no])
+fi
+if test x$want_mpi = xyes ; then
+if test x$have_mpi = xno ; then
+    AX_MPI([have_mpi2=yes],
+          [AC_MSG_WARN(*** MPI not found. *** ); have_mpi2=no])
+    if test x$have_mpi2 = xno ; then
+        AX_MPICH([have_mpi2=yes],
+             [AC_MSG_WARN(*** MPICH not found. *** ); have_mpi2=no])
+        if test x$have_mpi2 = xno ; then
+             AC_MSG_ERROR(Bailing out since MPI was explicitly desired.)
+        fi
+    fi
+fi
+fi
+AM_CONDITIONAL(AMHAVEMPI, test "$have_mpi" = "yes")
+if test x$have_mpi = xno ; then
+    AM_CONDITIONAL(AMHAVEMPI, test "$have_mpi2" = "yes")
+fi
+
+#------------------------------------------------------------------------------#
+### Check for optional library Boost.MPI.
+have_boost_mpi="unknown";
+AC_MSG_CHECKING([if optional library Boost.MPI is wanted.])
+AC_ARG_ENABLE(
+        [boost-mpi],
+        [AS_HELP_STRING([--enable-boost-mpi=@<:@yes/no@:>@],
+                [Enable Boost.MPI @<:@default=yes@:>@])],
+        [want_boost_mpi=$enableval],
+        [want_boost_mpi=yes]
+)
+AC_MSG_RESULT([$want_boost_mpi])
+if test x$want_boost_mpi != xno ; then
+    AX_BOOST_MPI
+    if test "x$BOOST_MPI_LIB" = "x" ; then
+        have_boost_mpi=no;
+    else
+        have_boost_mpi=yes;
+    fi
+fi
+if test x$want_boost_mpi = xyes ; then
+if test x$have_boost_mpi != xyes ; then
+    AC_MSG_ERROR(Bailing out since Boost.MPI was explicitly desired.)
+fi
+fi
+AM_CONDITIONAL(AMHAVEBOOSTMPI, test "$have_boost_mpi" = "yes")
+
+#------------------------------------------------------------------------------#
+### Check for optional library OpenMP.
+### Remark: Need to compile AND link with OPENMP_CXXFLAGS.
+have_openmp="unknown";
+AC_MSG_CHECKING([if optional library OpenMP is wanted.])
+AC_ARG_ENABLE(
+        [openmp],
+        [AS_HELP_STRING([--enable-openmp=@<:@yes/no@:>@],
+                [Enable OpenMP @<:@default=no@:>@])],
+        [want_openmp=$enableval],
+        [want_openmp=no]
+)
+AC_MSG_RESULT([$want_openmp])
+if test x$want_openmp != xno ; then
+AX_OPENMP([have_openmp=yes],
+          [AC_MSG_WARN(*** OPENMP not found. *** ); have_openmp=no])
+# Remark: Call AC_SUBST manually (since a acarchive m4 script is used).
+AC_SUBST(OPENMP_CXXFLAGS)
+fi
+if test x$want_openmp = xyes ; then
+if test x$have_openmp != xyes ; then
+    AC_MSG_ERROR(Bailing out since OpenMP was explicitly desired.)
+fi
+fi
+AM_CONDITIONAL(AMHAVEOMP, test "$have_openmp" = "yes")
+
+#------------------------------------------------------------------------------#
+### Check for optional library CUDA.
+have_cuda="unknown";
+if test "$distributeSoftware" = "no"; then
+    AC_MSG_CHECKING([if optional library CUDA is wanted.])
+    AC_ARG_ENABLE(
+        [cuda],
+        [AS_HELP_STRING([--enable-cuda=@<:@no/yes@:>@],
+                [Enable CUDA @<:@default=no@:>@])],
+        [want_cuda=$enableval],
+        [want_cuda=no]
+    )
+    AC_MSG_RESULT([$want_cuda])
+    if test x$want_cuda != xno ; then
+    AX_CUDA([have_cuda=yes],
+            [AC_MSG_WARN(*** Cuda not found. *** ); have_cuda=no])
+    fi
+    if test x$want_cuda = xyes ; then
+    if test x$have_cuda != xyes ; then
+        AC_MSG_ERROR(Bailing out since CUDA was explicitly desired.)
+    fi
+    fi
+fi
+AM_CONDITIONAL(AMHAVECUDA, test "$have_cuda" = "yes")
+
+#------------------------------------------------------------------------------#
+### Check for optional library NetCDF (and HDF5).
+have_netcdf="unknown";
+AC_MSG_CHECKING([if optional library NetCDF is wanted.])
+AC_ARG_ENABLE(
+        [netcdf],
+        [AS_HELP_STRING([--enable-netcdf=@<:@yes/no@:>@],
+                [Enable NetCDF @<:@default=no:>@])],
+        [want_netcdf=$enableval],
+        [want_netcdf=no]
+)
+AC_MSG_RESULT([$want_netcdf])
+if test x$want_netcdf != xno ; then
+AX_HDF5([],[AC_MSG_WARN(*** HDF5 not found. ***)])
+AX_NETCDF([have_netcdf=yes],
+          [AC_MSG_WARN(*** NetCDF not found. *** ); have_netcdf=no])
+fi
+if test x$want_netcdf = xyes ; then
+if test x$have_netcdf != xyes ; then
+    AC_MSG_ERROR(Bailing out since NetCDF was explicitly desired.)
+fi
+fi
+AM_CONDITIONAL(AMHAVENETCDF, test "$have_netcdf" = "yes")
+
+#------------------------------------------------------------------------------#
+### Check for optional library ADOL-C.
+have_adolc="unknown";
+AC_MSG_CHECKING([if optional library ADOL-C is wanted.])
+AC_ARG_ENABLE(
+        [adolc],
+        [AS_HELP_STRING([--enable-adolc=@<:@yes/no@:>@],
+                [Enable ADOL-C @<:@default=no:>@])],
+        [want_adolc=$enableval],
+        [want_adolc=no]
+)
+AC_MSG_RESULT([$want_adolc])
+if test x$want_adolc != xno ; then
+AX_ADOLC([have_adolc=yes],
+         [AC_MSG_WARN(*** ADOL-C not found. *** ); have_adolc=no])
+fi
+if test x$want_adolc = xyes ; then
+if test x$have_adolc != xyes ; then
+    AC_MSG_ERROR(Bailing out since ADOL-C was explicitly desired.)
+fi
+fi
+AM_CONDITIONAL(AMHAVEADOLC, test "$have_adolc" = "yes")
+
+#------------------------------------------------------------------------------#
+### Check for optional library GoogleMock.
+have_gmock="unknown";
+if test "$distributeSoftware" = "no"; then
+    AC_MSG_CHECKING([if optional library GoogleMock is wanted.])
+    AC_ARG_ENABLE(
+        [gmock],
+        [AS_HELP_STRING([--enable-gmock=@<:@yes/no@:>@],
+                [Enable GoogleMock @<:@default=no:>@])],
+        [want_gmock=$enableval],
+        [want_gmock=no]
+    )
+    AC_MSG_RESULT([$want_gmock])
+    if test x$want_gmock != xno ; then
+    AX_GMOCK([have_gmock=yes],
+      [AC_MSG_WARN(*** GoogleMock not found. *** ); have_gmock=no])
+    fi
+    if test x$want_gmock = xyes ; then
+        if test x$have_gmock != xyes ; then
+            AC_MSG_ERROR(Bailing out since GoogleMock was explicitly desired.)
+        fi
+    fi
+fi
+AM_CONDITIONAL(AMHAVEGMOCK, test "$have_gmock" = "yes")
+
+#------------------------------------------------------------------------------#
+### Check for optional library VT.
+have_vt="unknown";
+if test "$distributeSoftware" = "no"; then
+    AC_MSG_CHECKING([if optional library VT is wanted.])
+    AC_ARG_ENABLE(
+        [vt],
+        [AS_HELP_STRING([--enable-vt=@<:@yes/no@:>@],
+                [Enable VT @<:@default=no@:>@])],
+        [want_vt=$enableval],
+        [want_vt=no]
+    )
+    AC_MSG_RESULT([$want_vt])
+    if test x$want_vt != xno ; then
+    AX_VT([have_vt=yes],
+          [AC_MSG_WARN(*** VT not found. *** ); have_vt=no])
+    fi
+    if test x$want_vt = xyes ; then
+        if test x$have_vt != xyes ; then
+            AC_MSG_ERROR(Bailing out since VT was explicitly desired.)
+        fi
+    fi
+fi
+AM_CONDITIONAL(AMHAVEVT, test "$have_vt" = "yes")
+
+#------------------------------------------------------------------------------#
+### Check for optional Doxygen.
+have_doxygen="unknown";
+AC_MSG_CHECKING([if optional prog. Doxygen is wanted.])
+AC_ARG_ENABLE(
+        [doc],
+        [AS_HELP_STRING([--enable-doc=@<:@no/yes@:>@],
+                [Enable Doxygen @<:@default=no@:>@])],
+        [want_doxygen=$enableval],
+        [want_doxygen=no]
+)
+AC_MSG_RESULT([$want_doxygen])
+if test x$want_doxygen != xno ; then
+    AC_CHECK_PROG(have_doxygen_check, doxygen, yes, no)
+    have_doxygen=$have_doxygen_check
+fi
+if test x$want_doxygen = xyes ; then
+if test x$have_doxygen != xyes ; then
+    AC_MSG_ERROR(Bailing out since Doxygen was explicitly desired.)
+fi
+fi
+AM_CONDITIONAL(AMHAVEDOXYGEN, test "$have_doxygen" = "yes")
+
+#------------------------------------------------------------------------------#
+# Check for dot.
+if test x$have_doxygen = xyes ; then
+    AC_CHECK_PROG([have_dot],[dot],[YES],[NO])
+    if test x$have_dot != xYES ; then
+        AC_MSG_WARN([Optional program 'dot' not found.])
+    fi
+    if test x$have_dot = xYES ; then
+        dot -V &> dotversion
+        tmpdotv0=$(cat dotversion)
+        tmpdotv1=${tmpdotv0##*\(}
+        tmpdotv2=${tmpdotv1%.*}
+        if test $tmpdotv2 -lt 20140000 ; then
+            have_dot=NO
+            AC_MSG_WARN([Optional program 'dot' found but version is too old.])
+        fi
+    fi
+else
+    have_dot="unknown";
+fi
+AM_CONDITIONAL([AMHAVEDOT], [test "x$have_dot" = xYES])
+
+#------------------------------------------------------------------------------#
+# Create output.
+AC_CONFIG_FILES(Makefile)
+AC_CONFIG_FILES(doc/Makefile)
+if test "$have_doxygen" = "yes"; then
+    AC_CONFIG_FILES([doc/Doxyfile])
+fi
+AC_CONFIG_FILES(src/Makefile)
+AC_CONFIG_FILES(tests/Makefile)
+if test "$distributeSoftware" = "no"; then
+    AC_CONFIG_FILES(tests/unit/Makefile)
+fi
+AC_CONFIG_FILES(tests/system/Makefile)
+AC_CONFIG_FILES(tests/system/HeatEqnFdmStencilWidthOne/Makefile)
+AC_CONFIG_FILES([tests/system/HeatEqnFdmStencilWidthOne/RUN.sh],
+       [chmod +x tests/system/HeatEqnFdmStencilWidthOne/RUN.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFdmStencilWidthOne/TESTMATRIX_RUN.sh],
+       [chmod +x tests/system/HeatEqnFdmStencilWidthOne/TESTMATRIX_RUN.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFdmStencilWidthOne/TESTMATRIX_RUN_1D.sh],
+       [chmod +x tests/system/HeatEqnFdmStencilWidthOne/TESTMATRIX_RUN_1D.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFdmStencilWidthOne/TESTMATRIX_RUN_2D.sh],
+       [chmod +x tests/system/HeatEqnFdmStencilWidthOne/TESTMATRIX_RUN_2D.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFdmStencilWidthOne/TESTMATRIX_RUN_3D.sh],
+       [chmod +x tests/system/HeatEqnFdmStencilWidthOne/TESTMATRIX_RUN_3D.sh])
+AC_CONFIG_FILES(tests/system/HeatEqnFdmStencilWidthVar/Makefile)
+AC_CONFIG_FILES([tests/system/HeatEqnFdmStencilWidthVar/RUN.sh],
+       [chmod +x tests/system/HeatEqnFdmStencilWidthVar/RUN.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFdmStencilWidthVar/TESTMATRIX_RUN.sh],
+       [chmod +x tests/system/HeatEqnFdmStencilWidthVar/TESTMATRIX_RUN.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFdmStencilWidthVar/TESTMATRIX_RUN_1D.sh],
+       [chmod +x tests/system/HeatEqnFdmStencilWidthVar/TESTMATRIX_RUN_1D.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFdmStencilWidthVar/TESTMATRIX_RUN_2D.sh],
+       [chmod +x tests/system/HeatEqnFdmStencilWidthVar/TESTMATRIX_RUN_2D.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFdmStencilWidthVar/TESTMATRIX_RUN_3D.sh],
+       [chmod +x tests/system/HeatEqnFdmStencilWidthVar/TESTMATRIX_RUN_3D.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFdmStencilWidthVar/TESTMATRIX_RUN_4D.sh],
+       [chmod +x tests/system/HeatEqnFdmStencilWidthVar/TESTMATRIX_RUN_4D.sh])
+AC_CONFIG_FILES(tests/system/PropagationFromLeftLowerCorner/Makefile)
+AC_CONFIG_FILES([tests/system/PropagationFromLeftLowerCorner/RUN.sh],
+       [chmod +x tests/system/PropagationFromLeftLowerCorner/RUN.sh])
+AC_CONFIG_FILES([tests/system/PropagationFromLeftLowerCorner/TESTMATRIX_RUN.sh],
+       [chmod +x tests/system/PropagationFromLeftLowerCorner/TESTMATRIX_RUN.sh])
+AC_CONFIG_FILES([tests/system/PropagationFromLeftLowerCorner/TESTMATRIX_RUN_1D.sh],
+       [chmod +x tests/system/PropagationFromLeftLowerCorner/TESTMATRIX_RUN_1D.sh])
+AC_CONFIG_FILES([tests/system/PropagationFromLeftLowerCorner/TESTMATRIX_RUN_2D.sh],
+       [chmod +x tests/system/PropagationFromLeftLowerCorner/TESTMATRIX_RUN_2D.sh])
+AC_CONFIG_FILES([tests/system/PropagationFromLeftLowerCorner/TESTMATRIX_RUN_3D.sh],
+       [chmod +x tests/system/PropagationFromLeftLowerCorner/TESTMATRIX_RUN_3D.sh])
+AC_CONFIG_FILES(examples/Makefile)
+AC_CONFIG_FILES(examples/HeatEqnFDM/Makefile)
+AC_CONFIG_FILES([examples/HeatEqnFDM/RUN.sh],
+       [chmod +x examples/HeatEqnFDM/RUN.sh])
+AC_CONFIG_FILES([examples/HeatEqnFDM/TESTMATRIX_RUN.sh],
+       [chmod +x examples/HeatEqnFDM/TESTMATRIX_RUN.sh])
+AC_CONFIG_FILES(examples/WaveEqnFDM/Makefile)
+AC_CONFIG_FILES([examples/WaveEqnFDM/RUN.sh],
+       [chmod +x examples/WaveEqnFDM/RUN.sh])
+AC_CONFIG_FILES([examples/WaveEqnFDM/TESTMATRIX_RUN.sh],
+       [chmod +x examples/WaveEqnFDM/TESTMATRIX_RUN.sh])
+AC_CONFIG_FILES(examples/LameNavierEqnFDM/Makefile)
+AC_CONFIG_FILES([examples/LameNavierEqnFDM/RUN.sh],
+       [chmod +x examples/LameNavierEqnFDM/RUN.sh])
+AC_CONFIG_FILES([examples/LameNavierEqnFDM/TESTMATRIX_RUN.sh],
+       [chmod +x examples/LameNavierEqnFDM/TESTMATRIX_RUN.sh])
+AC_CONFIG_FILES(examples/LameNavierEqnFDMFirstOrder/Makefile)
+AC_CONFIG_FILES([examples/LameNavierEqnFDMFirstOrder/RUN.sh],
+       [chmod +x examples/LameNavierEqnFDMFirstOrder/RUN.sh])
+AC_CONFIG_FILES([examples/LameNavierEqnFDMFirstOrder/TESTMATRIX_RUN.sh],
+       [chmod +x examples/LameNavierEqnFDMFirstOrder/TESTMATRIX_RUN.sh])
+AC_CONFIG_FILES(examples/EMFDTD/Makefile)
+AC_CONFIG_FILES([examples/EMFDTD/RUN.sh],
+       [chmod +x examples/EMFDTD/RUN.sh])
+AC_CONFIG_FILES([examples/EMFDTD/TESTMATRIX_RUN.sh],
+       [chmod +x examples/EMFDTD/TESTMATRIX_RUN.sh])
+##if test "$distributeSoftware" = "no"; then
+##    AC_CONFIG_FILES(examples/MaxwellEqnsFDTD/Makefile)
+##fi
+AC_CONFIG_FILES(scripts/Makefile)
+
+AC_OUTPUT # Create Makefiles etc.
+
+#------------------------------------------------------------------------------#
+# Show configure summary.
+echo \
+"------------------------------------------------------------------------
+Configuration:
+==============
+
+  Compiler (CC):                        ${CC}
+  Compiler flags (CFLAGS):              ${CFLAGS}
+  Compiler (CXX):                       ${CXX}
+  Compiler flags (CXXFLAGS):            ${CXXFLAGS}
+  Linker flags (LDFLAGS):               ${LDFLAGS}
+  Build System Type:                    ${build}
+  Host System Type:                     ${host}
+  Install path:                         ${prefix}
+
+  Enabled / Available MPI?              ${want_mpi} / ${have_mpi}
+  Enabled / Available Boost?            ${want_boost} / ${have_boost}
+  Enabled / Available Boost.Serializ.?  ${want_boost_serialization} / ${have_boost_serialization}
+  Enabled / Available Boost.MPI?        ${want_boost_mpi} / ${have_boost_mpi}
+  Enabled / Available OpenMP?           ${want_openmp} / ${have_openmp}
+  Enabled / Available NetCDF?           ${want_netcdf} / ${have_netcdf}
+  Enabled / Available ADOL-C?           ${want_adolc} / ${have_adolc}"
+
+if test "$distributeSoftware" = "no"; then
+echo \
+"
+  Enabled / Available VT?               ${want_vt} / ${have_vt}
+  Enabled / Available GMOCK?            ${want_gmock} / ${have_gmock}
+  Enabled / Available CUDA?             ${want_cuda} / ${have_cuda}"
+fi
+
+echo \
+"
+  Enabled / Available Doxygen?          ${want_doxygen} / ${have_doxygen}
+            Available dot?              ${have_dot}
+
+  See config.h for further configuration information.
+------------------------------------------------------------------------"

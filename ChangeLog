@@ -1,0 +1,143 @@
+1.0.0 (12/11/2013)
+        - Initial version
+
+2.0.0 (07/04/2014)
+        - Removed function pointers for initialisation of data fields
+          from parameter list of class ScaFES::Problem.
+        - Removed function pointers for the analytical solutions
+          from parameter list of class ScaFES::Problem.
+        - Added std::vector<bool> computeError as parameter to
+          constructor of ScaFES::Problem.
+        - Added parameter bool const& useLeapFrog to the parameter list of
+          the class ScaFES::Problem for setting if the leap frog scheme
+          should be applied (=true) or not (=false).
+        - Added parameter std::vector<bool> writeToFile to
+          constructor of class ScaFES::Problem.
+        - Added parameter std::vector<int> const& nLayers constructor
+          of class ScaFES::Problem. Remark: Currently, nLayers has no effect.
+        - Added "std::vector<CT> const& defaultValue" to parameter list of
+          constructor of class ScaFES::Problem in order to initialise each
+          field with a default value.
+        - If the leap frog scheme should be applied, then the methods
+            updateInner2(),
+            updaterBorder2()
+          must be implemented in the sub class.
+        - Added checks for equal lengths of parameters in class ScaFES::Problem.
+        - Removed methods writeFree() and readFree() for types ScaFES::Complex
+          and ScaFES::Ntuple.
+        - Removed writes of each field separately.
+          Instead, all data fields (which are marked as unknown ones) will
+          be written to one NetCDF file.
+        - Added an enum class ScaFES::WriteHowOften in order to control how
+          often a field should be written to the NetCDF file.
+        - Fields which should be never written, are omitted in the NetCDF file.
+        - NetCDF file will be written if at at least one field should be
+          written.
+        - Removed suffix "_All" from NetCDF file name.
+        - Added ADOL-C support to initialisation and update phase.
+        - Added command line parameter --writeKindFile=<0/1> (default=0).
+        - Added command line option --nLayersAtBorder=<val> (default=1) such
+          that the global border width can be flexible adjusted
+          (for PMLs, e.g.).
+        - Added command line option "--computeGradients=<0/1>" (default=0)
+        - Added command line option --isTfTimeDependent=<0/1> (default=0).
+        - Added command line option --checkGradients=<0/1> (default=0).
+        - Added command line option --asynchronMode=<0/1> (default=1)
+          in order to use synchroneous resp. asynchronous MPI communication.
+        - Classes which are derived from the class ScaFES::Problem have to
+          implement the methods ("Inner" = All global inner grid nodes,
+          "Border" = All global border grid nodes):
+            evaluate()   ---> evalInner(),
+                              evalBorder(),
+            initialise() ---> initInner(),
+                              initBorder(),
+            update2()    ---> updateInner2(),
+                              updateBorder2(),
+        - Removed internal class ScaFES::DataField::Iterator.
+        - Added method DataField::time() returning the current time.
+        - Extended class ScaFES::DataField such that it can represent matrices,
+          too.
+        - Internal memory management is reorganized: Memory will
+          be not allocated anymore separately for each field in the class
+          DataField, but in the class Problem. This results in one single
+          memory lump for the new resp. for the old iterate.
+        - Replaced calls to "new CT" by calls to "std::vector<CT>".
+
+2.0.1 (09/25/2014)
+        - Improved build and installation tests.
+        - Updated doxygen documentation.
+        - Fixed minor bugs wrt. build and installation process.
+
+2.1.0 (11/13/2014)
+        - Fixed bug related to enabling / disabling optional modules
+          like ADOL-C or NetCDF. Before, software could only be built
+          in the configuration which was used during the creation of the
+          release.
+        - Fixed VampirTrace MPI support.
+        - Replaced compression format of html dir: tar.gz --> zip.
+        - Removed inheritance of GridGlobal<DIM> from class Grid<DIM>.
+          Instead, add discretized computational (global) domain as
+          member variable to the class GridGlobal.
+          Replaced corresponding calls to grid global related methods:
+          globalGrid().... ----> globalGrid().discreteDomain()....
+        - Added a new method for partitioning the discretized computational
+          domain: Domain will be partitioned uniformly in each dimension.
+          Added new command line options for the domain decomposition types:
+            --typeDomainDecompostion=<UNI/RCB> (default=RCB).
+              UNI: uniform domain decomposition
+              RCB: domain decomposition using the RCB algorithm.
+            --nPartitions=<p1x...xpd>, only in combination with "UNI"
+              (default =nProcsMpix1x...x1).
+              Number of partitions in each direction.
+        - Created class ScaFES::Communicator in order to hide Boost.MPI.
+        - Created class ScaFES::Timer for hiding boost::mpi::timer.
+        - Added mode "DEBUG_MPI" to shell script executeScafesApplication.sh.
+        - Renamed MPI related methods and moved those methods to the
+          file ScaFES_Communicator.hpp.
+
+2.2.0 (11/20/2014)
+        - Created shell script scripts/scafescc.sh in order to simplify the
+          build process of a ScaFES application. Necessary parameters for
+          building the application can be configured via environment variables
+          which are prefixed by "SCAFESCC_".
+        - Created shell script scripts/scafesrun.sh (previously named
+          scripts/executeScafesApplication.sh) in order to run a ScaFES
+          application. Analogously to scafescc.sh, necessary parameters for
+          running the application can be configured via environment variables
+          which are prefixed by "SCAFESRUN_".
+        - Removed warnings wrt. unused parameters (-Wunused) by applying
+          the C++11 feature std::ignore = var; of <tuple>.
+        - Fixed some minor bugs.
+
+2.3.0 (05/27/2015)
+        - Improved description of build and installation process.
+        - Added description how to install ScaFES using shell scripts prefixed by
+          scafes*.
+        - Made build system file compatible to automake 1.14 AND automake < 1.14
+        - Reset --enable-dist=yes as default.
+        - Improved doxygen documentation.
+        - Added page "FAQ" to doxygen documentation.
+        - Replaced initialiser list of unordered map "mNCErrorStrings" in order
+          to be compile applications using ICC 2013.
+        - Added input files for test matrix shell scripts TESTMATRIX_RUN.sh:
+          Paths within scripts will be created dynamically.
+        - Fixed "define HAVE_MPI".
+        - Added new class "ScaFES::Environment".
+        - Add run modes "OPENMP_ONLY", "SERIAL", "LOADLEVELER_WITH_LLSUBMIT_CALL"
+          to shell script scafesrun.sh
+        - Added ifdef sections wrt. BOOST, BOOST_SERIALIZATION.
+        - Changed configure checks: Now, Boost.program_options, Boost.Regex will
+          be checked only if Boost is wanted.
+        - Set default values for command line parameters if
+          Boost.program_options is not enabled.
+        - Fixed bug such that wall clock times will be correctly printed for
+          OpenMP parallel ScaFES applications.
+        - Wall clock times will be determined using gettimeofday() for serial
+          ScaFES applications.
+        - Fixed compile errors shown by clang 3.7-nightlybuild.
+        - Corrected usage of "netcdf_par" depending on the availability of
+          parallel NetCDF and MPI in ScaFES_DataFile.hpp, ScaFES_DataFileApi.hpp.
+        - Renamed folder "scafes" to "src".
+
+
+

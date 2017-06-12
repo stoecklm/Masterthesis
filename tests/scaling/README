@@ -1,0 +1,42 @@
+README
+======
+
+# Assumptions:
+# All shell scripts in the subfolders requires an application
+# named "a.out" located in the folder "trunk".
+
+#------------------------------------------------------------------------------#
+cd trunk
+
+#------------------------------------------------------------------------------#
+# Load all necessary modules and environment variables.
+source BTS_scripts/BTS_machineconfig.sh ZIH_TAURUS_PHASE2_GCC_4_9_1
+
+#------------------------------------------------------------------------------#
+# Run the configure script in order to update ScaFES_Config.hpp.
+BTS_setupsystem.sh ZIH_TAURUS_PHASE2_GCC_4_9_1 no
+
+#------------------------------------------------------------------------------#
+# Install ScaFES headers and scripts for compiling and running the application.
+cd build
+make install
+cd ..
+
+#------------------------------------------------------------------------------#
+# Compile example.
+./scripts/scafescc.sh tests/system/HeatEqnFdmStencilWidthOne/main3D.cpp
+
+#------------------------------------------------------------------------------#
+# Run scaling tests in subfolders (see README in corresponding subfolder).
+
+
+#------------------------------------------------------------------------------#
+# Run scaling tests in current folder. The file names can be read as follows:
+
+    ./tests/scaling/RUN_SCALING_TESTS_<scalingTestType>-<nameMachine>.sh
+
+bash -ex ./tests/scaling/RUN_SCALING_TESTS_WEAK_OPENMP-ZIH_TAURUS_SMP.sh
+bash -ex ./tests/scaling/RUN_SCALING_TESTS_WEAK_OPENMP-ZIH_TAURUS2_THROUGHPUT.sh
+bash -ex ./tests/scaling/RUN_SCALING_TESTS_WEAK_OPENMP-ZIH_ATLAS_N037.sh
+bash -ex ./tests/scaling/RUN_SCALING_TESTS_WEAK_OPENMP-ZIH_ATLAS_N088.sh
+bash -ex ./tests/scaling/RUN_SCALING_TESTS_WEAK_OPENMP-VENUS.sh

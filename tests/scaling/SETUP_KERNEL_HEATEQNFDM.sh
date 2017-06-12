@@ -1,0 +1,22 @@
+#!/bin/bash
+# Common kernel settings.
+# Copyright (c) 2011-2015, ZIH, TU Dresden, Federal Republic of Germany.
+# For details, see the files COPYING and LICENSE in the base directory
+# of the package.
+
+export SCAFESRUN_NAME_EXECUTABLE="a.out"
+export SCAFESRUN_SPACE_DIM="3";
+export SCAFESRUN_TYPE_DOMAIN_DECOMPOSITION="UNI"
+export SCAFESRUN_COORD_NODE_FIRST="0x0x0"
+export SCAFESRUN_COORD_NODE_LAST="1x1x1"
+export SCAFESRUN_N_TIMESTEPS=20;
+export SCAFESRUN_N_SNAPSHOTS=1
+export SCAFESRUN_START_TIME=0
+export SCAFESRUN_END_TIME=1
+export SCAFESRUN_OUTPUTLEVEL=3;
+export SCAFESRUN_NLAYERS_AT_BORDER=1
+export SCAFESRUN_NAME_KINDFILE=""
+export SCAFESRUN_WRITE_KINDFILE="NO";
+export SCAFESRUN_NAME_CONFIGFILE=""
+export SCAFESRUN_RESULTS_DIR="./";
+export SCAFESRUN_CHECK_RESULTS="YES";

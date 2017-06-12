@@ -1,0 +1,13 @@
+SUBDIRS =
+SUBDIRS += HeatEqnFDM
+SUBDIRS += WaveEqnFDM
+SUBDIRS += LameNavierEqnFDM
+SUBDIRS += LameNavierEqnFDMFirstOrder
+
+if AMHAVEBOOST
+if AMHAVEBOOSTMPI
+if AMHAVEADOLC
+SUBDIRS += EMFDTD
+endif
+endif
+endif

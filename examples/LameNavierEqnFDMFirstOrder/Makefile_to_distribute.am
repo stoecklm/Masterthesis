@@ -1,0 +1,48 @@
+#AUTOMAKE_OPTIONS= subdir-objects
+
+#------------------------------------------------------------------------------#
+SCAFES_TESTS_DIR=$(top_srcdir)/examples
+
+CPPFLAGS_COMMON= \
+        -I$(top_srcdir)/src \
+        -I$(top_builddir)/src \
+        @NETCDF_CPPFLAGS@ \
+        @BOOST_CPPFLAGS@ \
+        @MPI_CPPFLAGS@ \
+        @OPENMP_CXXFLAGS@ \
+        @ADOLC_CPPFLAGS@ \
+        $(VTxxxCPPFLAGS) \
+        $(VTOPARIxxxCPPFLAGS)
+
+LDFLAGS_COMMON = $(VTxxxCPPFLAGS) \
+                 $(VTOPARIxxxCPPFLAGS)
+
+LDADD_COMMON = \
+        $(top_builddir)/src/libscafes.la \
+        @BOOST_LDFLAGS@ \
+        @BOOST_PROGRAM_OPTIONS_LIB@ \
+        @BOOST_REGEX_LIB@ \
+        @BOOST_SERIALIZATION_LIB@ \
+        @MPI_LDFLAGS@ \
+        @BOOST_MPI_LIB@ \
+        @OPENMP_CXXFLAGS@ \
+        @NETCDF_LDFLAGS@ \
+        @ADOLC_LDFLAGS@
+DEPENDENCIES_COMMON= $(top_builddir)/src/libscafes.la
+
+
+################################################################################
+include_HEADERS=
+noinst_PROGRAMS=
+EXTRA_DIST=
+
+################################################################################
+include_HEADERS +=
+noinst_PROGRAMS += LameNavierEqnFDMFirstOrder
+LameNavierEqnFDMFirstOrder_SOURCES = main.cpp \
+                     LameNavierEqnFDMFirstOrder.hpp
+LameNavierEqnFDMFirstOrder_CPPFLAGS = $(CPPFLAGS_COMMON)
+LameNavierEqnFDMFirstOrder_LDFLAGS = $(LDFLAGS_COMMON)
+LameNavierEqnFDMFirstOrder_LDADD = $(LDADD_COMMON)
+LameNavierEqnFDMFirstOrder_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+EXTRA_DIST += RUN.sh

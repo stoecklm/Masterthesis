@@ -1,0 +1,15 @@
+            ScaFES: Scalable Framework for Explicit Solvers
+            ===============================================
+
+"We present ScaFES, an open-source HPC framework written in C++11 for
+solving initial boundary value problems using explicit numerical methods
+in time on structured grids. It is designed to be highly-scalable and
+very user-friendly, i.e. to exploit all levels of parallelism and provide
+easy-to-use interfaces. Besides, the numerical nomenclature is reflected
+in a nearly one-to-one mapping."
+
+[Source: Martin Flehmig, Kim Feldhoff, and Ulf Markwardt:
+ "ScaFES: An Open-Source Framework for Explcit Solvers Combing
+ High-Scalability with User-Friendliness",
+ ARCS 2014 - 27th International Conference of Computing Systems,
+ Workshop-Proceedings, VDE-Verlag, 2014]

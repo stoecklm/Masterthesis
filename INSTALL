@@ -1,0 +1,83 @@
+                         ==================
+                         INSTALLATION GUIDE
+                         ==================
+
+CONTENTS:
+=========
+* WHICH SOFTWARE WILL BE NEEDED
+* HOW TO CONFIGURE THE SOFTWARE?
+* HOW TO BUILD THE SOFTWARE?
+* HOW TO INSTALL THE SOFTWARE?
+
+
+================================================================================
+WHICH SOFTWARE WILL BE NEEDED?
+==============================
+* Minimum Requirements:
+    - C++ compiler supporting C++11 (including C++11 aliases like GCC >= 4.8.1)
+    - Boost.ProgramOptions >= 1.42.0
+    - Boost.Regex >= 1.42.0
+    - Boost.Serialization >= 1.42.0
+    - bash >= 3.0
+* Maximum Requirements:
+    - Software required in 'Minimum Requirements'
+    - Implementation of the MPI standard >= 2.0 (like Open MPI >= 1.6)
+    - Boost.MPI >= 1.42.0
+    - C++ compiler additionally supporting OpenMP >= 3.1 (like GCC >= 4.8.1)
+    - HDF5 >= 1.8.5
+    - NetCDF >= 4.0 (and >= 4.3 for parallel writing).
+    - ADOL-C >= 2.3
+
+
+================================================================================
+HOW TO CONFIGURE THE SOFTWARE?
+==============================
+The software can be configured for the underlying system by calling
+the usual configure script. In order to install the software to a desired
+directory, the configure option '--prefix=<installdir>' can be used.
+Please make sure that the installation directory is writable.
+This can be either ensured by executing the following command as
+super user (su) or by using the configure option '--prefix=<installdir>'
+with a writable directory <installdir>.
+
+    ./configure
+
+the following options can be set:
+
+    --enable-netcdf       Enables writing data fields to files [default=no].
+    --enable-openmp       Enables OpenMP support [default=no].
+    --enable-adolc        Enables ADOL-C support [default=no].
+    --enable-doc          Enables generating the documentation [default=no].
+
+    --with-mpi            Sets the base directory of MPI impl. [default=/usr].
+    --with-boost          Sets the base directory of Boost [default=/usr].
+    --with-boost-libdir   Sets the lib directory of Boost [default=/usr/lib].
+    --with-netcdf         Sets the base directory of NetCDF [default=/usr].
+    --with-adolc          Sets the base directory of ADOL-C [default=/usr].
+
+Compiler and compiler options can be set via the environment variables
+CXX and CXXFLAGS. Thus, an example call would look as follows:
+
+    CXX=g++  CXXFLAGS='-O3 -Wall' \
+    ./configure --enable-openmp --enable-netcdf \
+                --with-boost=/opt/boost --with-boost-libdir=/opt/boost/lib
+
+
+================================================================================
+HOW TO BUILD THE SOFTWARE?
+==========================
+The library and different examples will be built using "make".
+The build process can be done in parallel if the underlying system has more
+than one core. Then, please use the make option '-j'.
+
+    make
+
+
+================================================================================
+HOW TO INSTALL THE SOFTWARE?
+============================
+If everything went fine, the software can be installed to the directory
+given during the call of the configure script.
+
+    make install
+

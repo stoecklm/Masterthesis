@@ -1,0 +1,68 @@
+README
+======
+
+Shell scripts have to be exectued from the root directory of the software
+(trunk).
+
+#------------------------------------------------------------------------------#
+################################################################################
+# Test runs for weak scaling tests wrt. pure MPI.
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/010-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_1-nthr_1-nNodes_64x64x64-dvideGrid_1x1x1-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/011-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_2-nthr_1-nNodes_128x64x64-dvideGrid_2x1x1-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/012-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_4-nthr_1-nNodes_128x128x64-dvideGrid_2x2x1-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/020-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_8-nthr_1-nNodes_128x128x128-divideGrid_2x2x2-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/021-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_16-nthr_1-nNodes_256x128x128-divideGrid_4x2x2-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/022-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_32-nthr_1-nNodes_256x256x128-divideGrid_4x4x2-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/030-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_64-nthr_1-nNodes_256x256x256-divideGrid_4x4x4-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/031-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_128-nthr_1-nNodes_512x256x256-divideGrid_8x4x4-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/032-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_256-nthr_1-nNodes_512x512x256-divideGrid_8x8x4-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/040-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_512-nthr_1-nNodes_512x512x512-divideGrid_8x8x8-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/041-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_1024-nthr_1-nNodes_1024x512x512-divideGrid_16x8x8-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/042-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_2048-nthr_1-nNodes_1024x1024x512-divideGrid_16x16x8-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/050-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_4096-nthr_1-nNodes_1024x1024x1024-divideGrid_16x16x16-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/051-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_8192-nthr_1-nNodes_2048x1024x1024-divideGrid_32x16x16-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/052-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_16384-nthr_1-nNodes_2048x2048x1024-divideGrid_32x32x16-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/060-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_32768-nthr_1-nNodes_2048x2048x2048-divideGrid_32x32x32-ZIH_TAURUS2.sh
+
+
+#------------------------------------------------------------------------------#
+################################################################################
+# Test runs for strong scaling tests wrt. pure MPI.
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/210-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_1-nthr_1-nNodes_512x512x512-divideGrid_1x1x1-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/211-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_2-nthr_1-nNodes_512x512x512-divideGrid_2x1x1-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/212-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_4-nthr_1-nNodes_512x512x512-divideGrid_2x2x1-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/220-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_8-nthr_1-nNodes_512x512x512-divideGrid_2x2x2-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/221-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_16-nthr_1-nNodes_512x512x512-divideGrid_4x2x2-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/222-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_32-nthr_1-nNodes_512x512x512-divideGrid_4x4x2-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/230-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_64-nthr_1-nNodes_512x512x512-divideGrid_4x4x4-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/231-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_128-nthr_1-nNodes_512x512x512-divideGrid_8x4x4-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/232-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_256-nthr_1-nNodes_512x512x512-divideGrid_8x8x4-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/240-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_512-nthr_1-nNodes_512x512x512-divideGrid_8x8x8-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/241-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_1024-nthr_1-nNodes_512x512x512-divideGrid_16x8x8-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/242-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_2048-nthr_1-nNodes_512x512x512-divideGrid_16x16x8-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/250-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_4096-nthr_1-nNodes_512x512x512-divideGrid_16x16x16-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/251-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_8192-nthr_1-nNodes_512x512x512-divideGrid_32x16x16-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/252-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_16384-nthr_1-nNodes_512x512x512-divideGrid_32x32x16-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/260-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_32768-nthr_1-nNodes_512x512x512-divideGrid_32x32x32-ZIH_TAURUS2.sh
+
+
+#------------------------------------------------------------------------------#
+################################################################################
+# Test runs for weak scaling tests wrt. pure OpenMP.
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/110-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_1-nthr_1-nNodes_64x64x64-dvideGrid_1x1x1-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/111-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_1-nthr_2-nNodes_128x64x64-dvideGrid_1x1x1-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/112-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_1-nthr_4-nNodes_128x128x64-dvideGrid_1x1x1-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/120-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_1-nthr_8-nNodes_128x128x128-dvideGrid_1x1x1-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/121-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_1-nthr_16-nNodes_256x128x128-dvideGrid_1x1x1-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/124-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_1-nthr_24-nNodes_256x192x128-dvideGrid_1x1x1-ZIH_TAURUS2.sh
+
+
+#------------------------------------------------------------------------------#
+################################################################################
+# Test runs for strong scaling tests wrt. pure OpenMP.
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/310-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_1-nthr_1-nNodes_512x512x512-dvideGrid_1x1x1-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/311-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_1-nthr_2-nNodes_512x512x512-dvideGrid_1x1x1-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/312-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_1-nthr_4-nNodes_512x512x512-dvideGrid_1x1x1-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/320-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_1-nthr_8-nNodes_512x512x512-dvideGrid_1x1x1-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/321-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_1-nthr_16-nNodes_512x512x512-dvideGrid_1x1x1-ZIH_TAURUS2.sh
+sbatch -A zihforschung ./tests/scaling/ZIH_TAURUS2_GCC_4_9_1/324-run-HeatEqnOne3D-ts20-adolc_no-async_yes-nprocs_1-nthr_24-nNodes_512x512x512-dvideGrid_1x1x1-ZIH_TAURUS2.sh

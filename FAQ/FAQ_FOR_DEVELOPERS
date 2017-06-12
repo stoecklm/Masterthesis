@@ -1,0 +1,843 @@
+                ===============================================
+                FREQUENTLY ASKED QUESTIONS (FAQ) FOR DEVELOPERS
+                ===============================================
+
+
+=========================================================== 1 ==================
+UML DIAGRAMS WITH DOXYGEN
+=========================================================== 1 ==================
+[KF, 10.10.2014]
+UML-like class diagrams can be obtained automatically using doxygen:
+
+* Set the following tags in doc/Doxyfile.in:
+
+    EXTRACT_ALL            = YES
+    HAVE_DOT               = YES
+    UML_LOOK               = YES
+
+Source:
+http://stackoverflow.com/questions/4755913/how-to-use-doxygen-to-create-uml-class-diagrams-from-c-source
+Last accessed: 10.10.2014.
+
+* Private (static) variables and methods will be shown using:
+
+    EXTRACT_PRIVATE        = YES
+    EXTRACT_PACKAGE        = YES
+    EXTRACT_STATIC         = YES
+
+* Shows template relations and set the number of fields within classes to a
+  given value:
+
+    UML_LIMIT_NUM_FIELDS   = 10
+    TEMPLATE_RELATIONS     = YES
+
+
+=========================================================== 4 ==================
+DEVELOPERS ONLY: INSTALLING GoogleTest FROM SOURCES
+=========================================================== 4 ==================
+* Download the source files from
+
+     http://code.google.com/p/googlemock
+
+* Extract the zip-file via unzip, then go to the directory of
+  gtest-1.6.0 and run the configure script:
+
+    unzip gtest-1.6.0.zip
+    cd gtest-1.6.0
+    ./configure --prefix=/opt/gtest-1.6.0
+
+* This means that the library (including GoogleMock) will be installed
+  in /opt/gtest-1.6.0/lib. Then, compile the sources via make.
+
+    make;
+
+* Now, install the libraries using make. Call "make -i install" as root (su...).
+  The option "-i" is important! Still as root, create a symbolic link:
+
+    su
+    make -i install
+    ln -sf /opt/gtest-1.6.0 /opt/gtest
+
+* Finally, add the library directory to the the LD_LIBRARY_PATH. Therefore,
+  open ~/.bashrc and the following line to the file:
+
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/gtest
+
+* Start a new console in order to activate the new LD_LIBRARY_PATH.
+  Now, GoogleTest and GoogleMock should be properly installed!
+
+
+=========================================================== 6 ==================
+SCAFES AND SVN -- A SMALL HOWTO
+=========================================================== 6 ==================
+# SVN general
+# -----------
+# All SVN commands should be executed in the root folder of the software
+#   (normally: trunk).
+# On system with a module system, it is necessary sometimes that SVN is loaded
+# as a module (ZIH cluster Atlas, e.g.).
+#   module load svn
+#   export SVN_EDITOR=vim
+
+# SVN check in
+# ------------
+# Before local modified data are checked in, one has to update to the newest
+# revision and see the changes to this new revision (in order to remember
+# the changes one has made).
+#     svn update
+#     svn diff
+#     svn ci
+# If "svn ci" is called without the option "-m" the correspding editor
+# will open automatically (normally vim) and will show a list of all
+# files modified (or added, deleted etc.).
+# Please delete the first 3 lines of the file and comment the changes
+# to the files listed (as given in the example below):
+# --- BEGIN FILE ---
+   -- Diese und die folgenden Zeilen werden ignoriert --
+
+   M    README
+   M    tests/SystemTests/EXECUTE.sh
+# --- END OF FILE ---
+
+
+=========================================================== 8 ==================
+Rev. 671
+=========================================================== 8 ==================
+[08.05.2014, KF]
+
+HeatEqnFdmStencilWidthVar1D-ZIH_ATLAS_HPCFLIS_NEW-SCADOPT_REV671-mpi00001-omp00001-nNodes512-divide1-adolcYES-asyncNO-gradYES-tfTdepNO-nTs000020-tEnd1-nLayers1-201405071949.out"
+
+caFES : Rank=0:            * Initialise all data fields...
+ScaFES : Rank=0:                 * Initialise(pb) synchronously data fields UNewDom...
+ScaFES : Rank=0:                      * Create tapes for tracing initialise(UNewDom,...).
+kk = 519
+ScaFES : Rank=0:                        Created.
+ScaFES : Rank=0:                      * Initialise(pb) iterate and its gradients using ADOL-C tape #1592...
+--------------------------------------------------------------------------
+mpirun noticed that process rank 0 with PID 3754 on node n001 exited on signal 11 (Segmentation fault).
+--------------------------------------------------------------------------
+Command exited with non-zero status 139
+
+
+=========================================================== 9 ==================
+Rev. 674 on ZIH_VENUS
+=========================================================== 9 ==================
+[08.05.2014, KF]
+
+HeatEqnFdmStencilWidthVar1D-ZIH_ATLAS_HPCFLIS_NEW-SCADOPT_REV-mpi00002-omp00001-nNodes512-divide1-adolcYES-asyncNO-gradYES-tfTdepNO-nTs000020-tEnd1-nLayers1-201405081602.out
+
+ScaFES : Rank=0:  * Partition the global grid...
+ScaFES : Rank=0:       * CPU time(gridGlobal):
+ScaFES : Rank=0:       ----> t(gridGlobal) =  1.66904 s. <-------
+ScaFES : Rank=0:    Partitioned.
+~
+~
+terminate called after throwing an instance of 'boost::exception_detail::clone_impl<boost::exception_detail::error_info_injector<boost::mpi::exception> >'
+  what():  MPI_Type_struct: Invalid argument
+terminate called after throwing an instance of 'boost::exception_detail::clone_impl<boost::exception_detail::error_info_injector<boost::mpi::exception> >'
+  what():  MPI_Type_struct: Invalid argument
+MPI: On host venus, Program /home/h3/hpc-flis/jenkins/workspace/SCADOPT_VENUS/extlib/scafes/tests/system/HeatEqnFdmStencilWidthVar/.libs/lt-HeatEqnFdmStencilWidthVar1D, Rank 1, Process 303780 received signal SIGABRT/SIGIOT(6)
+
+
+MPI: --------stack traceback-------
+MPI: Attaching to program: /proc/303780/exe, process 303780
+MPI: Try: zypper install -C "debuginfo(build-id)=86e0c9994d16f010cb58cdd68cbedf4899c67ba0"
+MPI: (no debugging symbols found)...done.
+MPI: Try: zypper install -C "debuginfo(build-id)=3d8771817cc6d1d1e4b9767b9b65dd2e06a0e597"
+MPI: (no debugging symbols found)...done.
+MPI: [Thread debugging using libthread_db enabled]
+MPI: Using host libthread_db library "/lib64/libthread_db.so.1".
+MPI: Try: zypper install -C "debuginfo(build-id)=89f460a6502702332c336f3cd7f5568036483b98"
+MPI: (no debugging symbols found)...done.
+MPI: Try: zypper install -C "debuginfo(build-id)=61f1824892113fa0cbaaa4c1831ad5b732e78525"
+MPI: (no debugging symbols found)...done.
+MPI: Try: zypper install -C "debuginfo(build-id)=38ab807fcca391af7d3ed7fcf585fbff2d54556a"
+MPI: (no debugging symbols found)...done.
+MPI: Try: zypper install -C "debuginfo(build-id)=3aa2aae918264415a943ee5ee2b872bb9c6194a2"
+MPI: (no debugging symbols found)...done.
+MPI: Try: zypper install -C "debuginfo(build-id)=b9520e6d84e0c308008b8f365e221fe8b4414043"
+MPI: (no debugging symbols found)...done.
+MPI: Try: zypper install -C "debuginfo(build-id)=8b72ed29ee8ae44b89251097bf571d29b0438d04"
+MPI: (no debugging symbols found)...done.
+MPI: 0x00002aaaacc6a2f5 in waitpid () from /lib64/libpthread.so.0
+MPI: warning: File "/sw/global/compilers/gcc/4.7.1/lib64/libstdc++.so.6.0.17-gdb.py" auto-loading has been declined by your `auto-load safe-path' set to "$debugdir:$datadir/auto-load".
+MPI: To enable execution of this file add
+MPI:    add-auto-load-safe-path /sw/global/compilers/gcc/4.7.1/lib64/libstdc++.so.6.0.17-gdb.py
+MPI: line to your configuration file "/home/mmeinel/.gdbinit".
+MPI: To completely disable this security protection add
+MPI:    set auto-load safe-path /
+MPI: line to your configuration file "/home/mmeinel/.gdbinit".
+MPI: For more information about this security protection see the
+MPI: "Auto-loading safe path" section in the GDB manual.  E.g., run from the shell:
+MPI:    info "(gdb)Auto-loading safe path"
+MPI: (gdb) #0  0x00002aaaacc6a2f5 in waitpid () from /lib64/libpthread.so.0
+MPI: #1  0x00002aaaabe83c14 in mpi_sgi_system (command=<optimized out>) at sig.c:89
+MPI: #2  MPI_SGI_stacktraceback (header=<optimized out>) at sig.c:272
+MPI: #3  0x00002aaaabe845c5 in first_arriver_handler (signo=6,
+MPI:     stack_trace_sem=0x2aaaae980500) at sig.c:415
+MPI: #4  0x00002aaaabe847c0 in slave_sig_handler (signo=6,
+MPI:     siginfo=<optimized out>, extra=<optimized out>) at sig.c:494
+MPI: #5  <signal handler called>
+MPI: #6  0x00002aaaaceaab55 in raise () from /lib64/libc.so.6
+MPI: #7  0x00002aaaaceac131 in abort () from /lib64/libc.so.6
+MPI: #8  0x00002aaaab130c9d in __gnu_cxx::__verbose_terminate_handler ()
+MPI:     at ../../../../gcc-4.7.1/libstdc++-v3/libsupc++/vterminate.cc:95
+MPI: #9  0x00002aaaab12eda6 in __cxxabiv1::__terminate (handler=<optimized out>)
+MPI:     at ../../../../gcc-4.7.1/libstdc++-v3/libsupc++/eh_terminate.cc:40
+MPI: #10 0x00002aaaab12edd3 in std::terminate ()
+MPI:     at ../../../../gcc-4.7.1/libstdc++-v3/libsupc++/eh_terminate.cc:50
+MPI: #11 0x00002aaaab12effe in __cxxabiv1::__cxa_throw (obj=0x143d9b0,
+MPI:     tinfo=<optimized out>, dest=<optimized out>)
+MPI:     at ../../../../gcc-4.7.1/libstdc++-v3/libsupc++/eh_throw.cc:83
+MPI: #12 0x000000000042546e in void boost::throw_exception<boost::mpi::exception>(boost::mpi::exception const&) ()
+MPI: #13 0x000000000041edbd in boost::mpi::detail::mpi_datatype_primitive::get_mpi_datatype() ()
+MPI: #14 0x000000000041ffb9 in boost::mpi::detail::content_oarchive::get_content()
+MPI:     ()
+MPI: #15 0x0000000000463f7c in boost::mpi::content const boost::mpi::get_content<std::vector<double, std::allocator<double> > >(std::vector<double, std::allocator<double> > const&) ()
+MPI: #16 0x000000000045b241 in ScaFES::Buffer<double>::Buffer(boost::mpi::communicator const&, int const&, int const&, bool const&) ()
+MPI: #17 0x000000000044cac5 in ScaFES::DataField<double, 1ul>::initDependentMembers() ()
+MPI: #18 0x000000000043c01c in ScaFES::DataField<double, 1ul>::DataField(std::string const&, ScaFES::Parameters const&, ScaFES::GridGlobal<1ul> const&, ScaFES::Grid<1ul> const&, int const&, double* const&, int const&, ScaFES::GridSub<1ul> const&, int const&, ScaFES::WriteHowOften const&) ()
+MPI: #19 0x000000000043c41a in ScaFES::Problem<HeatEqnFdmStencilWidthVar<double, 1ul>, double, 1ul>::createVectorOfUnknownDataFields(std::vector<ScaFES::DataField<double, 1ul>, std::allocator<ScaFES::DataField<double, 1ul> > >&, std::vector<ScaFES::DataField<double, 1ul>, std::allocator<ScaFES::DataField<double, 1ul> > >&, std::vector<double, std::allocator<double> > const&, std::vector<std::string, std::allocator<std::string> > const&, std::string const&, std::vector<bool, std::allocator<bool> > const&, std::vector<int, std::allocator<int> > const&, std::vector<int, std::allocator<int> > const&, std::vector<ScaFES::Grid<1ul>, std::allocator<ScaFES::Grid<1ul> > > const&, std::vector<ScaFES::GridSub<1ul>, std::allocator<ScaFES::GridSub<1ul> > > const&, std::vector<int, std::allocator<int> > const&, std::vector<ScaFES::WriteHowOften, std::allocator<ScaFES::WriteHowOften> > const&, std::vector<double, std::allocator<double> > const&, int const&) ()
+MPI: #20 0x00000000004311b9 in ScaFES::Problem<HeatEqnFdmStencilWidthVar<double, 1ul>, double, 1ul>::Problem(ScaFES::Parameters const&, ScaFES::GridGlobal<1ul> const&, bool const&, std::vector<std::string, std::allocator<std::string> > const&, std::vector<int, std::allocator<int> > const&, std::vector<bool, std::allocator<bool> > const&, std::vector<int, std::allocator<int> > const&, std::vector<double, std::allocator<double> > const&, std::vector<ScaFES::WriteHowOften, std::allocator<ScaFES::WriteHowOften> > const&, std::vector<bool, std::allocator<bool> > const&, std::vector<double, std::allocator<double> > const&) ()
+MPI: #21 0x00000000004291a0 in HeatEqnFdmStencilWidthVar<double, 1ul>::HeatEqnFdmStencilWidthVar(ScaFES::Parameters const&, ScaFES::GridGlobal<1ul> const&, bool, std::vector<std::string, std::allocator<std::string> > const&, std::vector<int, std::allocator<int> > const&, std::vector<bool, std::allocator<bool> > const&, std::vector<int, std::allocator<int> > const&, std::vector<double, std::allocator<double> > const&, std::vector<ScaFES::WriteHowOften, std::allocator<ScaFES::WriteHowOften> > const&, std::vector<bool, std::allocator<bool> > const&, std::vector<double, std::allocator<double> > const&) ()
+MPI: #22 0x0000000000415313 in main ()
+MPI: (gdb) A debugging session is active.
+MPI:
+MPI:    Inferior 1 [process 303780] will be detached.
+MPI:
+MPI: Quit anyway? (y or n) [answered Y; input not from terminal]
+MPI: Detaching from program: /proc/303780/exe, process 303780
+
+MPI: -----stack traceback ends-----
+MPI: On host venus, Program /home/h3/hpc-flis/jenkins/workspace/SCADOPT_VENUS/extlib/scafes/tests/system/HeatEqnFdmStencilWidthVar/.libs/lt-HeatEqnFdmStencilWidthVar1D, Rank 1, Process 303780: Dumping core on signal SIGABRT/SIGIOT(6) into directory /home/h3/hpc-flis/jenkins/workspace/SCADOPT_VENUS/extlib/scafes/tests/system/HeatEqnFdmStencilWidthVar
+MPI: MPI_COMM_WORLD rank 1 has terminated without calling MPI_Finalize()
+MPI: aborting job
+MPI: Received signal 6
+
+
+--- Run application. ---
++ export OMP_NUM_THREADS=1
++ OMP_NUM_THREADS=1
++ /usr/bin/time mpirun -np 1 ./HeatEqnFdmStencilWidthVar1D --dim=1
+--divideGrid=1 --nNodes=512 --coordNodeFirst=0 --coordNodeLast=1 --starttime=0
+--endtime=1 --nTimesteps=20 --nSnapshots=1 --writeKindFile=0 --enabledAdolc=1
+--asynchronMode=0 --computeGradients=0 --isTfTimeDependent=0
+--writePartitionfile=HeatEqnFdmStencilWidthVar1D_1_1_512
+--outputfile=HeatEqnFdmStencilWidthVar1D_1_1_512 --outputlevel=5
+--nLayersAtBorder=1
+
+
+
+=========================================================== 9 ==================
+\section automake_1_14_error Error during call of bootstrap.sh when using automake >= 1.14
+=========================================================== 9 ==================
+[04/17/2015, KF]
+* Some or all of the following warning messages occur during compiling:
+
+        automake: warnings are treated as errors
+        examples/HeatEqnFDM/Makefile.am:50: warning: source file '$(SCAFES_TESTS_DIR)/HeatEqnFDM/main.cpp' is in a subdirectory,
+        examples/HeatEqnFDM/Makefile.am:50: but option 'subdir-objects' is disabled
+        automake: warning: possible forward-incompatibility.
+        automake: At least a source file is in a subdirectory, but the 'subdir-objects'
+        automake: automake option hasn't been enabled.  For now, the corresponding output
+        automake: object file(s) will be placed in the top-level directory.  However,
+        automake: this behaviour will change in future Automake versions: they will
+        automake: unconditionally cause object files to be placed in the same subdirectory
+        automake: of the corresponding sources.
+        automake: You are advised to start using 'subdir-objects' option throughout your
+        automake: project, to avoid future incompatibilities.
+
+Automake >= 1.14 has been used.
+AC_INIT_AUTOMAKE([subdir-objects])
+- Workaround: Use Automake <= 1.13
+- or add "subdir-objects" to AC_INIT_AUTOMAKE([subdir-objects])
+  If "make[2]: *** No rule to make target `../scafes/.deps/libscafes_la-ScaFES_Dummy.Plo"
+  or similar things appear, then
+   1) add "--disable-dependency-tracking" to your configure line or
+   2) AC_INIT_AUTOMAKE([subdir-objects no-dependencies])
+      This disables the dependency tracking by default using the configure.ac file.
+
+see:
+        http://stackoverflow.com/questions/21609580/autotools-build-fails-due-to-subdir-objects-option-in-am-init-automake
+        http://stackoverflow.com/questions/11438613/conditional-subdir-objects
+
+This issue has been fixed in the next release of ScaFES.
+
+
+
+********************************************************************************
+Known Error:
+============
+[KF, 04/14/2015]:
+        export SCAFESCC_ENABLE_MPI="yes"
+        export SCAFESCC_ENABLE_OPENMP="yes"
+        export SCAFESCC_ENABLE_GMOCK="no"
+        export SCAFESCC_ENABLE_DEBUG_MODE="no"
+        export SCAFESCC_ENABLE_BOOST="yes"
+        export SCAFESCC_ENABLE_BOOST_SERIALIZATION="yes"
+        export SCAFESCC_ENABLE_BOOST_MPI="no"
+        export SCAFESCC_ENABLE_NETCDF="no";
+        export SCAFESCC_ENABLE_ADOLC="no";
+        export SCAFESCC_ENABLE_CUDA="no"
+        export SCAFESCC_ENABLE_VT="no";
+        export SCAFESCC_ENABLE_DOXYGEN="no"
+        export SCAFESCC_ENABLE_GCOV="no"
+        export SCAFESCC_CREATE_SHARED="no"
+        export SCAFESCC_CREATE_STATIC="yes"
+        export SCAFESCC_BUILD_FOR_TARGET=""; #powerpc64-bgq-linux"
+JUQUEEN_GCC_4_8_1
+scafes trunk rev. 628
+Making all in HeatEqnFDM
+make[3]: Entering directory `/homea/hdr09/hdr090/scafes/scafes-work/trunk/build/examples/HeatEqnFDM'
+/bin/sh ../../libtool  --tag=CXX   --mode=link mpig++  -O3 -std=c++11    -o HeatEqnFDM HeatEqnFDM-main.o ../../scafes/libscafes.la -L/homea/hdr09/hdr090/scafes/opt/boost_1_57_0/lib -lboost_program_options -lboost_regex -lboost_serialization -L/bgsys/drivers/V1R2M2/ppc64/comm/lib -L/bgsys/drivers/V1R2M2/ppc64/comm/lib -L/bgsys/drivers/V1R2M2/ppc64/comm/lib64 -L/bgsys/drivers/V1R2M2/ppc64/comm/lib -L/bgsys/drivers/V1R2M2/ppc64/spi/lib -L/bgsys/drivers/V1R2M2/ppc64/comm/sys/lib -L/bgsys/drivers/V1R2M2/ppc64/spi/lib -L/bgsys/drivers/V1R2M2/ppc64/comm/sys/lib -L/bgsys/drivers/V1R2M2/ppc64/comm/lib64 -L/bgsys/drivers/V1R2M2/ppc64/comm/lib -L/bgsys/drivers/V1R2M2/ppc64/spi/lib -L/bgsys/drivers/V1R2M2/ppc64/comm/lib -lmpichcxx-xl -lmpich-xl -lopa-xl -lmpl-xl -lpami-gcc -lSPI -lSPI_cnk -lrt -lpthread -lstdc++ -lpthread -fopenmp
+libtool: link: mpig++ -O3 -std=c++11 -o HeatEqnFDM HeatEqnFDM-main.o -fopenmp  ../../scafes/.libs/libscafes.a -L/homea/hdr09/hdr090/scafes/opt/boost_1_57_0/lib -lboost_program_options -lboost_regex -lboost_serialization -L/bgsys/drivers/V1R2M2/ppc64/comm/lib -L/bgsys/drivers/V1R2M2/ppc64/comm/lib64 -L/bgsys/drivers/V1R2M2/ppc64/spi/lib -L/bgsys/drivers/V1R2M2/ppc64/comm/sys/lib /bgsys/drivers/V1R2M2/ppc64/comm/lib/libmpichcxx-xl.so /bgsys/drivers/V1R2M2/ppc64/comm/lib/libmpich-xl.so /bgsys/drivers/V1R2M2/ppc64/comm/lib/libopa-xl.so /bgsys/drivers/V1R2M2/ppc64/comm/lib/libmpl-xl.so -lpami-gcc -lSPI -lSPI_cnk -lrt /bgsys/local/gcc/4.8.1/powerpc64-bgq-linux/lib/../lib64/libstdc++.so -lm -lpthread -Wl,-rpath -Wl,/bgsys/local/gcc/4.8.1/powerpc64-bgq-linux/lib/../lib64 -Wl,-rpath -Wl,/bgsys/drivers/V1R2M2/ppc64/comm/lib -Wl,-rpath -Wl,/bgsys/local/gcc/4.8.1/powerpc64-bgq-linux/lib/../lib64 -Wl,-rpath -Wl,/bgsys/drivers/V1R2M2/ppc64/comm/lib
+/usr/local/bg_soft/gcc/4.8.1/bin/../lib/gcc/powerpc64-bgq-linux/4.8.1/../../../../powerpc64-bgq-linux/bin/ld: attempted static link of dynamic object `/bgsys/drivers/V1R2M2/ppc64/comm/lib/libmpichcxx-xl.so'
+collect2: error: ld returned 1 exit status
+make[3]: *** [HeatEqnFDM] Error 1
+
+Workaround:
+===========
+Edit linker line and remove all added libraries execpt for libscafes.a.
+
+
+********************************************************************************
+Known Error:
+============
+[KF, 05/29/2015]:
+scafes 2.3.0
+ZIH_VENUS_GCC_4_8_2
+
+1735 conftest.cpp: In function 'int main()':
+1736 conftest.cpp:34:25: error: no matching function for call to 'boost::mpi::environment::environment()'
+1737  boost::mpi::environment env; return 0;
+1738                          ^
+1739 conftest.cpp:34:25: note: candidate is:
+1740 In file included from /sw/venus/libraries/boost/1.51.0/include/boost/mpi/collectives/gather.hpp:18:0,
+1741                  from /sw/venus/libraries/boost/1.51.0/include/boost/mpi/collectives/all_gather.hpp:18,
+1742                  from /sw/venus/libraries/boost/1.51.0/include/boost/mpi/collectives.hpp:536,
+1743                  from /sw/venus/libraries/boost/1.51.0/include/boost/mpi.hpp:23,
+1744                  from conftest.cpp:29:
+1745 /sw/venus/libraries/boost/1.51.0/include/boost/mpi/environment.hpp:81:3: note: boost::mpi::environment::environment(int&, char**     &, bool)
+1746    environment(int& argc, char** &argv, bool abort_on_exception = true);
+1747    ^
+1748 /sw/venus/libraries/boost/1.51.0/include/boost/mpi/environment.hpp:81:3: note:   candidate expects 3 arguments, 0 provided
+1749 configure:17375: $? = 1
+1750 configure: failed program was:
+1751 | /* confdefs.h */
+1752 | #define PACKAGE_NAME "scafes"
+1753 | #define PACKAGE_TARNAME "scafes"
+1754 | #define PACKAGE_VERSION "2.3.0"
+1755 | #define PACKAGE_STRING "scafes 2.3.0"
+1756 | #define PACKAGE_BUGREPORT "scafes-support@fusionforge.zih.tu-dresden.de"
+1757 | #define PACKAGE_URL ""
+1758 | #define PACKAGE "scafes"
+1759 | #define VERSION "2.3.0"
+1760 | #define STDC_HEADERS 1
+1761 | #define HAVE_SYS_TYPES_H 1
+1762 | #define HAVE_SYS_STAT_H 1
+1763 | #define HAVE_STDLIB_H 1
+1764 | #define HAVE_STRING_H 1
+1765 | #define HAVE_MEMORY_H 1
+1766 | #define HAVE_STRINGS_H 1
+1767 | #define HAVE_INTTYPES_H 1
+1768 | #define HAVE_STDINT_H 1
+1769 | #define HAVE_UNISTD_H 1
+1770 | #define HAVE_DLFCN_H 1
+1771 | #define LT_OBJDIR ".libs/"
+1772 | #define HAVE_GETTIMEOFDAY 1
+1773 | #define HAVE_BOOST /**/
+1774 | #define HAVE_BOOST_PROGRAM_OPTIONS /**/
+1775 | #define HAVE_BOOST_REGEX /**/
+1776 | #define HAVE_BOOST_SERIALIZATION /**/
+1777 | #define HAVE_MPI 1
+1778 | /* end confdefs.h.  */
+1779 | #include <boost/mpi.hpp>
+1780 |
+1781 | int
+1782 | main ()
+1783 | {
+1784 | boost::mpi::environment env; return 0;
+1785 |   ;
+1786 |   return 0;
+1787 | }
+1788 configure:17389: result: no
+1789 configure:17556: error: Bailing out since Boost.MPI was explicitly desired.
+
+Reason:
+=======
+SGI MPI implementation could not be properly detected.
+Thus, boost/mpi/config.hpp does not set the proper definitions
+like BOOST_MPI_HAS_NOARG_INITIALIZATION which is needed in order
+
+Workaround:
+===========
+Add the following definition to CXXFLAGS at configure call:
+
+-DBOOST_MPI_HAS_NOARG_INITIALIZATION
+
+
+
+********************************************************************************
+Known Error:
+============
+[KF, 05/29/2015]:
+scafes 2.3.0
+ZIH_VENUS_GCC_4_8_2
+with module load boost/1.54.0 instead of boost/1.51.0
+
+ 652 configure:16925: checking for mpicxx
+ 653 configure:16941: found /opt/sgi/mpt/mpt-2.11/bin/mpicxx
+ 654 configure:16952: result: mpicxx
+ 655 configure:16968: checking whether MPI wrapper compiler supports --show-me
+ 656 configure:17011: result: yes
+ 657 configure:17308: checking if optional library Boost.MPI is wanted.
+ 658 configure:17318: result: yes
+ 659 configure:17352: checking whether the Boost::MPI library is available
+ 660 configure:17375: g++ -c -DNDEBUG -DBOOST_MPI_HAS_NOARG_INITIALIZATION -Wall -Wextra -O3 -mtune=corei7-avx                    -ma     rch=corei7-avx -std=c++11  -I/sw/global/libraries/boost/1.54/include  -I/opt/sgi/mpt/mpt-2.11/include conftest.cpp >&5
+ 661 configure:17375: $? = 0
+ 662 configure:17389: result: yes
+ 663 configure:17400: checking for exit in -lboost_mpi
+ 664 configure:17425: g++ -o conftest -DNDEBUG -DBOOST_MPI_HAS_NOARG_INITIALIZATION -Wall -Wextra -O3 -mtune=corei7-avx                         -march=corei7-avx -std=c++11  -I/sw/global/libraries/boost/1.54/include  -I/opt/sgi/mpt/mpt-2.11/include  -L/sw/global/lib     raries/boost/1.54/lib  -L/opt/sgi/mpt/mpt-2.11/lib -lmpi++ -lmpi conftest.cpp -lboost_mpi   >&5
+ 665 /sw/global/compilers/gcc/4.8.2/lib/gcc/x86_64-unknown-linux-gnu/4.8.2/../../../../x86_64-unknown-linux-gnu/bin/ld: warning: libm     pi.so.1, needed by /sw/global/libraries/boost/1.54/lib/libboost_mpi.so, not found (try using -rpath or -rpath-link)
+ 666 /sw/global/compilers/gcc/4.8.2/lib/gcc/x86_64-unknown-linux-gnu/4.8.2/../../../../x86_64-unknown-linux-gnu/bin/ld: warning: libm     pi_cxx.so.1, needed by /sw/global/libraries/boost/1.54/lib/libboost_mpi.so, not found (try using -rpath or -rpath-link)
+ 667 /sw/global/libraries/boost/1.54/lib/libboost_mpi.so: undefined reference to `ompi_mpi_cxx_op_intercept'
+ 668 /sw/global/libraries/boost/1.54/lib/libboost_mpi.so: undefined reference to `ompi_mpi_packed'
+ 669 /sw/global/libraries/boost/1.54/lib/libboost_mpi.so: undefined reference to `ompi_mpi_comm_world'
+ 670 /sw/global/libraries/boost/1.54/lib/libboost_mpi.so: undefined reference to `ompi_op_set_cxx_callback'
+ 671 /sw/global/libraries/boost/1.54/lib/libboost_mpi.so: undefined reference to `ompi_mpi_comm_null'
+ 672 /sw/global/libraries/boost/1.54/lib/libboost_mpi.so: undefined reference to `ompi_mpi_unsigned_long'
+ 673 /sw/global/libraries/boost/1.54/lib/libboost_mpi.so: undefined reference to `ompi_request_null'
+ 674 /sw/global/libraries/boost/1.54/lib/libboost_mpi.so: undefined reference to `ompi_mpi_datatype_null'
+ 675 /sw/global/libraries/boost/1.54/lib/libboost_mpi.so: undefined reference to `ompi_mpi_info_null'
+ 676 /sw/global/libraries/boost/1.54/lib/libboost_mpi.so: undefined reference to `ompi_mpi_group_empty'
+ 677 /sw/global/libraries/boost/1.54/lib/libboost_mpi.so: undefined reference to `ompi_mpi_errors_return'
+ 678 collect2: error: ld returned 1 exit status
+
+Reason:
+=======
+Chosen global boost module 1.54.0 which had been linked againt OpenMPI.
+OpenMPI is not available on Venus.
+
+Solution:
+=========
+Choose a local installation of Boost on Venus which uses an MPI implementation
+which is available on Venus (SGI MPT).
+
+
+********************************************************************************
+Error:
+======
+[KF, 06/01/2015]:
+ZIH_TAURUS_PHASE2_GCC_5_1_0
+scafes trunk rev. 654
+with
+module load boost/1.56.0-gnu4.9.1
+export SCAFESCC_BOOST_ROOT="/sw/taurus/libraries/boost/1.56.0-gnu4.9.1"
+export SCAFESCC_BOOST_LIB="$SCAFESCC_BOOST_ROOT/lib";
+
+
+
+1045 In file included from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/memory:81:0,
+1046                  from /sw/taurus/libraries/boost/1.56.0-gnu4.9.1/include/boost/mpi/allocator.hpp:18,
+1047                  from /sw/taurus/libraries/boost/1.56.0-gnu4.9.1/include/boost/mpi.hpp:22,
+1048                  from conftest.cpp:29:
+1049 /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/unique_ptr.h:49:28: note: declared here
+1050    template<typename> class auto_ptr;
+1051                             ^
+1052 In file included from /sw/taurus/libraries/boost/1.56.0-gnu4.9.1/include/boost/shared_ptr.hpp:17:0,
+1053                  from /sw/taurus/libraries/boost/1.56.0-gnu4.9.1/include/boost/mpi/communicator.hpp:20,
+1054                  from /sw/taurus/libraries/boost/1.56.0-gnu4.9.1/include/boost/mpi/collectives.hpp:21,
+1055                  from /sw/taurus/libraries/boost/1.56.0-gnu4.9.1/include/boost/mpi.hpp:23,
+1056                  from conftest.cpp:29:
+1057 /sw/taurus/libraries/boost/1.56.0-gnu4.9.1/include/boost/smart_ptr/shared_ptr.hpp: In member function 'boost::shared_ptr<T>& boo     st::shared_ptr<T>::operator=(std::auto_ptr<_Up>&&)':
+1058 /sw/taurus/libraries/boost/1.56.0-gnu4.9.1/include/boost/smart_ptr/shared_ptr.hpp:531:38: warning: 'template<class> class std::a     uto_ptr' is deprecated [-Wdeprecated-declarations]
+1059          this_type( static_cast< std::auto_ptr<Y> && >( r ) ).swap( *this );
+1060                                       ^
+1061 In file included from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/memory:81:0,
+1062                  from /sw/taurus/libraries/boost/1.56.0-gnu4.9.1/include/boost/mpi/allocator.hpp:18,
+1063                  from /sw/taurus/libraries/boost/1.56.0-gnu4.9.1/include/boost/mpi.hpp:22,
+1064                  from conftest.cpp:29:
+1065 /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/unique_ptr.h:49:28: note: declared here
+1066    template<typename> class auto_ptr;
+1067                             ^
+1068 configure:17378: $? = 0
+1069 configure:17392: result: yes
+1070 configure:17543: error: Could not link against boost_serialization !
+
+
+Reason:
+=======
+-bash-4.1$ ls /sw/taurus/libraries/boost/1.55.0-gnu4.8/lib/libboost_mpi*
+libboost_mpi.a                 libboost_mpi_python.so         libboost_mpi.so
+libboost_mpi_python.a          libboost_mpi_python.so.1.55.0  libboost_mpi.so.1.55.0
+
+-bash-4.1$ ls /sw/taurus/libraries/boost/1.56.0-gnu4.9.1/lib/libboost_mpi*
+-bash: cd: /sw/taurus/libraries/boost/1.56.0-gnu4.9.1/lib/libboost_mpi*: Datei oder Verzeichnis nicht gefunden
+
+-bash-4.1$ ls /sw/taurus/libraries/boost/1.57.0-intel2013-sp1/lib/libboost_mpi*
+libboost_mpi.a                 libboost_mpi_python.so         libboost_mpi.so
+libboost_mpi_python.a          libboost_mpi_python.so.1.57.0  libboost_mpi.so.1.57.0
+
+Solution:
+=========
+Rebuild boost with Boost.MPI support.
+
+
+
+********************************************************************************
+Error:
+======
+[KF, 06/05/2015]:
+Intel ICC 2013 SP1 complains about during compiling:
+error: no instance of constructor "std::basic_ofstream<_CharT, _Traits>::basic_ofstream [with _CharT=char, _Traits=std::char_traits<char>]" matches the argument list
+            argument types are: (const std::string)
+          std::ofstream of(fname);
+
+Solution:
+=========
+Convert std::string to a C string:
+std::ofstream of(fname.c_str());
+
+
+
+********************************************************************************
+Error:
+======
+[KF, 06/05/2015]:
+Intel ICC 2013 SP1 complains about during compiling:
+error: no instance of constructor "std::vector<_Tp, _Alloc>::vector [with _Tp=signed int, _Alloc=std::allocator<signed int>]" matches the argument list
+In file included from ../.././../examples/EMFDTD/simulate.cpp(12):
+argument types are: ({...})
+
+Reason:
+=======
+ICC 2013-SP1 does not support this C++11 feature.
+https://software.intel.com/en-us/articles/c0x-features-supported-by-intel-c-compiler
+
+Solution:
+=========
+Rewrite initialisation:
+Create a function which initialises all elements of the vector,
+see also:
+http://stackoverflow.com/questions/3701903/initialisation-of-static-vector
+
+
+
+================================================================================
+[KF, 06/08/2015]
+Question:
+=========
+example/HeatEqnFDM could not be compiled using GCC 4.7.1
+
+../.././../src/ScaFES_Problem.hpp:2407:9: Fehler: keine passende Funktion für Aufruf von »ScaFES::Problem<HeatEqnFDM<double, 3ul>, double, 3ul>::evalTypeOneAsynchronously(std::string&, ScaFES::Problem<HeatEqnFDM<double, 3ul>, double, 3ul>::ScaFES_VectDf<double>&, ScaFES::Problem<HeatEqnFDM<double, 3ul>, double, 3ul>::ScaFES_VectDf<double>&, const std::vector<double>&, std::vector<double>&, int&, short int, short int, <unresolved overloaded function type>, <unresolved overloaded function type>)«
+../.././../src/ScaFES_Problem.hpp:2407:9: Anmerkung: Kandidat ist:
+../.././../src/ScaFES_Problem.hpp:3653:13: Anmerkung: void ScaFES::Problem<OWNPRBLM, CT, DIM>::evalTypeOneAsynchronously(const string&, ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_VectDf<CT>&, ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_VectDf<CT>&, const std::vector<CT>&, const std::vector<CT>&, const int&, const int&, const int&, ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_FuncTypeOneToImplement<CT>, ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_FuncTypeOneToImplement<CT>) [with OWNPRBLM = HeatEqnFDM<double, 3ul>; CT = double; long unsigned int DIM = 3ul; std::string = std::basic_string<char>; ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_VectDf<CT> = std::vector<ScaFES::DataField<double, 3ul>, std::allocator<ScaFES::DataField<double, 3ul> > >; ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_FuncTypeOneToImplement<CT> = void (HeatEqnFDM<double, 3ul>::*)(std::vector<ScaFES::DataField<double, 3ul>, std::allocator<ScaFES::DataField<double, 3ul> > >&, const std::vector<double>&, ScaFES::Ntuple<int, 3ul>&, const int&)]
+../.././../src/ScaFES_Problem.hpp:3653:13: Anmerkung:   keine bekannte Umwandlung für Argument 9 von »<unresolved overloaded function type>« nach »ScaFES::Problem<HeatEqnFDM<double, 3ul>, double, 3ul>::ScaFES_FuncTypeOneToImplement<double> {aka void (HeatEqnFDM<double, 3ul>::*)(std::vector<ScaFES::DataField<double, 3ul>, std::allocator<ScaFES::DataField<double, 3ul> > >&, const std::vector<double>&, ScaFES::Ntuple<int, 3ul>&, const int&)}«
+../.././../src/ScaFES_Problem.hpp:2417:9: Fehler: keine passende Funktion für Aufruf von »ScaFES::Problem<HeatEqnFDM<double, 3ul>, double, 3ul>::evalTypeOneSynchronously(std::string&, ScaFES::Problem<HeatEqnFDM<double, 3ul>, double, 3ul>::ScaFES_VectDf<double>&, ScaFES::Problem<HeatEqnFDM<double, 3ul>, double, 3ul>::ScaFES_VectDf<double>&, ScaFES::Problem<HeatEqnFDM<double, 3ul>, double, 3ul>::ScaFES_VectDf<double>&, ScaFES::Problem<HeatEqnFDM<double, 3ul>, double, 3ul>::ScaFES_VectDf<double>&, const std::vector<double>&, std::vector<double>&, int&, short int, <unresolved overloaded function type>, <unresolved overloaded function type>)«
+../.././../src/ScaFES_Problem.hpp:2417:9: Anmerkung: Kandidat ist:
+../.././../src/ScaFES_Problem.hpp:4011:13: Anmerkung: void ScaFES::Problem<OWNPRBLM, CT, DIM>::evalTypeOneSynchronously(const string&, ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_VectDf<CT>&, ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_VectDf<CT>&, ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_VectDf<CT>&, ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_VectDf<CT>&, const std::vector<CT>&, const std::vector<CT>&, const int&, const int&, ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_FuncTypeOneToImplement<CT>, ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_FuncTypeOneToImplement<CT>) [with OWNPRBLM = HeatEqnFDM<double, 3ul>; CT = double; long unsigned int DIM = 3ul; std::string = std::basic_string<char>; ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_VectDf<CT> = std::vector<ScaFES::DataField<double, 3ul>, std::allocator<ScaFES::DataField<double, 3ul> > >; ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_FuncTypeOneToImplement<CT> = void (HeatEqnFDM<double, 3ul>::*)(std::vector<ScaFES::DataField<double, 3ul>, std::allocator<ScaFES::DataField<double, 3ul> > >&, const std::vector<double>&, ScaFES::Ntuple<int, 3ul>&, const int&)]
+../.././../src/ScaFES_Problem.hpp:4011:13: Anmerkung:   keine bekannte Umwandlung für Argument 10 von »<unresolved overloaded function type>« nach »ScaFES::Problem<HeatEqnFDM<double, 3ul>, double, 3ul>::ScaFES_FuncTypeOneToImplement<double> {aka void (HeatEqnFDM<double, 3ul>::*)(std::vector<ScaFES::DataField<double, 3ul>, std::allocator<ScaFES::DataField<double, 3ul> > >&, const std::vector<double>&, ScaFES::Ntuple<int, 3ul>&, const int&)}«
+
+Solution:
+=========
+This errors occurs up to GCC 4.7.1.
+Please use GCC 4.8.0+.
+
+
+================================================================================
+[KF, 06/09/2015]
+ZIH_TAURUS_PGI_15_1
+
+Question:
+=========
+configure ends up with the following error
+ configure:15969: pgc++ -c -DNDEBUG -Minform=warn -O3 -std=c++11  -I/opt/bullxde/utils/boost/include conftest.cpp >&5
+ 612 configure:15969: $? = 0
+ 613 configure:15971: result: yes
+ 614 configure:16166: checking whether the Boost::Program_Options library is available
+ 615 configure:16190: pgc++ -c -DNDEBUG -Minform=warn -O3 -std=c++11  -I/opt/bullxde/utils/boost/include conftest.cpp >&5
+ 616 "/sw/global/compilers/gcc/4.9.1/lib/gcc/x86_64-unknown-linux-gnu/4.9.1/../../../../include/c++/4.9.1/bits/alloc_traits.h", line 248: error:
+ 617           expected a ">"
+ 618           = typename __construct_helper<_Tp, _Args...>::type;
+ 619                                                   ^
+ 620           detected during instantiation of type
+ 621                     "std::allocator_traits<_Alloc>::__has_construct<_Tp,
+ 622                     _Args...>" at line 251
+ 623
+ 624 "/sw/taurus/compilers/pgi/15.1/linux86-64/15.1/include-gcc48/type_traits", line 112: error:
+ 625           not a class or struct name
+ 626       : public _B1
+ 627                ^
+ 628           detected during:
+ 629             instantiation of class "std::__and_<_B1> [with _B1=<error-type>]"
+ 630                       at line 1775
+ 631             instantiation of type "std::_Require<<error-type>>" at line 251 of
+ 632                       "/sw/global/compilers/gcc/4.9.1/lib/gcc/x86_64-unknown-li
+ 633                       nux-gnu/4.9.1/../../../../include/c++/4.9.1/bits/alloc_tr
+ 634                       aits.h"
+ 635
+ 636 "/sw/taurus/compilers/pgi/15.1/linux86-64/15.1/include-gcc48/type_traits", line 1775: error:
+ 637           class "std::__and_<<error-type>>" has no member "value"
+ 638       using _Require = typename enable_if<__and_<_Cond...>::value>::type;
+ 639                                                             ^
+ 640           detected during instantiation of type "std::_Require<<error-type>>"
+ 641                     at line 251 of
+ 642                     "/sw/global/compilers/gcc/4.9.1/lib/gcc/x86_64-unknown-linu
+ 643                     x-gnu/4.9.1/../../../../include/c++/4.9.1/bits/alloc_traits
+ 644                     .h"
+ 645
+ 646 "/sw/taurus/compilers/pgi/15.1/linux86-64/15.1/include-gcc48/type_traits", line 1775: error:
+ 647           class "std::enable_if<<error-constant>, void>" has no member "type"
+ 648       using _Require = typename enable_if<__and_<_Cond...>::value>::type;
+ 649                                                                     ^
+ 650           detected during instantiation of type "std::_Require<<error-type>>"
+ 651                     at line 251 of
+ 652                     "/sw/global/compilers/gcc/4.9.1/lib/gcc/x86_64-unknown-linu
+ 653                     x-gnu/4.9.1/../../../../include/c++/4.9.1/bits/alloc_traits
+ 654                     .h"
+ 655
+ 656 "conftest.cpp", line 33: warning: statement is unreachable
+ 657     return 0;
+ 658     ^
+
+
+Reason:
+=======
+PGI 15.1 installed at Taurus uses internally a version of GCC which seems to be
+incompatible to the one already included in PGI 15.1
+
+Solution:
+=========
+Create a new file "localrc" as follows:
+
+    makelocalrc /sw/taurus/compilers/pgi/15.1/linux86-64/15.1/bin \
+           -gcc /sw/global/compilers/gcc/4.8.2/bin/gcc \
+           -gpp /sw/global/compilers/gcc/4.8.2/bin/g++ \
+           -g77 /sw/global/compilers/gcc/4.8.2/bin/gfortran -x -net
+
+and copy the new file called "localrc.<HOSTNAME>" to the $HOME directory
+and rename it to ".mypgcpprc":
+
+    cp localrc.login2 ~/.mypgcpprc
+    cp localrc_taurus_gcc_482 ~/.mypgcpprc
+
+See also:
+=========
+ http://geco.mines.edu/guide/pgC++_man.html
+
+
+
+################################################################################
+[KF, 06/18/2015]
+ZIH_TAURUS2_GCC_4_9_1
+svn rev 696
+
+Error:
+======
+Calling
+
+   BTS_setupsystem.sh ZIH_TAURUS_PHASE2_GCC_4_9_1 no
+
+results in the following error:
+[...]
+„tests/system/PropagationFromLeftLowerCorner/Makefile.am“
+SHELL SCRIPT=/home/feldhoff/opt/buildtests-4.0.0/bin/BTS_setupsystem.sh: PREPARE BUILDSYSTEM: ERROR CODE = 0
+aclocal: error: aclocal: file 'config/m4/lt~obsolete.m4' does not exist
+
+Reason:
+=======
+Broken links
+* in config/m4:
+libtool.m4 -> /usr/share/aclocal/libtool.m4
+lt~obsolete.m4 -> /usr/share/aclocal/lt~obsolete.m4
+ltoptions.m4 -> /usr/share/aclocal/ltoptions.m4
+ltsugar.m4 -> /usr/share/aclocal/ltsugar.m4
+ltversion.m4 -> /usr/share/aclocal/ltversion.m4
+* in config:
+ltmain.sh -> /usr/share/libtool/config/ltmain.sh
+Probably, libtool, automake etc. has been run at another system.
+
+
+Solution:
+=========
+Remove broken links und rerun script BTS_setupsystem.sh:
+libtool.m4 -> /sw/global/tools/libtool/2.4.2/x86_64/share/aclocal/libtool.m4
+lt~obsolete.m4 -> /sw/global/tools/libtool/2.4.2/x86_64/share/aclocal/lt~obsolete.m4
+ltoptions.m4 -> /sw/global/tools/libtool/2.4.2/x86_64/share/aclocal/ltoptions.m4
+ltsugar.m4 -> /sw/global/tools/libtool/2.4.2/x86_64/share/aclocal/ltsugar.m4
+ltversion.m4 -> /sw/global/tools/libtool/2.4.2/x86_64/share/aclocal/ltversion.m4
+
+
+################################################################################
+[KF, 06/23/2015]
+JUQUEEN
+
+Error:
+======
+a.out-JUQUEEN-trunk-mpi262144-omp00001-nNodes4096x4096x4096-decompUNI-nPart64x64x64-divide1x1x1-adolcNO-asyncNO-gradNO-nTs000020-tEnd1-nLayers1-201506230148.err
+
+terminate called after throwing an instance of 'std::bad_alloc'
+  what():  std::bad_alloc
+ScaFES : Rank=0:       * Process TIME ITERATE = 1...
+ScaFES : Rank=0:            * Evaluate all known data fields...
+ScaFES : Rank=0:              Evaluated.
+ScaFES : Rank=0:            * Evaluate phase update...
+2015-06-23 01:49:14.555 (WARN ) [0x40000f38f40] :2230850:ibm.runjob.client.Job: terminated by signal 6
+
+Reason:
+=======
+Too less memory available at compute node.
+
+
+################################################################################
+[KF, 06/23/2015]
+JUQUEEN
+
+Error:
+======
+vi a.out-JUQUEEN-trunk-mpi04096-omp00001-nNodes4096x4096x4096-decompUNI-nPart16x16x16-divide1x1x1-adolcNO-asyncNO-gradNO-nTs000020-tEnd1-nLayers1-201506221653.err
+
+terminate called after throwing an instance of 'std::bad_alloc
+ScaFES : Rank=0:       * time(gridGlobal):
+ScaFES : Rank=0:       ----> t(gridGlobal) with barriers =  0.04191 s. <-------
+ScaFES : Rank=0:    Partitioned.
+2015-06-22 16:53:56.829 (WARN ) [0x40000f38f40] :2230688:ibm.runjob.client.Job: terminated by signal 6
+
+Reason:
+=======
+Too less memory available at compute node.
+
+
+################################################################################
+[KF, 2015-09-24]
+scafes/trunk
+
+Error:
+======
+make ends up with error message:
+No Makefile available in tests/unit
+
+Reason:
+=======
+* All files Makefile.am within trunk are built for development mode.
+   Makefile_to_develop.am --> Makefile.am etc.
+* configure had benn called with distribution mode enabled:
+   configure --enable-dist=yes
+
+Solution:
+=========
+* Ensure that type of Makefile.am (distribute, develop) are consistent to
+  configure call (./configure --enable-dist=<no/yes>).
+  * Build in development mode:
+     ./BTS_scripts/BTS_preparebuildsystem.sh no
+     ./bootstrap.sh
+     ./configure --enable-dist=no ...
+  * Build in distribution mode:
+     ./BTS_scripts/BTS_preparebuildsystem.sh yes
+     ./bootstrap.sh
+     ./configure --enable-dist=yes ...
+
+
+
+################################################################################
+[MF, 2015-10-29]
+
+Task:
+=====
+Debug ScaFES application using DDT on Taurus.
+
+Problem:
+========
+There are various Boost modules available on Taurus. DDT can not show any local
+variables when compiling and linking with module boost/1.58.0-gnu5.1.
+The application did not compile using boost/1.54.0-gnu4.6.
+
+Solution:
+=========
+Load module boost/1.55.0-gnu4.8.
+
+
+
+################################################################################
+[KF, 2016-06-14]
+scafes/trunk
+
+Problem:
+========
+How to record traces of the example application "HeatEqnFDM"?
+
+Solution:
+=========
+#Install MPI: mpich
+sudo apt-get install mpich
+
+#Install Score-P 2.0.2 with MPI support
+mkdir -p BUILD
+../configure  --prefix=/opt/scorep/2.0.2  --with-nocross-compiler-suite=gcc       --without-shmem --with-libbfd=no   --with-papi-header=/usr/include    --with-papi-lib=/usr/lib      --without-gui      --enable-static --enable-shared
+make -j2
+make install
+export LD_LIBRARY_PATH=/opt/scorep/2.0.2/lib:$LD_LIBRARY_PATH
+export PATH=/opt/scorep/2.0.2/bin:$PATH
+
+#Instrument application.
+scorep mpic++ --std=c++11 -I $HOME/scafes-work/trunk/software/include -I . -c main.cpp
+scorep mpic++ -L $HOME/scafes-work/trunk/software/lib -o HeatEqnFDM main.o -lscafes -lboost_serialization -lboost_program_options -lboost_mpi -lboost_regex
+
+#Instrument application using MPICH.
+scorep mpic++.mpich --std=c++11 -I $HOME/scafes-work/trunk/software/include -I . -c main.cpp
+scorep mpic++.mpich -L $HOME/scafes-work/trunk/software/lib -o HeatEqnFDM main.o -lscafes -lboost_serialization -lboost_program_options -lboost_mpi -lboost_regex
+
+#Record information.
+export SCOREP_ENABLE_TRACING=1
+export SCOREP_TOTAL_MEMORY=512M
+mpirun -np 4 ./HeatEqnFDM --dim=3 --typeDomainDecomposition=UNI --divideGrid=1x1x1 \
+--nPartitions=4x1x1   --nNodes=32x8x8  --coordNodeFirst=0x0x0 --coordNodeLast=1x1x1 \
+--starttime=0 --endtime=1 --nTimesteps=20 --nSnapshots=1 --writeKindFile=0 \
+--enabledAdolc=0 --asynchronMode=1 --useBoostMpiSkeletonConcept=1 --computeGradients=0 \
+--outputfile=HeatEqnFDM_4_1_32x8x8 --outputlevel=5 --nLayersAtBorder=1 \
+>.//HeatEqnFDM-ZIH_WIL_FSC_Q9000-trunk-mpi00004-omp00001-nNodes32x8x8-nPart4x1x1-adolcNO-asyncYES-skeletYES-201606141054.out \
+2> .//HeatEqnFDM-ZIH_WIL_FSC_Q9000-trunk-mpi00004-omp00001-nNodes32x8x8-nPart4x1x1-adolcNO-asyncYES-skeletYES-201606141054.err
+
+################################################################################
+SCAFES_ZIH_TAURUS_HASWELL_COMPILETESTS/CONFIG/ZIH_TAURUS_HASWELL_GCC_5_3_0
+using Boost 1.60.0 installation at Taurus
+KF, 2016-09-14
+rev. 749
+
+Problem:
+========
+make[3]: Entering directory `/lustre/scratch2/zihforschung/jenkins3/workspace/ScaFES/SCAFES_ZIH_TAURUS_HASWELL_COMPILETESTS/CONFIG/ZIH_TAURUS_HASWELL_GCC_5_3_0/label/ZIH-Taurus-ScaFES/software_trunk/build/examples/HeatEqnFDM'
+  CXX      HeatEqnFDM-main.o
+In file included from ../.././../src/ScaFES.hpp:409:0,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+../.././../src/ScaFES_Problem.hpp:59:40: fatal error: boost/serialization/pfto.hpp: No such file or directory
+compilation terminated.
+make[3]: *** [HeatEqnFDM-main.o] Error 1
+
+Remark: No error with Boost 1.57.0.
+
+Reason:
+=======
+boost/serialization/ptfo.hpp is not included anymore in boost_rootdir/include
+beginning from version 1.59.0
+
+https://mailman.cc.gatech.edu/pipermail/mlpack/2015-September/000694.html
+http://www.boost.org/doc/libs/1_58_0/boost/serialization/pfto.hpp
+http://www.boost.org/doc/libs/1_59_0/boost/serialization/pfto.hpp
+
+Solution:
+=========
+http://stackoverflow.com/questions/6639881/how-do-you-check-your-version-of-boost
+
+Use BOOST_VERSION from boost/version.hpp and check for Boost version.
+Include header file if Boost version < 1.59.0
+
+################################################################################
+KF, 2016-09-15
+Ignore SVN files. Call from trunk:
+
+    svn propset svn:ignore -F .svnignore . -R
+
+
+compare
+http://stackoverflow.com/questions/3051980/how-to-create-ignore-list-of-several-items-in-svn

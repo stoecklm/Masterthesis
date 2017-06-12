@@ -1,0 +1,2247 @@
+PROBLEM:
+--------
+Start "Ubuntu Software Center" was started
+in order to install all necessary modules.
+HDF5 could not be found.
+
+SOLUTION:
+---------
+If you are installing the packages from the Ubuntu Software Center
+after entering your query in the search box please be sure to click
+the "Show technical items" located at the bottom of the Ubuntu Software Center
+in the status bar. Without this you will not be able to see ALL packages
+which can be installed using the Ubuntu repositories.
+That mistake was correctly rectified by showing the technical items.
+
+
+#------------------------------------------------------------------------------#
+# AIM: [KF, MJ, 9.5.2012]
+# -----------------------
+# * There exist two libraries in the same directory,
+#   both of them are using OpenMP.
+# * Trace libraries via VT (and OPARI).
+#
+# Problem:
+# --------
+# * OPARI writes all necessary omp structs into one GLOBAL opari file
+#   (with all extern defined structs like omp_rd91..).
+# * These extern defined structs are defined in the include files (*.opari.inc)
+#   which are included into the C-sources of the libraries.
+# * Now, if the library is linked against an application,
+#   some of these extern defined structs cannot be resolved, since they are
+#   included in the sources of the other library.
+#
+# Solution:
+# ---------
+# Define an opari resource and an opari table file for each library in the
+# library folder. Then, all structs will be defined.
+
+# REMARKS:
+# --------
+# * VT+Opari CANNOT be built in parallel mode. => Do not use "make -j".
+# * make V=1 shows make commands.
+# * A shared AND a static library CANNOT be built at the same time:
+#   (Otherwise: The shared library doubles the number of omp structs.
+#   => This leads to undefined references of some omp structs).
+# * OpenMP pragmas with "default(none)" in combination with VT DO NOT WORK.
+#   Why? If one uses "default(none)" then one has to set explictly each variable
+#   within in the parallel region (either as shared or as private variable).
+# * "make distclean" if make with VT+OPARI ends up with an error.
+#    Otherwise:
+#      make[2]: *** Keine Regel vorhanden, um das Target »SDB_gnrl.pomp.c«,
+#      benötigt von »libsimdbench_la-SDB_gnrl.lo«, zu erstellen.  Schluss.
+
+# REMARK: [KF, 27.06.2012]
+# ------------------------
+# * 'vtcc' is a compiler wrapper.
+#    This has the following consequences:
+#    a) The correct VT libraries will be added automatically.
+#       Sometimes, one has to enforce this via the VT options '-vt:hyb', '
+#       -vt:mt', '-vt:mpi' or '-vt:seq' if VT fails to find the underlying
+#       implementations.
+#    b) Users must not add some VT libraries AND paths to VT libraries
+#       by hand (e.g. in Makefiles). Otherwise, if the application is built
+#       dynamically, then it could be that two different versions of the VT
+#       library are linked. Then, the first one will be used. If you are lucky,
+#       the correct one will be used. But if you are not lucky then the wrong
+#       one will be used and you will get strange run time errors:
+#          'assertion in vtlib/vt_trc.c:2742'
+
+# REMARK: [KF, MJ, 8.5.2012]
+# --------------------------
+# Replace compiler in variable "CXX" by "vtc++" in Makefiles
+# AFTER ./configure run. This means: Do not set CXX="vtc++" BEFORE configure run.
+# Otherwise, there could be problems with libtool & Co.
+
+# REMARK: [KF, MJ, 6.7.2012]
+# --------------------------
+# Problem:
+# After building the software with VT support one has to call "make distclean"
+# rather than "make clean".
+#
+# Solution approach:
+# Use configure option "-disable-dependency-tracking".
+# This is useful for one time builds.
+
+
+Problem [KF, 26.08.2013]:
+=========================
+template<class OWNPRBLM, std::size_t DIM>
+template<typename CT>
+inline void NewProblem<OWNPRBLM, DIM>::updateLocalInner(std::vector< DataField<CT,DIM> >& dfDep,
+                                                        std::vector< DataField<CT,DIM> > const& dfIndep,
+                                                        int const& timestep)
+{
+    if ((0 == myRank()) && (0 < params().indentDepth())) {
+        std::cout << getPrefix(params().indentDepth(), myRank())
+                  << " * Update at local inner nodes: " << dfDep.at(0).name()
+                  << ", " << dfIndep.at(0).name() << ",...."
+                  << std::endl;
+    }
+    mParams.decreaseLevel();
+    Ntuple<int, DIM> idxNode;
+    int nNodesTotalPartition = mKind.memNormal().nNodesSub().size();
+    int ii;
+    // * ii Iteration variable ---> private
+    // * idxNode WRITE access Corresponding global node number ---> private
+    // * dfIndep READ access --> shared
+    // * dfDep WRITE access, but only dfDep(idxNode) will be changed
+    //   within the functions given by the corresponding function pointers!
+    //   --> The memory locaton is different for all threads --> shared.
+    // * timestep READ access --> shared
+#pragma omp parallel for \
+    schedule(static) \
+    default(none) \
+    private(ii, idxNode) \
+    shared(dfIndep, dfDep, timestep, nNodesTotalPartition)
+    for (ii = 0; ii < nNodesTotalPartition; ++ii) {
+        std::cout << "ii " << ii << std::endl;
+[...]
+feldhoff@taurusi2040:/scratch/feldhoff/scafes_2013_08_26a> cd tests/SystemTests/
+feldhoff@taurusi2040:/scratch/feldhoff/scafes_2013_08_26a/tests/SystemTests> make -Cbin -j PropagationDoubleScalarEps
+make: Entering directory `/scratch/feldhoff/scafes_2013_08_26a/tests/SystemTests/bin'
+  CXX    PropagationDoubleScalarEps-main.o
+In file included from ../../../src/ScaFES.hpp:128:0,
+                 from ../../../tests/SystemTests/PropagationDoubleScalarEps/main.cpp:1:
+../../../src/ScaFES_NewProblem.hpp: In Elementfunktion »void ScaFES::NewProblem<OWNPRBLM, DIM>::updateLocalInner(std::vector<ScaFES::DataField<SS, DIM> >&, const std::vector<ScaFES::DataField<SS, DIM> >&, const int&) [mit CT = double; OWNPRBLM = Problem_PropagationDoubleScalarEps<3ul>; long unsigned int DIM = 3ul]«:
+../../../src/ScaFES_NewProblem.hpp:1372:9: Fehler: »cout« in umgebender Parallele nicht angegeben
+../../../src/ScaFES_NewProblem.hpp:1379:17: Fehler: umgebende Parallele
+make: *** [PropagationDoubleScalarEps-main.o] Fehler 1
+make: Leaving directory `/scratch/feldhoff/scafes_2013_08_26a/tests/SystemTests/bin'
+
+Solution:
+=========
+Remove default(none) from OpenMP-Pragma.
+
+
+********************************************************************************
+Problem [KF, 10.09.2013]:
+=========================
+ZIH_ATLAS_INTEL_2013, Rev. 152
+ZIH_ATLAS_PGI_13_8, Rev. 151
+
+configure:17658: checking whether the Boost::Thread library is available
+configure:17690: icc -c -pthread -DNDEBUG -O3 -msse3 -Wall -std=c++11  -I/sw/global/libraries/boost/1.49/include conftest.cpp >&5
+configure:17690: $? = 0
+configure:17705: result: yes
+configure:17734: checking for exit in -lboost_thread
+configure:17759: icc -o conftest -DNDEBUG -O3 -msse3 -Wall -std=c++11  -I/sw/global/libraries/boost/1.49/include  -L/sw/global/libraries/boost/1.49/lib conftest.cpp -lboost_thread   >&5
+/sw/global/libraries/boost/1.49/lib/libboost_thread.so: undefined reference to `std::out_of_range::~out_of_range()@GLIBCXX_3.4.15'
+
+Solution:
+=========
+* Check if GLIBCXX_3.4.15 is available:
+     strings /usr/lib/libstdc++.so.6 | grep GLIBC
+* Check library dependencies of libboost_thread.so etc:
+   ldd /sw/global/libraries/boost/1.49/lib/libboost_thread.so
+        linux-vdso.so.1 =>  (0x00007fff81fc3000)
+        librt.so.1 => /lib64/librt.so.1 (0x00002b9ff2fa8000)
+        libstdc++.so.6 => /sw/global/compilers/gcc/4.7.1/lib64/libstdc++.so.6 (0x00002b9ff31b1000)
+        libm.so.6 => /lib64/libm.so.6 (0x00002b9ff34b2000)
+        libgcc_s.so.1 => /sw/global/compilers/gcc/4.7.1/lib64/libgcc_s.so.1 (0x00002b9ff3709000)
+        libpthread.so.0 => /lib64/libpthread.so.0 (0x00002b9ff391e000)
+        libc.so.6 => /lib64/libc.so.6 (0x00002b9ff3b3b000)
+        /lib64/ld-linux-x86-64.so.2 (0x00002b9ff2b3b000)
+   ===> libboost_thread.so was linked against libstdc++.so.6
+        which is linked to the libstdc++ from gcc/4.7.1 (libstc++ 3.4.15):
+   ===> LDPATH is not included in intel2013 by default.
+   ===> Set LDPATH in corresponding section of the file setupSystem.sh.
+
+
+
+
+********************************************************************************
+Problem [KF, 11.09.2013]:
+=========================
+ZIH_TAURUS_INTEL_2013, Rev. 155
+
+checking for GNU libc compatible malloc... yes
+checking for boostlib >= 1.42... yes
+checking whether the Boost::Thread library is available... no
+checking whether the Boost::Program_Options library is available... yes
+checking for exit in -lboost_program_options... yes
+checking whether the Boost::Regex library is available... no
+
+
+configure:19980: icc -c -O3 -mavx -Wall -std=c++11  -I/opt/bullxde/utils/boost/include conftest.cpp >&5
+/opt/bullxde/utils/boost/include/boost/functional/hash/detail/hash_float.hpp(65): error: more than one instance of overloaded function "fpclassify" matches the argument list:
+            function "fpclassify(double)"
+            function "std::fpclassify(double)"
+            argument types are: (double)
+              switch (fpclassify(v)) {
+                      ^
+          detected during:
+            instantiation of "std::size_t={unsigned long} boost::hash_detail::float_hash_value(T) [with T=double]" at line 299 of "/opt/bullxde/utils/boost/include/boost/functional/hash/hash.hpp"
+            instantiation of "boost::hash_detail::float_numbers<T>::type boost::hash_value(T) [with T=double]" at line 400 of "/opt/bullxde/utils/boost/include/boost/functional/hash/hash.hpp"
+
+
+Solution:
+=========
+This seems to be a Boost problem.
+
+
+********************************************************************************
+Problem [KF, 11.09.2013]:
+=========================
+ZIH_JOKER_CLANG_3_1 Rev. 156
+        libtool: link: g++ -Wall -Wextra -O0 -std=c++11 -o .libs/HeatEqnFdmStencilWidthOne3D HeatEqnFdmStencilWidthOne3D-main3D.o -fopenmp  ../../../scafes/.libs/libscafes.so /sw/global/compilers/gcc/4.7.1/lib/../lib64/libstdc++.so -L/sw/venus/libraries/boost/1.51.0/lib -lboost_program_options -lboost_regex -lboost_serialization -L/opt/sgi/mpt/mpt-2.06/lib -lmpi++ -lmpi -lboost_mpi -L/sw/venus/libraries/adolc/2.4.1/lib /sw/venus/libraries/adolc/2.4.1/lib64/libadolc.so /sw/global/compilers/gcc/4.8.0/lib/../lib64/libstdc++.so -lm -Wl,-rpath -Wl,/sw/global/compilers/gcc/4.7.1/lib/../lib64 -Wl,-rpath -Wl,/sw/venus/libraries/adolc/2.4.1/lib64 -Wl,-rpath -Wl,/sw/global/compilers/gcc/4.8.0/lib/../lib64
+        libtool: link: g++ -Wall -Wextra -O0 -std=c++11 -o .libs/HeatEqnFdmStencilWidthOne1D HeatEqnFdmStencilWidthOne1D-main1D.o -fopenmp  ../../../scafes/.libs/libscafes.so /sw/global/compilers/gcc/4.7.1/lib/../lib64/libstdc++.so -L/sw/venus/libraries/boost/1.51.0/lib -lboost_program_options -lboost_regex -lboost_serialization -L/opt/sgi/mpt/mpt-2.06/lib -lmpi++ -lmpi -lboost_mpi -L/sw/venus/libraries/adolc/2.4.1/lib /sw/venus/libraries/adolc/2.4.1/lib64/libadolc.so /sw/global/compilers/gcc/4.8.0/lib/../lib64/libstdc++.so -lm -Wl,-rpath -Wl,/sw/global/compilers/gcc/4.7.1/lib/../lib64 -Wl,-rpath -Wl,/sw/venus/libraries/adolc/2.4.1/lib64 -Wl,-rpath -Wl,/sw/global/compilers/gcc/4.8.0/lib/../lib64
+        HeatEqnFdmStencilWidthOne3D-main3D.o: In function `ScaFES::Problem<HeatEqnFdmStencilWidthOne<double, 3ul>, double, 3ul>::update_fovForward(std::vector<ScaFES::DataField<double, 3ul>, std::allocator<ScaFES::DataField<double, 3ul> > >&, std::vector<ScaFES::DataField<double, 3ul>, std::allocator<ScaFES::DataField<double, 3ul> > >&, short const&, std::vector<ScaFES::DataField<double, 3ul>, std::allocator<ScaFES::DataField<double, 3ul> > > const&, std::vector<ScaFES::DataField<double, 3ul>, std::allocator<ScaFES::DataField<double, 3ul> > > const&, int const&) [clone ._omp_fn.9]':
+        main3D.cpp:(.text+0x1767): undefined reference to `ADOLC_OpenMP_Handler'
+        HeatEqnFdmStencilWidthOne3D-main3D.o: In function `ScaFES::Problem<HeatEqnFdmStencilWidthOne<double, 3ul>, double, 3ul>::update_zosForward(std::vector<ScaFES::DataField<double, 3ul>, std::allocator<ScaFES::DataField<double, 3ul> > >&, short const&, std::vector<ScaFES::DataField<double, 3ul>, std::allocator<ScaFES::DataField<double, 3ul> > > const&, int const&) [clone ._omp_fn.10]':
+        main3D.cpp:(.text+0x1def): undefined reference to `ADOLC_OpenMP_Handler'
+        HeatEqnFdmStencilWidthOne3D-main3D.o: In function `ScaFES::Problem<HeatEqnFdmStencilWidthOne<double, 3ul>, double, 3ul>::traceUpdate(std::vector<ScaFES::DataField<double, 3ul>, std::allocator<ScaFES::DataField<double, 3ul> > >&, std::vector<ScaFES::DataField<double, 3ul>, std::allocator<ScaFES::DataField<double, 3ul> > > const&, int const&) [clone ._omp_fn.14]':
+        main3D.cpp:(.text+0x226a): undefined reference to `ADOLC_OpenMP_Handler'
+        HeatEqnFdmStencilWidthOne3D-main3D.o: In function `ADOLC_OpenMP::ADOLC_OpenMP(ADOLC_OpenMP const&)':
+        main3D.cpp:(.text._ZN12ADOLC_OpenMPC2ERKS_[_ZN12ADOLC_OpenMPC5ERKS_]+0x12): undefined reference to `ADOLC_parallel_doCopy'
+        main3D.cpp:(.text._ZN12ADOLC_OpenMPC2ERKS_[_ZN12ADOLC_OpenMPC5ERKS_]+0x1b): undefined reference to `beginParallel()'
+        HeatEqnFdmStencilWidthOne3D-main3D.o: In function `ADOLC_OpenMP::~ADOLC_OpenMP()':
+        main3D.cpp:(.text._ZN12ADOLC_OpenMPD2Ev[_ZN12ADOLC_OpenMPD5Ev]+0xd): undefinedBuild step 'Shell ausführen' marked build as failure
+        main1D.cpp:(.text+0x3556): undefined reference to `ADOLC_parallel_doCopy'
+        main1D.cpp:(.text+0x355f): undefined reference to `beginParallel()'
+        main1D.cpp:(.text+0x3a2f): undefined reference to `endParallel()'
+        HeatEqnFdmStencilWidthOne1D-main1D.o: In function `ScaFES::Problem<HeatEqnFdmStencilWidthOne<double, 1ul>, double, 1ul>::update_zosForward(std::vector<ScaFES::DataField<double, 1ul>, std::allocator<ScaFES::DataField<double, 1ul> > >&, short const&, std::vector<ScaFES::DataField<double, 1ul>, std::allocator<ScaFES::DataField<double, 1ul> > > const&, int const&) [clone ._omp_fn.10]':
+        main1D.cpp:(.text+0x3ab3): undefined reference to `ADOLC_parallel_doCopy'
+        main1D.cpp:(.text+0x3abc): undefined reference to `beginParallel()'
+        main1D.cpp:(.text+0x3cc3): undefined reference to `endParallel()'
+        HeatEqnFdmStencilWidthOne1D-main1D.o: In function `ScaFES::Problem<HeatEqnFdmStencilWidthOne<double, 1ul>, double, 1ul>::traceUpdate(std::vector<ScaFES::DataField<double, 1ul>, std::allocator<ScaFES::DataField<double, 1ul> > >&, std::vector<ScaFES::DataField<double, 1ul>, std::allocator<ScaFES::DataField<double, 1ul> > > const&, int const&) [clone ._omp_fn.14]':
+        main1D.cpp:(.text+0x3e71): undefined reference to `ADOLC_parallel_doCopy'
+        main1D.cpp:(.text+0x3e7a): undefined reference to `beginParallel()'
+        main1D.cpp:(.text+0x3f0c): undefined reference to `endParallel()'
+        collect2: error: ld returned 1 exit status
+
+
+********************************************************************************
+Problem
+=========================
+\section scafes_2_1_optional_modules Optional modules like ADOL-C cannot be arbitrarily enabled / disabled in ScaFES 2.0.1
+
+            myCXX='g++' # 4.8.1
+            # Distmode:
+            myCXXFLAGS="-DNDEBUG -g -Wall -Wextra -Wno-unused -O0";
+            #----------------------------------------------------------------------#
+            boostBase="/usr"; # 1.53.0-4.1.2
+            boostLibdir="/usr/lib64"; # 1.53.0-4.1.2
+            #----------------------------------------------------------------------#
+            mpiBase="/usr" # 1.7.2-2.1.3
+            #----------------------------------------------------------------------#
+            netcdfBase="/usr"; # 4.2.1.1-2.1.3
+            hdf5Base="/usr"; # 1.8.11-3.2.2
+            #----------------------------------------------------------------------#
+            # Remark: Built ADOL-C without OpenMP support [KF; 23.11.2012]
+            # Otherwise: If OpenMP is not given in "myCXXFLAGS" and configure
+            # tests the availability of ADOL-C, then the configure script will fail.
+            #adolcBase="/opt/ADOL-C-2.3.0"; # 2.3.0
+            adolcBase="/usr"; # 2.4.1-2.1.2
+
+            ../configure \
+                  CXX="$myCXX" \
+                  CXXFLAGS="$myCXXFLAGS" \
+                  --with-adolc=$adolcBase \
+                  --with-netcdf=$netcdfBase \
+                  --with-mpi=$mpiBase \
+                  --enable-mpi=yes \
+                  --enable-adolc=no \
+                  --enable-openmp=no \
+                  --enable-netcdf=no \
+                  --with-boost=$boostBase \
+                  --with-boost-libdir=$boostLibdir \
+                  --enable-boost-mpi=yes \
+                  --prefix=/sw/taurus/libraries/scafes/${versionScafes}
+
+                HeatEqnFDM-main.o: In function `operator-(badouble const&, double)':
+                /usr/include/adolc/adouble.h:472: undefined reference to `operator+(double, badouble const&)'
+                HeatEqnFDM-main.o: In function `operator/(badouble const&, double)':
+                /usr/include/adolc/adouble.h:484: undefined reference to `operator*(double, badouble const&)'
+                HeatEqnFDM-main.o: In function `ScaFES::DataFile<double, 3ul>::~DataFile()':
+                /home/ali/scafes-2.0.1-2014_10_14a/scafes-2.0.1/build/examples/HeatEqnFDM/../../../scafes/ScaFES_DataFileApi.hpp:275: undefined reference to `nc_close'
+                HeatEqnFDM-main.o: In function `ScaFES::DataFile<short, 3ul>::~DataFile()':
+                /home/ali/scafes-2.0.1-2014_10_14a/scafes-2.0.1/build/examples/HeatEqnFDM/../../../scafes/ScaFES_DataFileApi.hpp:275: undefined reference to `nc_close'
+                HeatEqnFDM-main.o: In function `void HeatEqnFDM<double, 3ul>::updateInner<adouble>(std::vector<ScaFES::DataField<adouble, 3ul>, std::allocator<ScaFES::DataField<adouble, 3ul> > >&, std::vector<ScaFES::DataField<adouble, 3ul>, std::allocator<ScaFES::DataField<adouble, 3ul> > > const&, ScaFES::Ntuple<int, 3ul> const&, int const&)':
+                /home/ali/scafes-2.0.1-2014_10_14a/scafes-2.0.1/build/examples/HeatEqnFDM/../../../examples/HeatEqnFDM/HeatEqnFDM.hpp:201: undefined reference to `adouble::operator=(adub const&)'
+                /home/ali/scafes-2.0.1-2014_10_14a/scafes-2.0.1/build/examples/HeatEqnFDM/../../../examples/HeatEqnFDM/HeatEqnFDM.hpp:201: undefined reference to `adub::~adub()'
+                /home/ali/scafes-2.0.1-2014_10_14a/scafes-2.0.1/build/examples/HeatEqnFDM/../../../examples/HeatEqnFDM/HeatEqnFDM.hpp:204: undefined reference to `operator*(double, badouble const&)'
+
+* scafes/ScaFES_Config.hpp was shipped with the release scafes-2.0.1.
+* build/scafes/ScaFES_Config.hpp will be created dynamically during configure.
+* Header files will be included in example/HeatEqnFDM in the following order:
+    -I$(top_builddir)/src -I$(top_srcdir)
+This is a bug. It has been fixed in the next release of ScaFES by
+removing scafes/ScaFES_Config.hpp from the "make dist" rule.
+
+
+********************************************************************************
+Problem [KF, 11.09.2013]:
+=========================
+ZIH_JOKER_CLANG_3_1 Rev. 156
+
+checking for GNU libc compatible malloc... yes
+checking for boostlib >= 1.42... yes
+checking whether the Boost::Thread library is available... no
+checking whether the Boost::Program_Options library is available... no
+configure: error: Bailing out since Boost.Program_Options is needed.
+
+configure:17931: checking whether the Boost::Program_Options library is available
+configure:17955: clang++ -c -DNDEBUG -Wall -Wextra -Wno-unused -O3 -std=c++11  -I/sw/joker/libraries/boost/1.48/x86_64/include conftest.cpp >&5
+In file included from conftest.cpp:43:
+In file included from /sw/joker/libraries/boost/1.48/x86_64/include/boost/program_options.hpp:15:
+In file included from /sw/joker/libraries/boost/1.48/x86_64/include/boost/program_options/options_description.hpp:12:
+In file included from /sw/joker/libraries/boost/1.48/x86_64/include/boost/program_options/errors.hpp:12:
+In file included from /usr/lib64/gcc/x86_64-suse-linux/4.5/../../../../include/c++/4.5/string:42:
+In file included from /usr/lib64/gcc/x86_64-suse-linux/4.5/../../../../include/c++/4.5/bits/allocator.h:48:
+In file included from /usr/lib64/gcc/x86_64-suse-linux/4.5/../../../../include/c++/4.5/x86_64-suse-linux/bits/c++allocator.h:34:
+In file included from /usr/lib64/gcc/x86_64-suse-linux/4.5/../../../../include/c++/4.5/ext/new_allocator.h:33:
+In file included from /usr/lib64/gcc/x86_64-suse-linux/4.5/../../../../include/c++/4.5/new:41:
+In file included from /usr/lib64/gcc/x86_64-suse-linux/4.5/../../../../include/c++/4.5/exception:150:
+/usr/lib64/gcc/x86_64-suse-linux/4.5/../../../../include/c++/4.5/exception_ptr.h:132:13: error: unknown type name 'type_info'
+      const type_info*
+            ^
+In file included from conftest.cpp:43:
+In file included from /sw/joker/libraries/boost/1.48/x86_64/include/boost/program_options.hpp:15:
+In file included from /sw/joker/libraries/boost/1.48/x86_64/include/boost/program_options/options_description.hpp:12:
+In file included from /sw/joker/libraries/boost/1.48/x86_64/include/boost/program_options/errors.hpp:12:
+In file included from /usr/lib64/gcc/x86_64-suse-linux/4.5/../../../../include/c++/4.5/string:42:
+In file included from /usr/lib64/gcc/x86_64-suse-linux/4.5/../../../../include/c++/4.5/bits/allocator.h:48:
+In file included from /usr/lib64/gcc/x86_64-suse-linux/4.5/../../../../include/c++/4.5/x86_64-suse-linux/bits/c++allocator.h:34:
+In file included from /usr/lib64/gcc/x86_64-suse-linux/4.5/../../../../include/c++/4.5/ext/new_allocator.h:33:
+In file included from /usr/lib64/gcc/x86_64-suse-linux/4.5/../../../../include/c++/4.5/new:41:
+In file included from /usr/lib64/gcc/x86_64-suse-linux/4.5/../../../../include/c++/4.5/exception:151:
+/usr/lib64/gcc/x86_64-suse-linux/4.5/../../../../include/c++/4.5/nested_exception.h:62:5: error: the parameter for this explicitly-defaulted copy constructor is const, but a member or base requires it to be non-const
+    nested_exception(const nested_exception&) = default;
+    ^
+/usr/lib64/gcc/x86_64-suse-linux/4.5/../../../../include/c++/4.5/nested_exception.h:64:23: error: the parameter for this explicitly-defaulted copy assignment operator is const, but a member or base requires it to be non-const
+    nested_exception& operator=(const nested_exception&) = default;
+                      ^
+/usr/lib64/gcc/x86_64-suse-linux/4.5/../../../../include/c++/4.5/nested_exception.h:77:28: error: exception specification in declaration does not match previous declaration
+  inline nested_exception::~nested_exception() = default;
+                           ^
+/usr/lib64/gcc/x86_64-suse-linux/4.5/../../../../include/c++/4.5/nested_exception.h:66:20: note: previous declaration is here
+    inline virtual ~nested_exception();
+                   ^
+/usr/lib64/gcc/x86_64-suse-linux/4.5/../../../../include/c++/4.5/nested_exception.h:122:61: error: redefinition of default argument
+    __throw_with_nested(_Ex&& __ex, const nested_exception* = 0)
+                                                            ^ ~
+/usr/lib64/gcc/x86_64-suse-linux/4.5/../../../../include/c++/4.5/nested_exception.h:110:56: note: previous definition is here
+    __throw_with_nested(_Ex&&, const nested_exception* = 0)
+                                                       ^ ~
+5 errors generated.
+configure:17955: $? = 1
+configure: failed program was:
+
+
+
+********************************************************************************
+Problem [KF, 12.09.2013]:
+=========================
+ZIH_TAURUS_GCC_4_6_2 Rev. 160
+
+checking whether the Boost::MPI library is available... no
+configure: error: Bailing out since Boost.MPI was explicitly desired.
+
+configure:21064: checking whether the Boost::MPI library is available
+configure:21097: g++ -c -DNDEBUG -Wall -Wno-unused -O3 -std=c++0x  -pthread -I/opt/bullxde/utils/boost/include  -I/opt/mpi/bullxmpi/1.2.4.1/include conftest.cpp >&5
+In file included from /sw/global/compilers/gcc/4.6.2/lib/gcc/x86_64-unknown-linux-gnu/4.6.2/include/c++/memory:67:0,
+                 from /opt/bullxde/utils/boost/include/boost/mpi/allocator.hpp:18,
+                 from /opt/bullxde/utils/boost/include/boost/mpi.hpp:22,
+                 from conftest.cpp:48:
+/sw/global/compilers/gcc/4.6.2/lib/gcc/x86_64-unknown-linux-gnu/4.6.2/include/c++/bits/stl_uninitialized.h: In function 'void std::__uninitialized_default_n_a(_ForwardIterator, _Size, _Allocator&) [with _ForwardIterator = char*, _Size = long unsigned int, _Allocator = boost::mpi::allocator<char>]':
+/sw/global/compilers/gcc/4.6.2/lib/gcc/x86_64-unknown-linux-gnu/4.6.2/include/c++/bits/vector.tcc:477:8:   instantiated from 'void std::vector<_Tp, _Alloc>::_M_default_append(std::vector<_Tp, _Alloc>::size_type) [with _Tp = char, _Alloc = boost::mpi::allocator<char>, std::vector<_Tp, _Alloc>::size_type = long unsigned int]'
+/sw/global/compilers/gcc/4.6.2/lib/gcc/x86_64-unknown-linux-gnu/4.6.2/include/c++/bits/stl_vector.h:592:4:   instantiated from 'void std::vector<_Tp, _Alloc>::resize(std::vector<_Tp, _Alloc>::size_type) [with _Tp = char, _Alloc = boost::mpi::allocator<char>, std::vector<_Tp, _Alloc>::size_type = long unsigned int]'
+/opt/bullxde/utils/boost/include/boost/mpi/detail/packed_oprimitive.hpp:96:46:   instantiated from here
+/sw/global/compilers/gcc/4.6.2/lib/gcc/x86_64-unknown-linux-gnu/4.6.2/include/c++/bits/stl_uninitialized.h:576:6: error: no matching function for call to 'boost::mpi::allocator<char>::construct(char*)'
+/sw/global/compilers/gcc/4.6.2/lib/gcc/x86_64-unknown-linux-gnu/4.6.2/include/c++/bits/stl_uninitialized.h:576:6: note: candidate is:
+/opt/bullxde/utils/boost/include/boost/mpi/allocator.hpp:168:8: note: void boost::mpi::allocator<T>::construct(boost::mpi::allocator<T>::pointer, const T&) [with T = char, boost::mpi::allocator<T>::pointer = char*]
+/opt/bullxde/utils/boost/include/boost/mpi/allocator.hpp:168:8: note:   candidate expects 2 arguments, 1 provided
+configure:21104: $? = 1
+
+
+********************************************************************************
+Problem [KF, 12.09.2013]:
+=========================
+ZIH_TAURUS_INTEL_12_1 Rev. 160
+ONLY IF GCC 4.7.1 was loaded, too: module load gcc/4.7.1
+
+configure:19572: checking whether the Boost::Program_Options library is available
+configure:19606: icpc -c -O3 -mavx -Wall -std=c++0x  -I/opt/bullxde/utils/boost/include conftest.cpp >&5
+Warning #2928: the __GXX_EXPERIMENTAL_CXX0X__ macro is disabled when using GNU version 4.6 with the c++0x option
+
+/sw/global/compilers/gcc/4.7.1/include/c++/4.7.1/ext/atomicity.h(48): error: identifier "__ATOMIC_ACQ_REL" is undefined
+    { return __atomic_fetch_add(__mem, __val, __ATOMIC_ACQ_REL); }
+                                              ^
+
+/sw/global/compilers/gcc/4.7.1/include/c++/4.7.1/ext/atomicity.h(48): error: identifier "__atomic_fetch_add" is undefined
+    { return __atomic_fetch_add(__mem, __val, __ATOMIC_ACQ_REL); }
+             ^
+
+/sw/global/compilers/gcc/4.7.1/include/c++/4.7.1/ext/atomicity.h(52): error: identifier "__ATOMIC_ACQ_REL" is undefined
+    { __atomic_fetch_add(__mem, __val, __ATOMIC_ACQ_REL); }
+                                       ^
+
+/sw/global/compilers/gcc/4.7.1/include/c++/4.7.1/ext/atomicity.h(52): error: identifier "__atomic_fetch_add" is undefined
+    { __atomic_fetch_add(__mem, __val, __ATOMIC_ACQ_REL); }
+      ^
+
+
+
+
+********************************************************************************
+Problem [KF, 12.09.2013]:
+=========================
+ZIH_TAURUS_GCC_4_8_0 Rev. 160
+Intel 12.1 was loaded, too,
+enableCuda=YES.
+
+make  all-recursive
+make[1]: Entering directory `/home/h1/feldhoff/scafes_2013_09_12a'
+Making all in lib
+make[2]: Entering directory `/home/h1/feldhoff/scafes_2013_09_12a/lib'
+ cd .. && /bin/sh /home/feldhoff/scafes_2013_09_12a/config/missing --run automake-1.11 --gnu lib/Makefile
+ cd .. && /bin/sh ./config.status lib/Makefile depfiles
+config.status: creating lib/Makefile
+config.status: executing depfiles commands
+make[2]: Leaving directory `/home/h1/feldhoff/scafes_2013_09_12a/lib'
+make[2]: Entering directory `/home/h1/feldhoff/scafes_2013_09_12a/lib'
+../cudalt.py ../src/ScaFES_NewProblemCuda.lo /sw/taurus/libraries/cuda/5.5.11//bin/nvcc -ccbin=/sw/global/compilers/intel/12.1/bin/icpc -arch=sm_20 --x cu --keep\
+        --verbose --compiler-options=\" -I../src -DJOKER  -g -O2    -pthread -I/opt/bullxde/utils/boost/include -I/opt/mpi/bullxmpi/1.2.4.1/include     -I/sw/taurus/libraries/cuda/5.5.11//include -I. -I..    --verbose\" \
+         -c ../src/ScaFES_NewProblemCuda.cu
+/sw/taurus/libraries/cuda/5.5.11//bin/nvcc -ccbin=/sw/global/compilers/intel/12.1/bin/icpc -arch=sm_20 --x cu --keep --verbose --compiler-options=" -I../src -DJOKER -g -O2 -pthread -I/opt/bullxde/utils/boost/include -I/opt/mpi/bullxmpi/1.2.4.1/include -I/sw/taurus/libraries/cuda/5.5.11//include -I. -I.. --verbose" -c ../src/ScaFES_NewProblemCuda.cu -Xcompiler -fPIC -o ../src/.libs/ScaFES_NewProblemCuda.o
+#$ _SPACE_=
+#$ _CUDART_=cudart
+#$ _HERE_=/sw/taurus/libraries/cuda/5.5.11//bin
+#$ _THERE_=/sw/taurus/libraries/cuda/5.5.11//bin
+#$ _TARGET_SIZE_=
+#$ _TARGET_DIR_=
+#$ _TARGET_SIZE_=64
+#$ TOP=/sw/taurus/libraries/cuda/5.5.11//bin/..
+#$ NVVMIR_LIBRARY_DIR=/sw/taurus/libraries/cuda/5.5.11//bin/../nvvm/libdevice
+#$ LD_LIBRARY_PATH=/sw/taurus/libraries/cuda/5.5.11//bin/../lib:/sw/taurus/libraries/lbfgsb/3.0/lib:/sw/taurus/libraries/adolc/2.4.1/lib:/sw/global/libraries/acml/5.1.0/ifort64_fma4/lib:/sw/global/compilers/intel/12.1/composer_xe_2011_sp1.8.273/compiler/lib/intel64:/sw/taurus/libraries/cuda/5.5.11/extras/CUPTI/lib64:/sw/taurus/libraries/cuda/5.5.11/lib64:/sw/global/compilers/intel/2013/composer_xe_2013.1.117/compiler/lib/intel64:/opt/mpi/bullxmpi/1.2.4.1/lib:/opt/bullxde/utils/boost/lib:/sw/global/libraries/acml/5.1.0/gfortran64_fma4/lib:/sw/global/compilers/gcc/4.8.0/lib/gcc/x86_64-unknown-linux-gnu/4.7.1:/sw/global/compilers/gcc/4.8.0/lib64
+#$ PATH=/sw/taurus/libraries/cuda/5.5.11//bin/../open64/bin:/sw/taurus/libraries/cuda/5.5.11//bin/../nvvm/bin:/sw/taurus/libraries/cuda/5.5.11//bin:/sw/taurus/libraries/adolc/2.4.1/bin:/sw/global/compilers/intel/12.1/composer_xe_2011_sp1.8.273/bin/intel64:/sw/taurus/libraries/cuda/5.5.11/bin:/sw/taurus/libraries/cuda/5.5.11/computeprof/bin:/opt/mpi/bullxmpi/1.2.4.1/bin/:/sw/global/compilers/gcc/4.8.0/bin:=~/bin:/usr/lib64/qt-3.3/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/sbin
+#$ INCLUDES="-I/sw/taurus/libraries/cuda/5.5.11//bin/..//include"
+#$ LIBRARIES=  "-L/sw/taurus/libraries/cuda/5.5.11//bin/..//lib64"
+#$ CUDAFE_FLAGS=
+#$ OPENCC_FLAGS=
+#$ PTXAS_FLAGS=
+#$ "/sw/global/compilers/intel/12.1/bin"/icpc -D__CUDA_ARCH__=200 -E -x c++   -DCUDA_DOUBLE_MATH_FUNCTIONS  -D__CUDACC__ -D__NVCC__  -I../src -DJOKER -g -O2 -pthread -I/opt/bullxde/utils/boost/include -I/opt/mpi/bullxmpi/1.2.4.1/include -I/sw/taurus/libraries/cuda/5.5.11//include -I. -I.. --verbose -fPIC "-I/sw/taurus/libraries/cuda/5.5.11//bin/..//include"   -include "cuda_runtime.h" -m64 -o "ScaFES_NewProblemCuda.cpp1.ii" "../src/ScaFES_NewProblemCuda.cu"
+icpc: command line warning #10006: ignoring unknown option '-fverbose'
+#$ cudafe --m64 --gnu_version=40800 -tused --no_remove_unneeded_entities  --gen_c_file_name "ScaFES_NewProblemCuda.cudafe1.c" --stub_file_name "ScaFES_NewProblemCuda.cudafe1.stub.c" --gen_device_file_name "ScaFES_NewProblemCuda.cudafe1.gpu" --nv_arch "compute_20" --gen_module_id_file --module_id_file_name "ScaFES_NewProblemCuda.module_id" --include_file_name "ScaFES_NewProblemCuda.fatbin.c" "ScaFES_NewProblemCuda.cpp1.ii"
+#$ "/sw/global/compilers/intel/12.1/bin"/icpc -D__CUDA_ARCH__=200 -E -x c   -DCUDA_DOUBLE_MATH_FUNCTIONS  -D__CUDACC__ -D__NVCC__ -D__CUDANVVM__  -I../src -DJOKER -g -O2 -pthread -I/opt/bullxde/utils/boost/include -I/opt/mpi/bullxmpi/1.2.4.1/include -I/sw/taurus/libraries/cuda/5.5.11//include -I. -I.. --verbose -fPIC -D__CUDA_PREC_DIV -D__CUDA_PREC_SQRT "-I/sw/taurus/libraries/cuda/5.5.11//bin/..//include"   -m64 -o "ScaFES_NewProblemCuda.cpp2.i" "ScaFES_NewProblemCuda.cudafe1.gpu"
+icpc: command line warning #10006: ignoring unknown option '-fverbose'
+#$ cudafe -w --m64 --gnu_version=40800 --c  --gen_c_file_name "ScaFES_NewProblemCuda.cudafe2.c" --stub_file_name "ScaFES_NewProblemCuda.cudafe2.stub.c" --gen_device_file_name "ScaFES_NewProblemCuda.cudafe2.gpu" --nv_arch "compute_20" --module_id_file_name "ScaFES_NewProblemCuda.module_id" --include_file_name "ScaFES_NewProblemCuda.fatbin.c" "ScaFES_NewProblemCuda.cpp2.i"
+#$ "/sw/global/compilers/intel/12.1/bin"/icpc -D__CUDA_ARCH__=200 -E -x c   -DCUDA_DOUBLE_MATH_FUNCTIONS  -D__CUDABE__ -D__CUDANVVM__  -I../src -DJOKER -g -O2 -pthread -I/opt/bullxde/utils/boost/include -I/opt/mpi/bullxmpi/1.2.4.1/include -I/sw/taurus/libraries/cuda/5.5.11//include -I. -I.. --verbose -fPIC -D__CUDA_PREC_DIV -D__CUDA_PREC_SQRT "-I/sw/taurus/libraries/cuda/5.5.11//bin/..//include"   -m64 -o "ScaFES_NewProblemCuda.cpp3.i" "ScaFES_NewProblemCuda.cudafe2.gpu"
+icpc: command line warning #10006: ignoring unknown option '-fverbose'
+#$ filehash -s " " "ScaFES_NewProblemCuda.cpp3.i" > "ScaFES_NewProblemCuda.hash"
+#$ "/sw/global/compilers/intel/12.1/bin"/icpc -E -x c++ -D__CUDACC__ -D__NVCC__  -I../src -DJOKER -g -O2 -pthread -I/opt/bullxde/utils/boost/include -I/opt/mpi/bullxmpi/1.2.4.1/include -I/sw/taurus/libraries/cuda/5.5.11//include -I. -I.. --verbose -fPIC "-I/sw/taurus/libraries/cuda/5.5.11//bin/..//include"   -include "cuda_runtime.h" -m64 -o "ScaFES_NewProblemCuda.cpp4.ii" "../src/ScaFES_NewProblemCuda.cu"
+icpc: command line warning #10006: ignoring unknown option '-fverbose'
+#$ cudafe++ --m64 --gnu_version=40800 --parse_templates  --gen_c_file_name "ScaFES_NewProblemCuda.cudafe1.cpp" --stub_file_name "ScaFES_NewProblemCuda.cudafe1.stub.c" --module_id_file_name "ScaFES_NewProblemCuda.module_id" "ScaFES_NewProblemCuda.cpp4.ii"
+#$ cicc  -arch compute_20 -m64 -ftz=0 -prec_div=1 -prec_sqrt=1 -fmad=1 -nvvmir-library "/sw/taurus/libraries/cuda/5.5.11//bin/../nvvm/libdevice/libdevice.compute_20.10.bc" --orig_src_file_name "../src/ScaFES_NewProblemCuda.cu"  "ScaFES_NewProblemCuda.cpp3.i" -o "ScaFES_NewProblemCuda.ptx"
+#$ ptxas  -arch=sm_20 -m64  "ScaFES_NewProblemCuda.ptx"  -o "ScaFES_NewProblemCuda.sm_20.cubin"
+#$ fatbinary --create="ScaFES_NewProblemCuda.fatbin" -64 --key="c356a4436e870e1c" --ident="../src/ScaFES_NewProblemCuda.cu" "--image=profile=sm_20,file=ScaFES_NewProblemCuda.sm_20.cubin" "--image=profile=compute_20,file=ScaFES_NewProblemCuda.ptx" --embedded-fatbin="ScaFES_NewProblemCuda.fatbin.c" --cuda
+#$ "/sw/global/compilers/intel/12.1/bin"/icpc -D__CUDA_ARCH__=200 -E -x c++   -DCUDA_DOUBLE_MATH_FUNCTIONS   -I../src -DJOKER -g -O2 -pthread -I/opt/bullxde/utils/boost/include -I/opt/mpi/bullxmpi/1.2.4.1/include -I/sw/taurus/libraries/cuda/5.5.11//include -I. -I.. --verbose -fPIC -D__CUDA_PREC_DIV -D__CUDA_PREC_SQRT "-I/sw/taurus/libraries/cuda/5.5.11//bin/..//include"   -m64 -o "ScaFES_NewProblemCuda.cu.cpp.ii" "ScaFES_NewProblemCuda.cudafe1.cpp"
+icpc: command line warning #10006: ignoring unknown option '-fverbose'
+#$ "/sw/global/compilers/intel/12.1/bin"/icpc -c -x c++ -I../src -DJOKER -g -O2 -pthread -I/opt/bullxde/utils/boost/include -I/opt/mpi/bullxmpi/1.2.4.1/include -I/sw/taurus/libraries/cuda/5.5.11//include -I. -I.. --verbose -fPIC "-I/sw/taurus/libraries/cuda/5.5.11//bin/..//include"   -m64 -o "../src/.libs/ScaFES_NewProblemCuda.o" "ScaFES_NewProblemCuda.cu.cpp.ii"
+icpc: command line warning #10006: ignoring unknown option '-fverbose'
+/sw/taurus/libraries/cuda/5.5.11/include/channel_descriptor.h(107): warning #1292: unknown attribute "host"
+  template < class T > inline __attribute__ ( ( host ) ) cudaChannelFormatDesc cudaCreateChannelDesc ( void )
+                                                ^
+
+/sw/global/compilers/gcc/4.8.0/include/c++/4.8.0/cstdlib(179): error: identifier "__int128_t" is undefined
+  inline __int128_t abs(__int128_t __x) { return (__x >= (0)) ? __x : (-__x); }
+         ^
+
+/sw/global/compilers/gcc/4.8.0/include/c++/4.8.0/cstdlib(179): error: identifier "__int128_t" is undefined
+  inline __int128_t abs(__int128_t __x) { return (__x >= (0)) ? __x : (-__x); }
+                        ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_surface_types.h(74): warning #1292: unknown attribute "device_builtin_surface_type"
+  struct __attribute__ ( ( device_builtin_surface_type ) ) surface : public surfaceReference
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_surface_types.h(76): warning #1292: unknown attribute "host"
+    __attribute__ ( ( host ) ) surface ( void )
+                      ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_surface_types.h(81): warning #1292: unknown attribute "host"
+    __attribute__ ( ( host ) ) surface ( struct cudaChannelFormatDesc desc )
+                      ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_surface_types.h(88): warning #1292: unknown attribute "device_builtin_surface_type"
+  struct __attribute__ ( ( device_builtin_surface_type ) ) surface < void, dim > : public surfaceReference
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_surface_types.h(90): warning #1292: unknown attribute "host"
+    __attribute__ ( ( host ) ) surface ( void )
+                      ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_texture_types.h(74): warning #1292: unknown attribute "device_builtin_texture_type"
+  struct __attribute__ ( ( device_builtin_texture_type ) ) texture : public textureReference
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_texture_types.h(76): warning #1292: unknown attribute "host"
+    __attribute__ ( ( host ) ) texture ( int norm = 0,
+                      ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_texture_types.h(89): warning #1292: unknown attribute "host"
+    __attribute__ ( ( host ) ) texture ( int norm,
+                      ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(124): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaSetupArgument (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(235): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaHostAlloc (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(245): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaHostGetDevicePointer (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(264): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaMallocHost (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(274): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaMallocPitch (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(320): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaMemcpyToSymbol (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(372): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaMemcpyToSymbolAsync (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(418): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaMemcpyFromSymbol (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(470): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaMemcpyFromSymbolAsync (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(503): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaGetSymbolAddress (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(532): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaGetSymbolSize (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(575): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaBindTexture (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(620): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaBindTexture (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(676): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaBindTexture2D (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(734): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaBindTexture2D (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(776): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaBindTextureToArray (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(814): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaBindTextureToArray (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(855): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaBindTextureToMipmappedArray (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(893): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaBindTextureToMipmappedArray (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(932): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaUnbindTexture (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(966): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaGetTextureAlignmentOffset (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(1019): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaFuncSetCacheConfig (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(1028): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaFuncSetSharedMemConfig (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(1071): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaLaunch (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(1138): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaBindSurfaceToArray (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(1167): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaBindSurfaceToArray (
+                           ^
+
+../src/ScaFES_NewProblemCuda.cu(39): warning #181: argument is incompatible with corresponding format string conversion
+  printf(" global memory: %d MByte(s)\n", ((prop.totalGlobalMem) / (1024)) / (1024));
+                                          ^
+
+../src/ScaFES_NewProblemCuda.cu(40): warning #181: argument is incompatible with corresponding format string conversion
+  printf(" shared memory: %d kByte(s)\n", (prop.sharedMemPerBlock) / (1024));
+                                          ^
+
+../src/ScaFES_NewProblemCuda.cu(48): warning #181: argument is incompatible with corresponding format string conversion
+  printf(" constant memory: %d Byte(s)\n", prop.totalConstMem);
+                                           ^
+
+compilation aborted for ScaFES_NewProblemCuda.cu.cpp.ii (code 2)
+# --error 0x2 --
+make[2]: *** [../src/ScaFES_NewProblemCuda.lo] Fehler 1
+
+
+********************************************************************************
+Problem [KF, 12.09.2013]:
+=========================
+ZIH_TAURUS_GCC_4_7_1 Rev. 160
+Intel 12.1 was loaded, too,
+enableCuda=YES.
+
+make  all-recursive
+make[1]: Entering directory `/home/h1/feldhoff/scafes_2013_09_12a'
+Making all in lib
+make[2]: Entering directory `/home/h1/feldhoff/scafes_2013_09_12a/lib'
+../cudalt.py ../src/ScaFES_NewProblemCuda.lo /sw/taurus/libraries/cuda/5.5.11//bin/nvcc -ccbin=/sw/global/compilers/intel/12.1/bin/icpc -arch=sm_20 --x cu --keep\
+        --verbose --compiler-options=\" -I../src -DJOKER  -g -O2    -pthread -I/opt/bullxde/utils/boost/include -I/opt/mpi/bullxmpi/1.2.4.1/include     -I/sw/taurus/libraries/cuda/5.5.11//include -I. -I..    --verbose\" \
+         -c ../src/ScaFES_NewProblemCuda.cu
+/sw/taurus/libraries/cuda/5.5.11//bin/nvcc -ccbin=/sw/global/compilers/intel/12.1/bin/icpc -arch=sm_20 --x cu --keep --verbose --compiler-options=" -I../src -DJOKER -g -O2 -pthread -I/opt/bullxde/utils/boost/include -I/opt/mpi/bullxmpi/1.2.4.1/include -I/sw/taurus/libraries/cuda/5.5.11//include -I. -I.. --verbose" -c ../src/ScaFES_NewProblemCuda.cu -Xcompiler -fPIC -o ../src/.libs/ScaFES_NewProblemCuda.o
+#$ _SPACE_=
+#$ _CUDART_=cudart
+#$ _HERE_=/sw/taurus/libraries/cuda/5.5.11//bin
+#$ _THERE_=/sw/taurus/libraries/cuda/5.5.11//bin
+#$ _TARGET_SIZE_=
+#$ _TARGET_DIR_=
+#$ _TARGET_SIZE_=64
+#$ TOP=/sw/taurus/libraries/cuda/5.5.11//bin/..
+#$ NVVMIR_LIBRARY_DIR=/sw/taurus/libraries/cuda/5.5.11//bin/../nvvm/libdevice
+#$ LD_LIBRARY_PATH=/sw/taurus/libraries/cuda/5.5.11//bin/../lib:/sw/taurus/libraries/lbfgsb/3.0/lib:/sw/taurus/libraries/adolc/2.4.1/lib:/sw/global/libraries/acml/5.1.0/ifort64_fma4/lib:/sw/global/compilers/intel/12.1/composer_xe_2011_sp1.8.273/compiler/lib/intel64:/sw/taurus/libraries/cuda/5.5.11/extras/CUPTI/lib64:/sw/taurus/libraries/cuda/5.5.11/lib64:/sw/global/compilers/intel/2013/composer_xe_2013.1.117/compiler/lib/intel64:/opt/mpi/bullxmpi/1.2.4.1/lib:/opt/bullxde/utils/boost/lib:/sw/global/libraries/acml/5.1.0/gfortran64_fma4/lib:/sw/global/compilers/gcc/4.7.1/lib/gcc/x86_64-unknown-linux-gnu/4.7.1:/sw/global/compilers/gcc/4.7.1/lib64
+#$ PATH=/sw/taurus/libraries/cuda/5.5.11//bin/../open64/bin:/sw/taurus/libraries/cuda/5.5.11//bin/../nvvm/bin:/sw/taurus/libraries/cuda/5.5.11//bin:/sw/taurus/libraries/adolc/2.4.1/bin:/sw/global/compilers/intel/12.1/composer_xe_2011_sp1.8.273/bin/intel64:/sw/taurus/libraries/cuda/5.5.11/bin:/sw/taurus/libraries/cuda/5.5.11/computeprof/bin:/opt/mpi/bullxmpi/1.2.4.1/bin/:/sw/global/compilers/gcc/4.7.1/bin:=~/bin:/usr/lib64/qt-3.3/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/sbin
+#$ INCLUDES="-I/sw/taurus/libraries/cuda/5.5.11//bin/..//include"
+#$ LIBRARIES=  "-L/sw/taurus/libraries/cuda/5.5.11//bin/..//lib64"
+#$ CUDAFE_FLAGS=
+#$ OPENCC_FLAGS=
+#$ PTXAS_FLAGS=
+#$ "/sw/global/compilers/intel/12.1/bin"/icpc -D__CUDA_ARCH__=200 -E -x c++   -DCUDA_DOUBLE_MATH_FUNCTIONS  -D__CUDACC__ -D__NVCC__  -I../src -DJOKER -g -O2 -pthread -I/opt/bullxde/utils/boost/include -I/opt/mpi/bullxmpi/1.2.4.1/include -I/sw/taurus/libraries/cuda/5.5.11//include -I. -I.. --verbose -fPIC "-I/sw/taurus/libraries/cuda/5.5.11//bin/..//include"   -include "cuda_runtime.h" -m64 -o "ScaFES_NewProblemCuda.cpp1.ii" "../src/ScaFES_NewProblemCuda.cu"
+icpc: command line warning #10006: ignoring unknown option '-fverbose'
+#$ cudafe --m64 --gnu_version=40701 -tused --no_remove_unneeded_entities  --gen_c_file_name "ScaFES_NewProblemCuda.cudafe1.c" --stub_file_name "ScaFES_NewProblemCuda.cudafe1.stub.c" --gen_device_file_name "ScaFES_NewProblemCuda.cudafe1.gpu" --nv_arch "compute_20" --gen_module_id_file --module_id_file_name "ScaFES_NewProblemCuda.module_id" --include_file_name "ScaFES_NewProblemCuda.fatbin.c" "ScaFES_NewProblemCuda.cpp1.ii"
+/sw/global/compilers/gcc/4.7.1/include/c++/4.7.1/ext/atomicity.h(48): error: identifier "__ATOMIC_ACQ_REL" is undefined
+
+/sw/global/compilers/gcc/4.7.1/include/c++/4.7.1/ext/atomicity.h(52): error: identifier "__ATOMIC_ACQ_REL" is undefined
+
+2 errors detected in the compilation of "ScaFES_NewProblemCuda.cpp1.ii".
+# --error 0x2 --
+
+
+
+********************************************************************************
+Problem [KF, 12.09.2013]:
+=========================
+ZIH_TAURUS_GCC_4_4_6 Rev. 160
+Intel 12.1 was loaded, too,
+enableCuda=YES.
+
+make  all-recursive
+make[1]: Entering directory `/home/h1/feldhoff/scafes_2013_09_12a'
+Making all in lib
+make[2]: Entering directory `/home/h1/feldhoff/scafes_2013_09_12a/lib'
+  CXX    libscafes_la-ScaFES_Dummy.lo
+../cudalt.py ../src/ScaFES_NewProblemCuda.lo /sw/taurus/libraries/cuda/5.5.11//bin/nvcc -ccbin=/sw/global/compilers/intel/12.1/bin/icpc -arch=sm_20 --x cu --keep\
+        --verbose --compiler-options=\" -I../src -DJOKER  -g -O2    -pthread -I/opt/bullxde/utils/boost/include -I/opt/mpi/bullxmpi/1.2.4.1/include     -I/sw/taurus/libraries/cuda/5.5.11//include -I. -I..    --verbose\" \
+         -c ../src/ScaFES_NewProblemCuda.cu
+/sw/taurus/libraries/cuda/5.5.11//bin/nvcc -ccbin=/sw/global/compilers/intel/12.1/bin/icpc -arch=sm_20 --x cu --keep --verbose --compiler-options=" -I../src -DJOKER -g -O2 -pthread -I/opt/bullxde/utils/boost/include -I/opt/mpi/bullxmpi/1.2.4.1/include -I/sw/taurus/libraries/cuda/5.5.11//include -I. -I.. --verbose" -c ../src/ScaFES_NewProblemCuda.cu -Xcompiler -fPIC -o ../src/.libs/ScaFES_NewProblemCuda.o
+#$ _SPACE_=
+#$ _CUDART_=cudart
+#$ _HERE_=/sw/taurus/libraries/cuda/5.5.11//bin
+#$ _THERE_=/sw/taurus/libraries/cuda/5.5.11//bin
+#$ _TARGET_SIZE_=
+#$ _TARGET_DIR_=
+#$ _TARGET_SIZE_=64
+#$ TOP=/sw/taurus/libraries/cuda/5.5.11//bin/..
+#$ NVVMIR_LIBRARY_DIR=/sw/taurus/libraries/cuda/5.5.11//bin/../nvvm/libdevice
+#$ LD_LIBRARY_PATH=/sw/taurus/libraries/cuda/5.5.11//bin/../lib:/sw/taurus/libraries/lbfgsb/3.0/lib:/sw/taurus/libraries/adolc/2.4.1/lib:/sw/global/libraries/acml/5.1.0/ifort64_fma4/lib:/sw/global/compilers/intel/12.1/composer_xe_2011_sp1.8.273/compiler/lib/intel64:/sw/taurus/libraries/cuda/5.5.11/extras/CUPTI/lib64:/sw/taurus/libraries/cuda/5.5.11/lib64:/sw/global/compilers/intel/2013/composer_xe_2013.1.117/compiler/lib/intel64:/opt/mpi/bullxmpi/1.2.4.1/lib:/opt/bullxde/utils/boost/lib
+#$ PATH=/sw/taurus/libraries/cuda/5.5.11//bin/../open64/bin:/sw/taurus/libraries/cuda/5.5.11//bin/../nvvm/bin:/sw/taurus/libraries/cuda/5.5.11//bin:/sw/taurus/libraries/adolc/2.4.1/bin:/sw/global/compilers/intel/12.1/composer_xe_2011_sp1.8.273/bin/intel64:/sw/taurus/libraries/cuda/5.5.11/bin:/sw/taurus/libraries/cuda/5.5.11/computeprof/bin:/opt/mpi/bullxmpi/1.2.4.1/bin/:=~/bin:/usr/lib64/qt-3.3/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/sbin
+#$ INCLUDES="-I/sw/taurus/libraries/cuda/5.5.11//bin/..//include"
+#$ LIBRARIES=  "-L/sw/taurus/libraries/cuda/5.5.11//bin/..//lib64"
+#$ CUDAFE_FLAGS=
+#$ OPENCC_FLAGS=
+#$ PTXAS_FLAGS=
+#$ "/sw/global/compilers/intel/12.1/bin"/icpc -D__CUDA_ARCH__=200 -E -x c++   -DCUDA_DOUBLE_MATH_FUNCTIONS  -D__CUDACC__ -D__NVCC__  -I../src -DJOKER -g -O2 -pthread -I/opt/bullxde/utils/boost/include -I/opt/mpi/bullxmpi/1.2.4.1/include -I/sw/taurus/libraries/cuda/5.5.11//include -I. -I.. --verbose -fPIC "-I/sw/taurus/libraries/cuda/5.5.11//bin/..//include"   -include "cuda_runtime.h" -m64 -o "ScaFES_NewProblemCuda.cpp1.ii" "../src/ScaFES_NewProblemCuda.cu"
+icpc: command line warning #10006: ignoring unknown option '-fverbose'
+#$ cudafe --m64 --gnu_version=40406 -tused --no_remove_unneeded_entities  --gen_c_file_name "ScaFES_NewProblemCuda.cudafe1.c" --stub_file_name "ScaFES_NewProblemCuda.cudafe1.stub.c" --gen_device_file_name "ScaFES_NewProblemCuda.cudafe1.gpu" --nv_arch "compute_20" --gen_module_id_file --module_id_file_name "ScaFES_NewProblemCuda.module_id" --include_file_name "ScaFES_NewProblemCuda.fatbin.c" "ScaFES_NewProblemCuda.cpp1.ii"
+#$ "/sw/global/compilers/intel/12.1/bin"/icpc -D__CUDA_ARCH__=200 -E -x c   -DCUDA_DOUBLE_MATH_FUNCTIONS  -D__CUDACC__ -D__NVCC__ -D__CUDANVVM__  -I../src -DJOKER -g -O2 -pthread -I/opt/bullxde/utils/boost/include -I/opt/mpi/bullxmpi/1.2.4.1/include -I/sw/taurus/libraries/cuda/5.5.11//include -I. -I.. --verbose -fPIC -D__CUDA_PREC_DIV -D__CUDA_PREC_SQRT "-I/sw/taurus/libraries/cuda/5.5.11//bin/..//include"   -m64 -o "ScaFES_NewProblemCuda.cpp2.i" "ScaFES_NewProblemCuda.cudafe1.gpu"
+icpc: command line warning #10006: ignoring unknown option '-fverbose'
+#$ cudafe -w --m64 --gnu_version=40406 --c  --gen_c_file_name "ScaFES_NewProblemCuda.cudafe2.c" --stub_file_name "ScaFES_NewProblemCuda.cudafe2.stub.c" --gen_device_file_name "ScaFES_NewProblemCuda.cudafe2.gpu" --nv_arch "compute_20" --module_id_file_name "ScaFES_NewProblemCuda.module_id" --include_file_name "ScaFES_NewProblemCuda.fatbin.c" "ScaFES_NewProblemCuda.cpp2.i"
+#$ "/sw/global/compilers/intel/12.1/bin"/icpc -D__CUDA_ARCH__=200 -E -x c   -DCUDA_DOUBLE_MATH_FUNCTIONS  -D__CUDABE__ -D__CUDANVVM__  -I../src -DJOKER -g -O2 -pthread -I/opt/bullxde/utils/boost/include -I/opt/mpi/bullxmpi/1.2.4.1/include -I/sw/taurus/libraries/cuda/5.5.11//include -I. -I.. --verbose -fPIC -D__CUDA_PREC_DIV -D__CUDA_PREC_SQRT "-I/sw/taurus/libraries/cuda/5.5.11//bin/..//include"   -m64 -o "ScaFES_NewProblemCuda.cpp3.i" "ScaFES_NewProblemCuda.cudafe2.gpu"
+icpc: command line warning #10006: ignoring unknown option '-fverbose'
+#$ filehash -s " " "ScaFES_NewProblemCuda.cpp3.i" > "ScaFES_NewProblemCuda.hash"
+#$ "/sw/global/compilers/intel/12.1/bin"/icpc -E -x c++ -D__CUDACC__ -D__NVCC__  -I../src -DJOKER -g -O2 -pthread -I/opt/bullxde/utils/boost/include -I/opt/mpi/bullxmpi/1.2.4.1/include -I/sw/taurus/libraries/cuda/5.5.11//include -I. -I.. --verbose -fPIC "-I/sw/taurus/libraries/cuda/5.5.11//bin/..//include"   -include "cuda_runtime.h" -m64 -o "ScaFES_NewProblemCuda.cpp4.ii" "../src/ScaFES_NewProblemCuda.cu"
+icpc: command line warning #10006: ignoring unknown option '-fverbose'
+#$ cudafe++ --m64 --gnu_version=40406 --parse_templates  --gen_c_file_name "ScaFES_NewProblemCuda.cudafe1.cpp" --stub_file_name "ScaFES_NewProblemCuda.cudafe1.stub.c" --module_id_file_name "ScaFES_NewProblemCuda.module_id" "ScaFES_NewProblemCuda.cpp4.ii"
+#$ cicc  -arch compute_20 -m64 -ftz=0 -prec_div=1 -prec_sqrt=1 -fmad=1 -nvvmir-library "/sw/taurus/libraries/cuda/5.5.11//bin/../nvvm/libdevice/libdevice.compute_20.10.bc" --orig_src_file_name "../src/ScaFES_NewProblemCuda.cu"  "ScaFES_NewProblemCuda.cpp3.i" -o "ScaFES_NewProblemCuda.ptx"
+#$ ptxas  -arch=sm_20 -m64  "ScaFES_NewProblemCuda.ptx"  -o "ScaFES_NewProblemCuda.sm_20.cubin"
+#$ fatbinary --create="ScaFES_NewProblemCuda.fatbin" -64 --key="1f45cf4c5f0be54a" --ident="../src/ScaFES_NewProblemCuda.cu" "--image=profile=sm_20,file=ScaFES_NewProblemCuda.sm_20.cubin" "--image=profile=compute_20,file=ScaFES_NewProblemCuda.ptx" --embedded-fatbin="ScaFES_NewProblemCuda.fatbin.c" --cuda
+#$ "/sw/global/compilers/intel/12.1/bin"/icpc -D__CUDA_ARCH__=200 -E -x c++   -DCUDA_DOUBLE_MATH_FUNCTIONS   -I../src -DJOKER -g -O2 -pthread -I/opt/bullxde/utils/boost/include -I/opt/mpi/bullxmpi/1.2.4.1/include -I/sw/taurus/libraries/cuda/5.5.11//include -I. -I.. --verbose -fPIC -D__CUDA_PREC_DIV -D__CUDA_PREC_SQRT "-I/sw/taurus/libraries/cuda/5.5.11//bin/..//include"   -m64 -o "ScaFES_NewProblemCuda.cu.cpp.ii" "ScaFES_NewProblemCuda.cudafe1.cpp"
+icpc: command line warning #10006: ignoring unknown option '-fverbose'
+#$ "/sw/global/compilers/intel/12.1/bin"/icpc -c -x c++ -I../src -DJOKER -g -O2 -pthread -I/opt/bullxde/utils/boost/include -I/opt/mpi/bullxmpi/1.2.4.1/include -I/sw/taurus/libraries/cuda/5.5.11//include -I. -I.. --verbose -fPIC "-I/sw/taurus/libraries/cuda/5.5.11//bin/..//include"   -m64 -o "../src/.libs/ScaFES_NewProblemCuda.o" "ScaFES_NewProblemCuda.cu.cpp.ii"
+icpc: command line warning #10006: ignoring unknown option '-fverbose'
+/sw/taurus/libraries/cuda/5.5.11/include/channel_descriptor.h(107): warning #1292: unknown attribute "host"
+  template < class T > inline __attribute__ ( ( host ) ) cudaChannelFormatDesc cudaCreateChannelDesc ( void )
+                                                ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_surface_types.h(74): warning #1292: unknown attribute "device_builtin_surface_type"
+  struct __attribute__ ( ( device_builtin_surface_type ) ) surface : public surfaceReference
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_surface_types.h(76): warning #1292: unknown attribute "host"
+    __attribute__ ( ( host ) ) surface ( void )
+                      ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_surface_types.h(81): warning #1292: unknown attribute "host"
+    __attribute__ ( ( host ) ) surface ( struct cudaChannelFormatDesc desc )
+                      ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_surface_types.h(88): warning #1292: unknown attribute "device_builtin_surface_type"
+  struct __attribute__ ( ( device_builtin_surface_type ) ) surface < void, dim > : public surfaceReference
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_surface_types.h(90): warning #1292: unknown attribute "host"
+    __attribute__ ( ( host ) ) surface ( void )
+                      ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_texture_types.h(74): warning #1292: unknown attribute "device_builtin_texture_type"
+  struct __attribute__ ( ( device_builtin_texture_type ) ) texture : public textureReference
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_texture_types.h(76): warning #1292: unknown attribute "host"
+    __attribute__ ( ( host ) ) texture ( int norm = 0,
+                      ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_texture_types.h(89): warning #1292: unknown attribute "host"
+    __attribute__ ( ( host ) ) texture ( int norm,
+                      ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(124): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaSetupArgument (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(235): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaHostAlloc (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(245): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaHostGetDevicePointer (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(264): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaMallocHost (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(274): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaMallocPitch (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(320): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaMemcpyToSymbol (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(372): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaMemcpyToSymbolAsync (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(418): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaMemcpyFromSymbol (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(470): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaMemcpyFromSymbolAsync (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(503): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaGetSymbolAddress (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(532): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaGetSymbolSize (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(575): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaBindTexture (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(620): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaBindTexture (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(676): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaBindTexture2D (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(734): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaBindTexture2D (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(776): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaBindTextureToArray (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(814): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaBindTextureToArray (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(855): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaBindTextureToMipmappedArray (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(893): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaBindTextureToMipmappedArray (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(932): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaUnbindTexture (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(966): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaGetTextureAlignmentOffset (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(1019): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaFuncSetCacheConfig (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(1028): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaFuncSetSharedMemConfig (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(1071): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaLaunch (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(1138): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaBindSurfaceToArray (
+                           ^
+
+/sw/taurus/libraries/cuda/5.5.11/include/cuda_runtime.h(1167): warning #1292: unknown attribute "host"
+  inline __attribute__ ( ( host ) ) cudaError_t cudaBindSurfaceToArray (
+                           ^
+
+/usr/include/c++/4.4.6/limits(367): warning #68: integer conversion resulted in a change of sign
+  { return (((char)(-1)) < 0) ? (((char)1) << ((sizeof(char) * (8)) - (((char)(-1)) < 0))) : ((char)0); }
+           ^
+
+/usr/include/c++/4.4.6/limits(1117): warning #239: floating point underflow
+  { return (1.401298464e-45F); }
+           ^
+
+/usr/include/c++/4.4.6/limits(1174): warning #239: floating point underflow
+  { return (4.940656458412465442e-324); }
+           ^
+
+/usr/include/fenv.h(86): error: exception specification is incompatible with that of previous function "fegetround" (declared at line 63 of "/sw/global/compilers/intel/12.1/composer_xe_2011_sp1.8.273/compiler/include/float.h")
+  extern "C" int fegetround() throw();
+                              ^
+
+../src/ScaFES_NewProblemCuda.cu(39): warning #181: argument is incompatible with corresponding format string conversion
+  printf(" global memory: %d MByte(s)\n", ((prop.totalGlobalMem) / (1024)) / (1024));
+                                          ^
+
+../src/ScaFES_NewProblemCuda.cu(40): warning #181: argument is incompatible with corresponding format string conversion
+  printf(" shared memory: %d kByte(s)\n", (prop.sharedMemPerBlock) / (1024));
+                                          ^
+
+../src/ScaFES_NewProblemCuda.cu(48): warning #181: argument is incompatible with corresponding format string conversion
+  printf(" constant memory: %d Byte(s)\n", prop.totalConstMem);
+                                           ^
+
+/usr/include/c++/4.4.6/bits/valarray_array.h(59): warning #191: type qualifier is meaningless on cast type
+        return static_cast < _Tp * __restrict__ >
+                             ^
+          detected during instantiation of "std::valarray<_Tp>::valarray(const std::valarray<_Tp> &) [with _Tp=unsigned long]" at line 138 of "/usr/include/c++/4.4.6/bits/gslice.h"
+
+compilation aborted for ScaFES_NewProblemCuda.cu.cpp.ii (code 2)
+# --error 0x2 --
+
+Solution / Workaround [KF, 13.09.2013]:
+=======================================
+/usr/include/fenv.h will be included from boost/details/fenv.hpp.
+This header redeclares the method
+   extern "C" int fegetround() throw();
+The Intel header (here as example Intel version 12.1,
+but it is analogously for Intel 2013)
+/sw/global/compilers/intel/12.1/composer_xe_2011_sp1.8.273/compiler/include/float.h
+redeclares the above method WITHOUT "throw.
+===> Define an own boost header which uses the same declaration of
+     the method as Intel does.
+     ---> lib/boost/details/fenv.hpp
+
+
+
+********************************************************************************
+Problem [KF, 15.10.2013]:
+=========================
+Rev. 174
+checkBuildprocess.sh
+ZIH_ATLAS_GCC_4_7_1
+All combinations where NetCDF and HDF5 are activated.
+As an example: 013-ZIH_ATLAS_GCC_4_7_1-netcdf-adolc-make.log
+
+  CXXLD    PropagationComplexU
+/sw/global/compilers/gcc/4.7.1/lib/gcc/x86_64-unknown-linux-gnu/4.7.1/../../../../x86_64-unknown-linux-gnu/bin/ld: warning: libmpi.so.0, needed by /sw/global/libraries/hdf5/1.8.6/lib/libhdf5.so, not found (try using -rpath or -rpath-link)
+/sw/global/compilers/gcc/4.7.1/lib/gcc/x86_64-unknown-linux-gnu/4.7.1/../../../../x86_64-unknown-linux-gnu/bin/ld: warning: libopen-rte.so.0, needed by /sw/global/libraries/hdf5/1.8.6/lib/libhdf5.so, not found (try using -rpath or -rpath-link)
+/sw/global/compilers/gcc/4.7.1/lib/gcc/x86_64-unknown-linux-gnu/4.7.1/../../../../x86_64-unknown-linux-gnu/bin/ld: warning: libopen-pal.so.0, needed by /sw/global/libraries/hdf5/1.8.6/lib/libhdf5.so, not found (try using -rpath or -rpath-link)
+
+********************************************************************************
+Problem [KF, 15.10.2013]:
+=========================
+Rev. 174
+checkBuildprocess.sh
+ZIH_ATLAS_GCC_4_7_1
+017-ZIH_ATLAS_GCC_4_7_1-lbfgsb-make.log
+
+../../../src/ScaFES_NewProblem.hpp: In Instanziierung von »void ScaFES::NewProblem<OWNPRBLM, DIM>::traceInit(std::vector<ScaFES::DataField<SS, DIM> >&, const std::vector<CT>&) [mit CT = double; OWNPRBLM = Problem_PropagationComplexU<2ul>; long unsigned int DIM = 2ul]«:
+../../../src/ScaFES_NewProblem.hpp:908:13:   erfordert durch »void ScaFES::NewProblem<OWNPRBLM, DIM>::iterate(const std::vector<CT>&) [mit CT = double; OWNPRBLM = Problem_PropagationComplexU<2ul>; long unsigned int DIM = 2ul]«
+../../../src/ScaFES_NewProblem.hpp:899:5:   erfordert durch »void ScaFES::NewProblem<OWNPRBLM, DIM>::iterate() [mit OWNPRBLM = Problem_PropagationComplexU<2ul>; long unsigned int DIM = 2ul]«
+../../../tests/SystemTests/PropagationComplexU/main.cpp:12:17:   von hier erfordert
+../../../src/ScaFES_NewProblem.hpp:1293:9: Warnung: Variable »timestep« wird nicht verwendet [-Wunused-variable]
+  CXXLD    PropagationComplexU
+
+********************************************************************************
+Problem [KF, 15.10.2013]:
+=========================
+Rev. 174
+checkBuildprocess.sh
+ZIH_ATLAS_GCC_4_7_1
+vi 019-ZIH_ATLAS_GCC_4_7_1-openmp-lbfgsb-make.log
+
+
+    CXX      MotherOptimProblem-main.o
+In file included from ../../../src/ScaFES.hpp:131:0,
+                 from ../../../tests/SystemTests/MotherOptimProblem/main.cpp:1:
+../../../src/ScaFES_OptimProblem.hpp: In Instanziierung von »void ScaFES::OptimProblem<PRBLMTYPE, OPTIMPRBLMTYPE, DIM>::solveLbfgsb() [mit PRBLMTYPE = Problem_MotherOptimProblem<2ul>; OPTIMPRBLMTYPE = OptimProblem_MotherOptimProblem<Problem_MotherOptimProblem<2ul>, 2ul>; long unsigned int DIM = 2ul]«:
+../../../src/ScaFES_OptimProblem.hpp:308:9:   erfordert durch »void ScaFES::OptimProblem<PRBLMTYPE, OPTIMPRBLMTYPE, DIM>::solve(const string&) [mit PRBLMTYPE = Problem_MotherOptimProblem<2ul>; OPTIMPRBLMTYPE = OptimProblem_MotherOptimProblem<Problem_MotherOptimProblem<2ul>, 2ul>; long unsigned int DIM = 2ul; std::string = std::basic_string<char>]«
+../../../tests/SystemTests/MotherOptimProblem/main.cpp:15:41:   von hier erfordert
+../../../src/ScaFES_OptimProblem.hpp:485:31: Warnung: Vergleich zwischen vorzeichenbehafteten und vorzeichenlosen Ganzzahlausdrücken [-Wsign-compare]
+
+********************************************************************************
+Problem [KF, 29.11.2013]:
+=========================
+ScaFES 1.0.0 RC1
+Local system of [FB]
+* gcc-Version 4.6.3
+
+CXX=g++  CXXFLAGS='-O3 -Wall' \
+       ./configure --enable-openmp --enable-netcdf
+------------------------------------------------------------------------
+Configuration:
+==============
+
+  Compiler (CXX):              g++
+  Compiler flags (CXXFLAGS):   -O3 -Wall -std=c++0x
+  Host System Type:            x86_64-unknown-linux-gnu
+  Install path:                /usr/local
+
+  Enabled OpenMP?              yes
+  Enabled NetCDF?              yes
+
+  Create documentation?        no
+
+  See config.h for further configuration information.
+-----------------------------------------------------------------------
+
+make
+make[2]: Betrete Verzeichnis '/home/franz/svn_repo/scafes-1.0.0-RC1/examples'
+Making all in HeatEqnFDM
+make[3]: Betrete Verzeichnis '/home/franz/svn_repo/scafes-1.0.0-RC1/examples/HeatEqnFDM'
+  CXX    HeatEqnFDM-main.o
+In file included from ../../src/ScaFES_Problem.hpp:60:0,
+                 from ../../src/ScaFES.hpp:134,
+                 from ../../examples/HeatEqnFDM/main.cpp:6:
+.../../src/ScaFES_DataField.hpp: In Funktion »double ScaFES::compErrLinfFree(const ScaFES::DataField<double, DIM>&, const ScaFES::DataField<double, DIM>&)«:
+.../../src/ScaFES_DataField.hpp:2259:15: Fehler: expected »+«, »*«, »-«, »&«, »^«, »|«, »&&«, or »||« before »max«
+make[3]: *** [HeatEqnFDM-main.o] Fehler 1
+make[3]: Verlasse Verzeichnis '/home/franz/svn_repo/scafes-1.0.0-RC1/examples/HeatEqnFDM'
+make[2]: *** [all-recursive] Fehler 1
+make[2]: Verlasse Verzeichnis '/home/franz/svn_repo/scafes-1.0.0-RC1/examples'
+make[1]: *** [all-recursive] Fehler 1
+make[1]: Verlasse Verzeichnis '/home/franz/svn_repo/scafes-1.0.0-RC1'
+make: *** [all] Fehler 2
+
+Solution:
+=========
+Compiler supporting OpenMP >= 3.1 is necessary.
+GCC 4.7.0 supports OpenMP >= 3.1
+
+
+********************************************************************************
+Problem [KF, 17.12.2013]:
+=========================
+ScaFES 1.0.0 with ZIH_TAURUS_GCC_4_8_0 on tauruslogin2.
+ScaFES could not write data files in parallel.
+Visit shows bad pictures for NetCDF files created by ScaFES applications
+using more than 1 processes.
+Some part of the solution seems to be ok, the remaining part is not ok
+(values are approx. 10^36).
+
+Reason:
+=======
+NetCDF was not built with parallel support.
+
+Solution:
+=========
+Use the ZIH cluster Atlas and the configuration ZIH_ATLAS_HPCFLIS_NEW.
+
+
+********************************************************************************
+Problem [KF, 10.09.2014]:
+=========================
+scadopt/trunk Rev. 810
+ZIH_KF
+GCC 4.7.1
+Compile error of HeatEqnFDM:
+../../../scafes/ScaFES_Problem.hpp:2395:9: Fehler: keine passende Funktion für
+ Aufruf von »ScaFES::Problem<HeatEqnFdmStencilWidthOne<double, 1ul>, double, 1ul>::evalTypeOneSynchronously(std::string&, ScaFES::Problem<HeatEqnFdmStencilWidthOne<double, 1ul>, double, 1ul>::ScaFES_VectDf<double>&, ScaFES::Problem<HeatEqnFdmStencilWidthOne<double, 1ul>, double, 1ul>::ScaFES_VectDf<double>&, ScaFES::Problem<HeatEqnFdmStencilWidthOne<double, 1ul>, double, 1ul>::ScaFES_VectDf<double>&, ScaFES::Problem<HeatEqnFdmStencilWidthOne<double, 1ul>, double, 1ul>::ScaFES_VectDf<double>&, const std::vector<double>&, std::vector<double>&, int&, short int, <unresolved overloaded function type>, <unresolved overloaded function type>)«
+../../../scafes/ScaFES_Problem.hpp:2395:9: Anmerkung: Kandidat ist:
+../../../scafes/ScaFES_Problem.hpp:3991:13: Anmerkung: void ScaFES::Problem<OWNPRBLM, CT, DIM>::evalTypeOneSynchronously(const string&, ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_VectDf<CT>&, ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_VectDf<CT>&, ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_VectDf<CT>&, ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_VectDf<CT>&, const std::vector<CT>&, const std::vector<CT>&, const int&, const int&, ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_FuncTypeOneToImplement<CT>, ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_FuncTypeOneToImplement<CT>) [with OWNPRBLM = HeatEqnFdmStencilWidthOne<double, 1ul>; CT = double; long unsigned int DIM = 1ul; std::string = std::basic_string<char>; ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_VectDf<CT> = std::vector<ScaFES::DataField<double, 1ul>, std::allocator<ScaFES::DataField<double, 1ul> > >; ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_FuncTypeOneToImplement<CT> = void (HeatEqnFdmStencilWidthOne<double, 1ul>::*)(std::vector<ScaFES::DataField<double,
+1ul>, std::allocator<ScaFES::DataField<double, 1ul> > >&, const std::vector<double>&, ScaFES::Ntuple<int, 1ul>&, const int&)]
+../../../scafes/ScaFES_Problem.hpp:3991:13: Anmerkung:   keine bekannte Umwandlung für Argument 10 von »<unresolved overloaded function type>« nach »ScaFES::Problem<HeatEqnFdmStencilWidthOne<double, 1ul>, double, 1ul>::ScaFES_FuncTypeOneToImplement<double> {aka void (HeatEqnFdmStencilWidthOne<double, 1ul>::*)(std::vector<ScaFES::DataField<double, 1ul>, std::allocator<ScaFES::DataField<double, 1ul> > >&, const std::vector<double>&, ScaFES::Ntuple<int, 1ul>&, const int&)}«
+
+Reason:
+=======
+Source code uses C++11 Alias which seems to not be implemented in
+GCC 4.7.1
+
+Solution:
+=========
+Use a newer version of GCC like 4.8.1 or above.
+
+
+********************************************************************************
+Problem [KF, april 2013]:
+=========================
+* Atlas: ERROR when compiling with
+         GCC_4_7_2 )
+            myCXX='g++' # GCC 4.7.2
+            myCXXFLAGS="-g -mtune=bdver1 -march=bdver1 -O2 -ansi -Wall"
+  Error during compilation:
+make[3]: Entering directory `/home/h1/feldhoff/parrad_branches_2013_04_09b/redesign/tests/bin'
+  CXX    PropagationDoubleScalarEps-main.o
+  CXXLD  PropagationDoubleScalarEps
+PropagationDoubleScalarEps-main.o: In function `boost::archive::detail::oserializer<boost::archive::binary_oarchive, ScaFES::GridGlobal<3ul> >::version() const':
+/home/hpc-flis/modules-amd64/python-extras/20120418/include/boost/archive/detail/oserializer.hpp:128: undefined reference to `boost::serialization::version<ScaFES::GridGlobal<3ul> >::value'
+PropagationDoubleScalarEps-main.o: In function `boost::archive::detail::oserializer<boost::archive::binary_oarchive, ScaFES::Grid<3ul> >::version() const':
+/home/hpc-flis/modules-amd64/python-extras/20120418/include/boost/archive/detail/oserializer.hpp:128: undefined reference to `boost::serialization::version<ScaFES::Grid<3ul> >::value'
+[...]
+collect2: error: ld returned 1 exit status
+make[3]: *** [PropagationDoubleScalarEps] Fehler 1
+
+
+********************************************************************************
+Problem [KF, 22.03.2013]:
+=========================
+ScaFES trunk
+Compiler ICC 13 on Atlas
+   Compiler ERROR: Qualified name is not allowed:
+   Ntuple<TT,NN>(std::vector<TT> const& vec);
+Solution:
+=========
+Include corresponding header before!
+   HERE:          #include<vector>
+
+********************************************************************************
+Problem [KF, 22.03.2013]:
+=========================
+ScaFES trunk
+Compiler ICC 13 on Atlas
+  Compiler ERROR:
+error: the global scope has no "fabs"
+
+Solution:
+=========
+Include corresponding header before!
+   HERE:          #include<cmath>
+
+********************************************************************************
+Problem [KF, 22.03.2013]:
+=========================
+ScaFES trunk
+Compiler ICC 13 on Atlas
+  Compiler ERROR:
+../../scafes/ScaFES_Complex_Operators.hpp(164): error #140: too many arguments in function call
+      if (!(fabs(mRe - rhs.mRe) < 2.2e-15)) {
+Solution:
+=========
+Include corresponding header before!
+   HERE:          #include<cmath>
+
+
+********************************************************************************
+Problem [KF, 22.03.2013]:
+=========================
+ScaFES trunk
+Compiler ICC 13 on Atlas
+  Compiler ERROR:
+../../scafes/ScaFES_Parameters.hpp(155): error: name followed by "::" must be a class or namespace name
+          boost::mpi::communicator const& myWorld() const;
+
+********************************************************************************
+Problem [KF, 22.03.2013]:
+=========================
+ScaFES trunk
+Compiler ICC 13 on Atlas
+  Compiler WARNING:
+../../scafes/ScaFES_Grid.hpp(370): warning #473: returning reference to local temporary
+      return DIM;
+
+
+********************************************************************************
+Problem [KF, 22.03.2013]:
+=========================
+ScaFES trunk
+Compiler ICC 13 on Atlas
+  Compiler WARNING:
+../../scafes/ScaFES_GridPartition.hpp(138): warning #424: extra ";" ignored
+          };
+Solution:
+=========
+    Remove extra semicolon at end of method.
+
+
+********************************************************************************
+Problem [KF, 22.03.2013]:
+=========================
+ScaFES trunk
+Compiler ICC 13 on Atlas
+  Compiler ERROR:
+../../scafes/ScaFES_DataFieldMPI.hpp(386): error: call of an object of a class type without appropriate operator() or conversion functions to pointer-to-function type
+      mIdNeighbour(from.mIdNeighbour);
+      ^
+../../scafes/ScaFES_DataFieldMPI.hpp(387): error: call of an object of a class type without appropriate operator() or conversion functions to pointer-to-function type
+      mGridNeighbourInDir(from.mGridNeighbourInDir);
+      ^
+../../scafes/ScaFES_DataFieldMPI.hpp(390): error: call of an object of a class type without appropriate operator() or conversion functions to pointer-to-function type
+      mvContSend(from.mvContSend);
+      ^
+../../scafes/ScaFES_DataFieldMPI.hpp(391): error: call of an object of a class type without appropriate operator() or conversion functions to pointer-to-function type
+      mvContRecv(from.mvContRecv);
+      ^
+
+********************************************************************************
+Problem [KF, 22.03.2013]:
+=========================
+ScaFES trunk
+Compiler ICC 13 on Atlas
+  Compiler WARNING:
+../../scafes/ScaFES_Problem.hpp(341): warning #473: returning reference to local temporary
+      return mParams.myWorld().size();
+Solution:
+=========
+    Replace const& by a hard copy.
+
+
+
+********************************************************************************
+Problem [KF, 12.11.2014]:
+=========================
+method ScaFES::Communicator::collectVector()
+MPI communication
+memory of global and local arrays.
+memory of global array is only allocated at rank=rankRoot
+
+Problem:
+========
+Memory segmentation fault
+
+Reason:
+=======
+memory of global array is only allocated at rank=rankRoot
+memory of local array is allocated at ALL ranks.
+===> Thus, pass pointer to memory of global array to MPI functions.
+Especially, do not call global[ii] from ALL MPI processes, but only
+from MPI processes rnakRoot.
+
+Solution:
+=========
+Replace BAD implementation by GOOD implementation:
+BAD:
+
+        for (int ii = 0; ii < nElems; ++ii) {
+            collectScalar(vectGlobal[ii], vectLocal[ii],....);
+        }
+
+GOOD:
+        collectVector(vectGlobal, vectLocal,....);
+
+        double* sendbuff = new double[nElems];
+        double* recvbuff = new double[nElems];
+        for (int ii = 0; ii < nElems; ++ii)
+        {
+            sendbuff[ii] = vectGlobal[ii];
+            recvbuff[ii] = 0.0;
+        }
+        MPI_Reduce(sendbuff, recvbuff, N_COMPS, MPI_DOUBLE, MPI_SUM, root,
+                   this->myWorld());
+        for (int ii = 0; ii < nElems; ++ii)
+        {
+            vectGlobal[ii] = recvbuff[ii];
+        }
+        delete[] sendbuff;
+        delete[] recvbuff;
+
+
+********************************************************************************
+Problem [KF, 06.02.2015]:
+=========================
+Taurus
+CUDA 6.5.14 + Intel 2013
+
+feldhoff@tauruslogin2:~/scafes-work-taurus/build> make
+make  all-recursive
+make[1]: Entering directory `/home/h1/feldhoff/scafes-work-taurus/build'
+Making all in scafes
+make[2]: Entering directory `/home/h1/feldhoff/scafes-work-taurus/build/scafes'
+  CXX      ../../scafes/libscafes_la-ScaFES_Dummy.lo
+
+icpc: command line warning #10006: ignoring unknown option '-fverbose'
+In file included from /sw/taurus/libraries/cuda/6.5.14/include/cuda_runtime.h(59),
+                 from ../../scafes/ScaFES_ProblemCuda.cu(0):
+/sw/taurus/libraries/cuda/6.5.14/include/host_config.h(72): error: #error directive: -- unsupported ICC configuration! Only ICC 14.0 on Linux x86_64 is supported!
+  #error -- unsupported ICC configuration! Only ICC 14.0 on Linux x86_64 is supported!
+   ^
+
+In file included from /usr/include/c++/4.4.7/type_traits(35),
+                 from ../../scafes/ScaFES_DataField.hpp(22),
+                 from ../../scafes/ScaFES_ProblemCuda.cu(10):
+/usr/include/c++/4.4.7/c++0x_warning.h(31): error: #error directive: This file requires compiler and library support for the upcoming ISO C++ standard, C++0x. This support is currently experimental, and must be enabled with the -std=c++0x or -std=gnu++0x compiler options.
+  #error This file requires compiler and library support for the upcoming \
+   ^
+
+# --error 0x2 --
+make[2]: *** [../../scafes/ScaFES_ProblemCuda.lo] Fehler 1
+make[2]: Leaving directory `/home/h1/feldhoff/scafes-work-taurus/build/scafes'
+make[1]: *** [all-recursive] Fehler 1
+
+
+********************************************************************************
+Problem [KF, 06.02.2015]:
+=========================
+Taurus
+CUDA 6.5.14 + GCC 4.9.1
+
+
+In file included from /sw/taurus/libraries/cuda/6.5.14/include/cuda_runtime.h:59:0,
+                 from <Kommandozeile>:0:
+/sw/taurus/libraries/cuda/6.5.14/include/host_config.h:82:2: Fehler: #error -- unsupported GNU version! gcc 4.9 and up are not supported!
+ #error -- unsupported GNU version! gcc 4.9 and up are not supported!
+  ^
+# --error 0x1 --
+make[2]: *** [../../scafes/ScaFES_ProblemCuda.lo] Fehler 1
+make[2]: Leaving directory `/home/h1/feldhoff/scafes-work-taurus/build/scafes'
+make[1]: *** [all-recursive] Fehler 1
+make[1]: Leaving directory `/home/h1/feldhoff/scafes-work-taurus/build'
+make: *** [all] Fehler 2
+
+
+
+********************************************************************************
+Problem [KF, 06.02.2015]:
+=========================
+Taurus
+NVCC CUDA 6.5.14
+
+feldhoff@tauruslogin2:~/scafes-work-taurus/scafes> nvcc -std=c++11 -arch=sm_20 -I ../build/scafes/ -c ScaFES_ProblemCuda.cu
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/mpi/communicator.hpp(1612): error: explicit specialization of function "boost::mpi::communicator::send(int, int, const T &) const [with T=boost::mpi::packed_oarchive]" must precede its first use (
+(1127): here)
+
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/mpi/communicator.hpp(1635): error: explicit specialization of function "boost::mpi::communicator::recv(int, int, T &) const [with T=boost::mpi::packed_iarchive]" must precede its first use (
+(1191): here)
+
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/mpi/communicator.hpp(1670): error: explicit specialization of function "boost::mpi::communicator::isend(int, int, const T &) const [with T=boost::mpi::packed_oarchive]" must precede its first use (
+(1276): here)
+
+3 errors detected in the compilation of "/tmp/tmpxft_00004cf2_00000000-4_ScaFES_ProblemCuda.cpp4.ii".
+
+
+
+
+********************************************************************************
+Known Error:
+============
+[KF, 04/14/2015]:
+JUQUEEN_GCC_4_8_1
+with Boost 1.47.0
+scafes trunk rev. 628
+
+>~/scafes/scafes-work/trunk/build $ make
+make  all-recursive
+make[1]: Entering directory `/homea/hdr09/hdr090/scafes/scafes-work/trunk/build'
+Making all in scafes
+make[2]: Entering directory `/homea/hdr09/hdr090/scafes/scafes-work/trunk/build/scafes'
+  CXX    libscafes_la-ScaFES_Dummy.lo
+  CXXLD  libscafes.la
+make[2]: Leaving directory `/homea/hdr09/hdr090/scafes/scafes-work/trunk/build/scafes'
+Making all in examples
+make[2]: Entering directory `/homea/hdr09/hdr090/scafes/scafes-work/trunk/build/examples'
+Making all in HeatEqnFDM
+make[3]: Entering directory `/homea/hdr09/hdr090/scafes/scafes-work/trunk/build/examples/HeatEqnFDM'
+  CXX    HeatEqnFDM-main.o
+In file included from /bgsys/local/boost/1.47.0/boost/shared_ptr.hpp:17:0,
+                 from /bgsys/local/boost/1.47.0/boost/archive/shared_ptr_helper.hpp:25,
+                 from /bgsys/local/boost/1.47.0/boost/archive/binary_iarchive.hpp:63,
+                 from ../.././../scafes/ScaFES_Problem.hpp:55,
+                 from ../.././../scafes/ScaFES.hpp:580,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/bgsys/local/boost/1.47.0/boost/smart_ptr/shared_ptr.hpp: In instantiation of 'boost::shared_ptr<T>& boost::shared_ptr<T>::operator=(const boost::shared_ptr<T>&) [with T = boost::re_detail::named_subexpressions]':
+/bgsys/local/boost/1.47.0/boost/regex/v4/match_results.hpp:549:20:   required from 'void boost::match_results<BidiIterator, Allocator>::set_named_subs(boost::shared_ptr<boost::re_detail::named_subexpressions>) [with BidiIterator = const char*; Allocator = std::allocator<boost::sub_match<const char*> >]'
+/bgsys/local/boost/1.47.0/boost/regex/v4/perl_matcher_common.hpp:203:4:   required from 'bool boost::re_detail::perl_matcher<BidiIterator, Allocator, traits>::match_imp() [with BidiIterator = const char*; Allocator = std::allocator<boost::sub_match<const char*> >; traits = boost::regex_traits<char>]'
+/bgsys/local/boost/1.47.0/boost/regex/v4/perl_matcher_common.hpp:180:21:   required from 'bool boost::re_detail::perl_matcher<BidiIterator, Allocator, traits>::match() [with BidiIterator = const char*; Allocator = std::allocator<boost::sub_match<const char*> >; traits = boost::regex_traits<char>]'
+/bgsys/local/boost/1.47.0/boost/regex/v4/regex_match.hpp:50:25:   required from 'bool boost::regex_match(BidiIterator, BidiIterator, boost::match_results<Iterator, Allocator>&, const boost::basic_regex<charT, traits>&, boost::regex_constants::match_flag_type) [with BidiIterator = const char*; Allocator = std::allocator<boost::sub_match<const char*> >; charT = char; traits = boost::regex_traits<char>; boost::regex_constants::match_flag_type = boost::regex_constants::_match_flags]'
+/bgsys/local/boost/1.47.0/boost/regex/v4/regex_match.hpp:73:66:   required from 'bool boost::regex_match(const charT*, boost::match_results<const charT*, Allocator>&, const boost::basic_regex<charT, traits2>&, boost::regex_constants::match_flag_type) [with charT = char; Allocator = std::allocator<boost::sub_match<const char*> >; traits = boost::regex_traits<char>; boost::regex_constants::match_flag_type = boost::regex_constants::_match_flags]'
+../.././../scafes/ScaFES_Parameters.hpp:1294:61:   required from 'void ScaFES::Parameters::checkParameter(const boost::program_options::variables_map&, const string&, std::vector<_RealType>&, bool) [with TT = int; std::string = std::basic_string<char>]'
+../.././../scafes/ScaFES_Parameters.hpp:543:57:   required from here
+/bgsys/local/boost/1.47.0/boost/smart_ptr/shared_ptr.hpp:301:9: error: use of deleted function 'boost::shared_ptr<boost::re_detail::named_subexpressions>::shared_ptr(const boost::shared_ptr<boost::re_detail::named_subexpressions>&)'
+         this_type(r).swap(*this);
+         ^
+/bgsys/local/boost/1.47.0/boost/smart_ptr/shared_ptr.hpp:164:25: note: 'boost::shared_ptr<boost::re_detail::named_subexpressions>::shared_ptr(const boost::shared_ptr<boost::re_detail::named_subexpressions>&)' is implicitly declared as deleted because 'boost::shared_ptr<boost::re_detail::named_subexpressions>' declares a move constructor or move assignment operator
+ template<class T> class shared_ptr
+                         ^
+In file included from /bgsys/local/boost/1.47.0/boost/regex/v4/regex.hpp:82:0,
+                 from /bgsys/local/boost/1.47.0/boost/regex.hpp:31,
+                 from ../.././../scafes/ScaFES_Parameters.hpp:53,
+                 from ../.././../scafes/ScaFES_Problem.hpp:90,
+                 from ../.././../scafes/ScaFES.hpp:580,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/bgsys/local/boost/1.47.0/boost/regex/v4/match_results.hpp: In instantiation of 'boost::match_results<BidiIterator, Allocator>::match_results(const boost::match_results<BidiIterator, Allocator>&) [with BidiIterator = const char*; Allocator = std::allocator<boost::sub_match<const char*> >]':
+/bgsys/local/boost/1.47.0/boost/regex/v4/perl_matcher_non_recursive.hpp:134:76:   required from 'boost::re_detail::saved_recursion<Results>::saved_recursion(int, const boost::re_detail::re_syntax_base*, Results*) [with Results = boost::match_results<const char*>]'
+/bgsys/local/boost/1.47.0/boost/regex/v4/perl_matcher_non_recursive.hpp:342:4:   required from 'void boost::re_detail::perl_matcher<BidiIterator, Allocator, traits>::push_recursion(int, const boost::re_detail::re_syntax_base*, boost::re_detail::perl_matcher<BidiIterator, Allocator, traits>::results_type*) [with BidiIterator = const char*; Allocator = std::allocator<boost::sub_match<const char*> >; traits = boost::regex_traits<char>; boost::re_detail::perl_matcher<BidiIterator, Allocator, traits>::results_type = boost::match_results<const char*>]'
+/bgsys/local/boost/1.47.0/boost/regex/v4/perl_matcher_non_recursive.hpp:935:127:   required from 'bool boost::re_detail::perl_matcher<BidiIterator, Allocator, traits>::match_endmark() [with BidiIterator = const char*; Allocator = std::allocator<boost::sub_match<const char*> >; traits = boost::regex_traits<char>]'
+/bgsys/local/boost/1.47.0/boost/regex/v4/perl_matcher_non_recursive.hpp:147:7:   required from 'bool boost::re_detail::perl_matcher<BidiIterator, Allocator, traits>::match_all_states() [with BidiIterator = const char*; Allocator = std::allocator<boost::sub_match<const char*> >; traits = boost::regex_traits<char>]'
+/bgsys/local/boost/1.47.0/boost/regex/v4/perl_matcher_common.hpp:323:21:   required from 'bool boost::re_detail::perl_matcher<BidiIterator, Allocator, traits>::match_prefix() [with BidiIterator = const char*; Allocator = std::allocator<boost::sub_match<const char*> >; traits = boost::regex_traits<char>]'
+/bgsys/local/boost/1.47.0/boost/regex/v4/perl_matcher_common.hpp:207:25:   required from 'bool boost::re_detail::perl_matcher<BidiIterator, Allocator, traits>::match_imp() [with BidiIterator = const char*; Allocator = std::allocator<boost::sub_match<const char*> >; traits = boost::regex_traits<char>]'
+/bgsys/local/boost/1.47.0/boost/regex/v4/perl_matcher_common.hpp:180:21:   required from 'bool boost::re_detail::perl_matcher<BidiIterator, Allocator, traits>::match() [with BidiIterator = const char*; Allocator = std::allocator<boost::sub_match<const char*> >; traits = boost::regex_traits<char>]'
+/bgsys/local/boost/1.47.0/boost/regex/v4/regex_match.hpp:50:25:   required from 'bool boost::regex_match(BidiIterator, BidiIterator, boost::match_results<Iterator, Allocator>&, const boost::basic_regex<charT, traits>&, boost::regex_constants::match_flag_type) [with BidiIterator = const char*; Allocator = std::allocator<boost::sub_match<const char*> >; charT = char; traits = boost::regex_traits<char>; boost::regex_constants::match_flag_type = boost::regex_constants::_match_flags]'
+/bgsys/local/boost/1.47.0/boost/regex/v4/regex_match.hpp:73:66:   required from 'bool boost::regex_match(const charT*, boost::match_results<const charT*, Allocator>&, const boost::basic_regex<charT, traits2>&, boost::regex_constants::match_flag_type) [with charT = char; Allocator = std::allocator<boost::sub_match<const char*> >; traits = boost::regex_traits<char>; boost::regex_constants::match_flag_type = boost::regex_constants::_match_flags]'
+../.././../scafes/ScaFES_Parameters.hpp:1294:61:   required from 'void ScaFES::Parameters::checkParameter(const boost::program_options::variables_map&, const string&, std::vector<_RealType>&, bool) [with TT = int; std::string = std::basic_string<char>]'
+../.././../scafes/ScaFES_Parameters.hpp:543:57:   required from here
+/bgsys/local/boost/1.47.0/boost/regex/v4/match_results.hpp:81:130: error: use of deleted function 'boost::shared_ptr<boost::re_detail::named_subexpressions>::shared_ptr(const boost::shared_ptr<boost::re_detail::named_subexpressions>&)'
+       : m_subs(m.m_subs), m_named_subs(m.m_named_subs), m_last_closed_paren(m.m_last_closed_paren), m_is_singular(m.m_is_singular)
+                                                                                                                                  ^
+make[3]: *** [HeatEqnFDM-main.o] Error 1
+make[3]: Leaving directory `/homea/hdr09/hdr090/scafes/scafes-work/trunk/build/examples/HeatEqnFDM'
+make[2]: *** [all-recursive] Error 1
+make[2]: Leaving directory `/homea/hdr09/hdr090/scafes/scafes-work/trunk/build/examples'
+make[1]: *** [all-recursive] Error 1
+make[1]: Leaving directory `/homea/hdr09/hdr090/scafes/scafes-work/trunk/build'
+make: *** [all] Error 2
+
+
+********************************************************************************
+Known Error:
+============
+[KF, 04/14/2015]:
+JUQUEEN_XLC_12_01
+scafes trunk rev. 628
+
+configure:16334: result: yes
+configure:16568: checking whether the Boost::Program_Options library is available
+configure:16602: xlc++ -c -O3 -qlanglvl=extended0x  -I/homea/hdr09/hdr090/scafes/opt/boost_1_57_0/include conftest.cpp >&5
+"/homea/hdr09/hdr090/scafes/opt/boost_1_57_0/include/boost/integer_traits.hpp", line 105.49: 1540-0724 (W) The non-type template argument "2147483648" of type "T" has wrapped.
+configure:16609: $? = 0
+configure:16631: result: yes
+configure:16644: checking for exit in -lboost_program_options
+configure:16679: xlc++ -o conftest -O3 -qlanglvl=extended0x  -I/homea/hdr09/hdr090/scafes/opt/boost_1_57_0/include  -L/homea/hdr09/hdr090/scafes/opt/boost_1_57_0/lib conftest.cpp -lboost_program_options   >&5
+/usr/bin/ld: skipping incompatible /homea/hdr09/hdr090/scafes/opt/boost_1_57_0/lib/libboost_program_options.so when searching for -lboost_program_options
+/usr/bin/ld: skipping incompatible /homea/hdr09/hdr090/scafes/opt/boost_1_57_0/lib/libboost_program_options.a when searching for -lboost_program_options
+/usr/bin/ld: skipping incompatible /usr/lib64/libboost_program_options.so when searching for -lboost_program_options
+/usr/bin/ld: cannot find -lboost_program_options
+configure:16686: $? = 1
+
+
+********************************************************************************
+Known Error:
+============
+[KF, 04/14/2015]:
+        export SCAFESCC_ENABLE_MPI="yes"
+        export SCAFESCC_ENABLE_OPENMP="yes"
+        export SCAFESCC_ENABLE_GMOCK="no"
+        export SCAFESCC_ENABLE_DEBUG_MODE="no"
+        export SCAFESCC_ENABLE_BOOST="yes"
+        export SCAFESCC_ENABLE_BOOST_SERIALIZATION="yes"
+        export SCAFESCC_ENABLE_BOOST_MPI="no"
+        export SCAFESCC_ENABLE_NETCDF="no";
+        export SCAFESCC_ENABLE_ADOLC="no";
+        export SCAFESCC_ENABLE_CUDA="no"
+        export SCAFESCC_ENABLE_VT="no";
+        export SCAFESCC_ENABLE_DOXYGEN="no"
+        export SCAFESCC_ENABLE_GCOV="no"
+        export SCAFESCC_CREATE_SHARED="yes"
+        export SCAFESCC_CREATE_STATIC="no"
+        export SCAFESCC_BUILD_FOR_TARGET=""; #powerpc64-bgq-linux"
+JUQUEEN_GCC_4_8_1
+scafes trunk rev. 628
+  CXXLD  HeatEqnFDM
+/usr/local/bg_soft/gcc/4.8.1/bin/../lib/gcc/powerpc64-bgq-linux/4.8.1/../../../../powerpc64-bgq-linux/bin/ld: attempted static link of dynamic object `../../scafes/.libs/libscafes.so'
+collect2: error: ld returned 1 exit status
+
+
+********************************************************************************
+Known Error:
+============
+[KF, 04/16/2015]:
+BTS_setupsystem.sh JUQUEEN_GCC_4_8_1 no
+scafes trunk rev. 631
+
+configure:17486: result: yes
+configure:17695: checking if optional library MPI is wanted.
+configure:17705: result: yes
+configure:17717: checking for mpig++
+configure:17733: found /bgsys/local/gcc/4.8.1/bin/mpig++
+configure:17744: result: mpig++
+configure:17760: checking whether MPI wrapper compiler supports --show-me
+configure:17805: result: yes
+configure:18250: checking if optional library Boost.MPI is wanted.
+configure:18260: result: yes
+configure:18294: checking whether the Boost::MPI library is available
+configure:18327: mpig++ -c -O0 -g -std=c++11  -I/homea/hdr09/hdr090/scafes/opt/boost_1_57_0/include  -I/bgsys/drivers/ppcfloor/ -I/bgsys/drivers/ppcfloor//comm/include -I/bgsys/drivers/ppcfloor//spi/include -I/bgsys/drivers/ppcfloor//spi/include/kernel/cnk -I/bgsys/drivers/ppcfloor/comm/include conftest.cpp >&5
+configure:18334: $? = 0
+configure:18356: result: yes
+configure:18369: checking for exit in -lboost_mpi
+configure:18404: mpig++ -o conftest -O0 -g -std=c++11  -I/homea/hdr09/hdr090/scafes/opt/boost_1_57_0/include  -I/bgsys/drivers/ppcfloor/ -I/bgsys/drivers/ppcfloor//comm/include -I/bgsys/drivers/ppcfloor//spi/include -I/bgsys/drivers/ppcfloor//spi/include/kernel/cnk -I/bgsys/drivers/ppcfloor/comm/include  -L/homea/hdr09/hdr090/scafes/opt/boost_1_57_0/lib  -L/bgsys/drivers/ppcfloor//spi/lib -L/bgsys/drivers/ppcfloor//comm/lib -Wl,-T -Wl,/bgsys/local/gcc/4.8.1/share/ld-bgq.linkerscript -Wl,-rpath -Wl,/bgsys/local/gcc/4.8.1/powerpc64-bgq-linux/lib64 -Wl,-rpath -Wl,/bgsys/local/gcc/4.8.1/powerpc64-bgq-linux/lib -L/bgsys/drivers/ppcfloor/comm/lib -lmpichcxx-gcc -Wl,-rpath -Wl,/bgsys/drivers/ppcfloor/comm/lib -lmpich-gcc -lopa-gcc -lmpl-gcc -lpami-gcc -lSPI -lSPI_cnk -lrt -lpthread -lstdc++ -lpthread conftest.cpp -lboost_mpi   >&5
+/usr/local/bg_soft/gcc/4.8.1/bin/../lib/gcc/powerpc64-bgq-linux/4.8.1/../../../../powerpc64-bgq-linux/bin/ld: internal error ../../binutils-2.23/ld/ldlang.c 5241
+
+
+
+
+********************************************************************************
+Known Error:
+============
+[KF, 06/01/2015]:
+ZIH_TAURUS_PHASE2_GCC_5_1_0
+scafes trunk rev. 654
+with
+module load boost/1.55.0-gnu4.8
+module load gcc/5.1.0
+
+make[3]: Entering directory `/home/h1/feldhoff/scafes-work-taurus2/trunk/build/examples/HeatEqnFDM'
+  CXX      HeatEqnFDM-main.o
+In file included from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/scoped_ptr.hpp:14:0,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/basic_binary_iprimitive.hpp:47,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/binary_iarchive_impl.hpp:21,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/binary_iarchive.hpp:20,
+                 from ../.././../src/ScaFES_Problem.hpp:55,
+                 from ../.././../src/ScaFES.hpp:406,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/smart_ptr/scoped_ptr.hpp:68:31: Warnung: »template<class> class std::auto_ptr« ist veraltet [-Wdeprecated-declarations]
+     explicit scoped_ptr( std::auto_ptr<T> p ) BOOST_NOEXCEPT : px( p.release() )
+                               ^
+In file included from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/locale_conv.h:41:0,
+                 from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/locale:43,
+                 from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/iomanip:43,
+                 from ../.././../src/ScaFES_Problem.hpp:19,
+                 from ../.././../src/ScaFES.hpp:406,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/unique_ptr.h:49:28: Anmerkung: hier deklariert
+   template<typename> class auto_ptr;
+                            ^
+In file included from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/smart_ptr/shared_ptr.hpp:32:0,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/shared_ptr.hpp:17,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/shared_ptr_helper.hpp:25,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/binary_iarchive.hpp:63,
+                 from ../.././../src/ScaFES_Problem.hpp:55,
+                 from ../.././../src/ScaFES.hpp:406,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/smart_ptr/detail/shared_count.hpp:323:33: Warnung: »template<class> class std::auto_ptr« ist veraltet [-Wdeprecated-declarations]
+     explicit shared_count( std::auto_ptr<Y> & r ): pi_( new sp_counted_impl_p<Y>( r.get() ) )
+                                 ^
+In file included from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/locale_conv.h:41:0,
+                 from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/locale:43,
+                 from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/iomanip:43,
+                 from ../.././../src/ScaFES_Problem.hpp:19,
+                 from ../.././../src/ScaFES.hpp:406,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/unique_ptr.h:49:28: Anmerkung: hier deklariert
+   template<typename> class auto_ptr;
+                            ^
+In file included from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/shared_ptr.hpp:17:0,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/shared_ptr_helper.hpp:25,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/binary_iarchive.hpp:63,
+                 from ../.././../src/ScaFES_Problem.hpp:55,
+                 from ../.././../src/ScaFES.hpp:406,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/smart_ptr/shared_ptr.hpp:247:65: Warnung: »template<class> class std::auto_ptr« ist veraltet [-Wdeprecated-declarations]
+ template< class T, class R > struct sp_enable_if_auto_ptr< std::auto_ptr< T >, R >
+                                                                 ^
+In file included from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/locale_conv.h:41:0,
+                 from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/locale:43,
+                 from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/iomanip:43,
+                 from ../.././../src/ScaFES_Problem.hpp:19,
+                 from ../.././../src/ScaFES.hpp:406,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/unique_ptr.h:49:28: Anmerkung: hier deklariert
+   template<typename> class auto_ptr;
+                            ^
+In file included from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/shared_ptr.hpp:17:0,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/shared_ptr_helper.hpp:25,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/binary_iarchive.hpp:63,
+                 from ../.././../src/ScaFES_Problem.hpp:55,
+                 from ../.././../src/ScaFES.hpp:406,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/smart_ptr/shared_ptr.hpp:446:31: Warnung: »template<class> class std::auto_ptr« ist veraltet [-Wdeprecated-declarations]
+     explicit shared_ptr( std::auto_ptr<Y> & r ): px(r.get()), pn()
+                               ^
+In file included from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/locale_conv.h:41:0,
+                 from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/locale:43,
+                 from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/iomanip:43,
+                 from ../.././../src/ScaFES_Problem.hpp:19,
+                 from ../.././../src/ScaFES.hpp:406,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/unique_ptr.h:49:28: Anmerkung: hier deklariert
+   template<typename> class auto_ptr;
+                            ^
+In file included from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/shared_ptr.hpp:17:0,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/shared_ptr_helper.hpp:25,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/binary_iarchive.hpp:63,
+                 from ../.././../src/ScaFES_Problem.hpp:55,
+                 from ../.././../src/ScaFES.hpp:406,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/smart_ptr/shared_ptr.hpp:459:22: Warnung: »template<class> class std::auto_ptr« ist veraltet [-Wdeprecated-declarations]
+     shared_ptr( std::auto_ptr<Y> && r ): px(r.get()), pn()
+                      ^
+In file included from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/locale_conv.h:41:0,
+                 from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/locale:43,
+                 from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/iomanip:43,
+                 from ../.././../src/ScaFES_Problem.hpp:19,
+                 from ../.././../src/ScaFES.hpp:406,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/unique_ptr.h:49:28: Anmerkung: hier deklariert
+   template<typename> class auto_ptr;
+                            ^
+In file included from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/shared_ptr.hpp:17:0,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/shared_ptr_helper.hpp:25,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/binary_iarchive.hpp:63,
+                 from ../.././../src/ScaFES_Problem.hpp:55,
+                 from ../.././../src/ScaFES.hpp:406,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/smart_ptr/shared_ptr.hpp:525:34: Warnung: »template<class> class std::auto_ptr« ist veraltet [-Wdeprecated-declarations]
+     shared_ptr & operator=( std::auto_ptr<Y> & r )
+                                  ^
+In file included from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/locale_conv.h:41:0,
+                 from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/locale:43,
+                 from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/iomanip:43,
+                 from ../.././../src/ScaFES_Problem.hpp:19,
+                 from ../.././../src/ScaFES.hpp:406,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/unique_ptr.h:49:28: Anmerkung: hier deklariert
+   template<typename> class auto_ptr;
+                            ^
+In file included from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/shared_ptr.hpp:17:0,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/shared_ptr_helper.hpp:25,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/binary_iarchive.hpp:63,
+                 from ../.././../src/ScaFES_Problem.hpp:55,
+                 from ../.././../src/ScaFES.hpp:406,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/smart_ptr/shared_ptr.hpp:534:34: Warnung: »template<class> class std::auto_ptr« ist veraltet [-Wdeprecated-declarations]
+     shared_ptr & operator=( std::auto_ptr<Y> && r )
+                                  ^
+In file included from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/locale_conv.h:41:0,
+                 from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/locale:43,
+                 from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/iomanip:43,
+                 from ../.././../src/ScaFES_Problem.hpp:19,
+                 from ../.././../src/ScaFES.hpp:406,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/unique_ptr.h:49:28: Anmerkung: hier deklariert
+   template<typename> class auto_ptr;
+                            ^
+In file included from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/shared_ptr.hpp:17:0,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/shared_ptr_helper.hpp:25,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/binary_iarchive.hpp:63,
+                 from ../.././../src/ScaFES_Problem.hpp:55,
+                 from ../.././../src/ScaFES.hpp:406,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/smart_ptr/shared_ptr.hpp: In Elementfunktion »boost::shared_ptr<T>& boost::shared_ptr<T>::operator=(std::auto_ptr<_Up>&&)«:
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/smart_ptr/shared_ptr.hpp:536:38: Warnung: »template<class> class std::auto_ptr« ist veraltet [-Wdeprecated-declarations]
+         this_type( static_cast< std::auto_ptr<Y> && >( r ) ).swap( *this );
+                                      ^
+In file included from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/locale_conv.h:41:0,
+                 from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/locale:43,
+                 from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/iomanip:43,
+                 from ../.././../src/ScaFES_Problem.hpp:19,
+                 from ../.././../src/ScaFES.hpp:406,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/unique_ptr.h:49:28: Anmerkung: hier deklariert
+   template<typename> class auto_ptr;
+                            ^
+In file included from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/serialization/detail/shared_ptr_132.hpp:29:0,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/serialization/shared_ptr_132.hpp:35,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/shared_ptr_helper.hpp:29,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/binary_iarchive.hpp:63,
+                 from ../.././../src/ScaFES_Problem.hpp:55,
+                 from ../.././../src/ScaFES.hpp:406,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/serialization/detail/shared_count_132.hpp: Im globalen Gültigkeitsbereich:
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/serialization/detail/shared_count_132.hpp:371:32: Warnung: »template<class> class std::auto_ptr« ist veraltet [-Wdeprecated-declarations]
+     explicit shared_count(std::auto_ptr<Y> & r): pi_(
+                                ^
+In file included from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/locale_conv.h:41:0,
+                 from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/locale:43,
+                 from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/iomanip:43,
+                 from ../.././../src/ScaFES_Problem.hpp:19,
+                 from ../.././../src/ScaFES.hpp:406,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/unique_ptr.h:49:28: Anmerkung: hier deklariert
+   template<typename> class auto_ptr;
+                            ^
+In file included from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/serialization/shared_ptr_132.hpp:35:0,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/shared_ptr_helper.hpp:29,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/binary_iarchive.hpp:63,
+                 from ../.././../src/ScaFES_Problem.hpp:55,
+                 from ../.././../src/ScaFES.hpp:406,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/serialization/detail/shared_ptr_132.hpp:202:30: Warnung: »template<class> class std::auto_ptr« ist veraltet [-Wdeprecated-declarations]
+     explicit shared_ptr(std::auto_ptr<Y> & r): px(r.get()), pn()
+                              ^
+In file included from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/locale_conv.h:41:0,
+                 from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/locale:43,
+                 from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/iomanip:43,
+                 from ../.././../src/ScaFES_Problem.hpp:19,
+                 from ../.././../src/ScaFES.hpp:406,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/unique_ptr.h:49:28: Anmerkung: hier deklariert
+   template<typename> class auto_ptr;
+                            ^
+In file included from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/serialization/shared_ptr_132.hpp:35:0,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/shared_ptr_helper.hpp:29,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/binary_iarchive.hpp:63,
+                 from ../.././../src/ScaFES_Problem.hpp:55,
+                 from ../.././../src/ScaFES.hpp:406,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/serialization/detail/shared_ptr_132.hpp:226:33: Warnung: »template<class> class std::auto_ptr« ist veraltet [-Wdeprecated-declarations]
+     shared_ptr & operator=(std::auto_ptr<Y> & r)
+                                 ^
+In file included from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/locale_conv.h:41:0,
+                 from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/locale:43,
+                 from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/iomanip:43,
+                 from ../.././../src/ScaFES_Problem.hpp:19,
+                 from ../.././../src/ScaFES.hpp:406,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/unique_ptr.h:49:28: Anmerkung: hier deklariert
+   template<typename> class auto_ptr;
+                            ^
+In file included from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/bind/mem_fn.hpp:25:0,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/mem_fn.hpp:22,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/function/detail/prologue.hpp:18,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/function/function_template.hpp:13,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/function/detail/maybe_include.hpp:18,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/function/function1.hpp:11,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/program_options/value_semantic.hpp:13,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/program_options/options_description.hpp:13,
+                 from /sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/program_options.hpp:15,
+                 from ../.././../src/ScaFES_Parameters.hpp:44,
+                 from ../.././../src/ScaFES_Problem.hpp:90,
+                 from ../.././../src/ScaFES.hpp:406,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/get_pointer.hpp:27:40: Warnung: »template<class> class std::auto_ptr« ist veraltet [-Wdeprecated-declarations]
+ template<class T> T * get_pointer(std::auto_ptr<T> const& p)
+                                        ^
+In file included from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/locale_conv.h:41:0,
+                 from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/locale:43,
+                 from /sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/iomanip:43,
+                 from ../.././../src/ScaFES_Problem.hpp:19,
+                 from ../.././../src/ScaFES.hpp:406,
+                 from ../.././../examples/HeatEqnFDM/main.cpp:7:
+/sw/global/compilers/gcc/5.1.0/include/c++/5.1.0/bits/unique_ptr.h:49:28: Anmerkung: hier deklariert
+   template<typename> class auto_ptr;
+                            ^
+  CXXLD    HeatEqnFDM
+HeatEqnFDM-main.o: In function `boost::program_options::typed_value<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, char>::xparse(boost::any&, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&) const':
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/program_options/detail/value_semantic.hpp:170: undefined reference to `boost::program_options::validate(boost::any&, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >*, int)'
+HeatEqnFDM-main.o: In function `void boost::archive::save_access::save_primitive<boost::archive::binary_oarchive, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >(boost::archive::binary_oarchive&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)':
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/detail/oserializer.hpp:88: undefined reference to `boost::archive::basic_binary_oprimitive<boost::archive::binary_oarchive, char, std::char_traits<char> >::save(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'
+HeatEqnFDM-main.o: In function `boost::program_options::validation_error::validation_error(boost::program_options::validation_error::kind_t, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, int)':
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/program_options/errors.hpp:372: undefined reference to `boost::program_options::validation_error::get_template[abi:cxx11](boost::program_options::validation_error::kind_t)'
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/program_options/errors.hpp:372: undefined reference to `boost::program_options::error_with_option_name::error_with_option_name(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, int)'
+HeatEqnFDM-main.o: In function `std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > boost::program_options::to_internal<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >(std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&)':
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/program_options/detail/convert.hpp:79: undefined reference to `boost::program_options::to_internal(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'
+HeatEqnFDM-main.o: In function `boost::program_options::basic_command_line_parser<char>::basic_command_line_parser(int, char const* const*)':
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/program_options/detail/parsers.hpp:43: undefined reference to `boost::program_options::detail::cmdline::cmdline(std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&)'
+HeatEqnFDM-main.o: In function `void boost::archive::load_access::load_primitive<boost::archive::binary_iarchive, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >(boost::archive::binary_iarchive&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&)':
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/detail/iserializer.hpp:107: undefined reference to `boost::archive::basic_binary_iprimitive<boost::archive::binary_iarchive, char, std::char_traits<char> >::load(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&)'
+HeatEqnFDM-main.o: In function `void boost::archive::save_access::save_primitive<boost::archive::binary_oarchive, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >(boost::archive::binary_oarchive&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)':
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/archive/detail/oserializer.hpp:88: undefined reference to `boost::archive::basic_binary_oprimitive<boost::archive::binary_oarchive, char, std::char_traits<char> >::save(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'
+HeatEqnFDM-main.o: In function `boost::program_options::typed_value<double, char>::name() const':
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/program_options/detail/value_semantic.hpp:19: undefined reference to `boost::program_options::arg[abi:cxx11]'
+HeatEqnFDM-main.o: In function `boost::program_options::typed_value<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, char>::name() const':
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/program_options/detail/value_semantic.hpp:19: undefined reference to `boost::program_options::arg[abi:cxx11]'
+HeatEqnFDM-main.o: In function `boost::program_options::typed_value<int, char>::name() const':
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/program_options/detail/value_semantic.hpp:19: undefined reference to `boost::program_options::arg[abi:cxx11]'
+HeatEqnFDM-main.o: In function `void boost::program_options::validate<double, char>(boost::any&, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&, double*, long)':
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/program_options/detail/value_semantic.hpp:92: undefined reference to `boost::program_options::invalid_option_value::invalid_option_value(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'
+HeatEqnFDM-main.o: In function `void boost::program_options::validate<int, char>(boost::any&, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&, int*, long)':
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/program_options/detail/value_semantic.hpp:92: undefined reference to `boost::program_options::invalid_option_value::invalid_option_value(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'
+HeatEqnFDM-main.o: In function `boost::program_options::variables_map::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const':
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/program_options/variables_map.hpp:155: undefined reference to `boost::program_options::abstract_variables_map::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const'
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/program_options/variables_map.hpp:155: undefined reference to `boost::program_options::abstract_variables_map::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const'
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/program_options/variables_map.hpp:155: undefined reference to `boost::program_options::abstract_variables_map::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const'
+HeatEqnFDM-main.o: In function `ScaFES::Parameters::Parameters(int, char**)':
+/home/feldhoff/scafes-work-taurus2/trunk/build/examples/HeatEqnFDM/../.././../src/ScaFES_Parameters.hpp:444: undefined reference to `boost::program_options::options_description::options_description(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, unsigned int, unsigned int)'
+HeatEqnFDM-main.o: In function `boost::program_options::variables_map::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const':
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/program_options/variables_map.hpp:155: undefined reference to `boost::program_options::abstract_variables_map::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const'
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/program_options/variables_map.hpp:155: undefined reference to `boost::program_options::abstract_variables_map::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const'
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/program_options/variables_map.hpp:155: undefined reference to `boost::program_options::abstract_variables_map::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const'
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/program_options/variables_map.hpp:155: undefined reference to `boost::program_options::abstract_variables_map::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const'
+/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/program_options/variables_map.hpp:155: undefined reference to `boost::program_options::abstract_variables_map::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const'
+HeatEqnFDM-main.o:/sw/taurus/libraries/boost/1.55.0-gnu4.8/include/boost/program_options/variables_map.hpp:155: more undefined references to `boost::program_options::abstract_variables_map::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const' follow
+HeatEqnFDM-main.o:(.rodata._ZTVN5boost16exception_detail19error_info_injectorINS_15program_options20invalid_option_valueEEE[_ZTVN5boost16exception_detail19error_info_injectorINS_15program_options20invalid_option_valueEEE]+0x30): undefined reference to `boost::program_options::error_with_option_name::substitute_placeholders(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const'
+HeatEqnFDM-main.o:(.rodata._ZTVN5boost16exception_detail10clone_implINS0_19error_info_injectorINS_15program_options20invalid_option_valueEEEEE[_ZTVN5boost16exception_detail10clone_implINS0_19error_info_injectorINS_15program_options20invalid_option_valueEEEEE]+0x38): undefined reference to `boost::program_options::error_with_option_name::substitute_placeholders(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const'
+HeatEqnFDM-main.o:(.rodata._ZTVN5boost16exception_detail19error_info_injectorINS_15program_options16validation_errorEEE[_ZTVN5boost16exception_detail19error_info_injectorINS_15program_options16validation_errorEEE]+0x30): undefined reference to `boost::program_options::error_with_option_name::substitute_placeholders(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const'
+HeatEqnFDM-main.o:(.rodata._ZTVN5boost16exception_detail10clone_implINS0_19error_info_injectorINS_15program_options16validation_errorEEEEE[_ZTVN5boost16exception_detail10clone_implINS0_19error_info_injectorINS_15program_options16validation_errorEEEEE]+0x38): undefined reference to `boost::program_options::error_with_option_name::substitute_placeholders(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const'
+HeatEqnFDM-main.o:(.rodata._ZTVN5boost15program_options16validation_errorE[_ZTVN5boost15program_options16validation_errorE]+0x30): undefined reference to `boost::program_options::error_with_option_name::substitute_placeholders(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const'
+HeatEqnFDM-main.o:(.rodata._ZTVN5boost15program_options20invalid_option_valueE[_ZTVN5boost15program_options20invalid_option_valueE]+0x30): more undefined references to `boost::program_options::error_with_option_name::substitute_placeholders(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const' follow
+HeatEqnFDM-main.o:(.rodata._ZTVN5boost15program_options11typed_valueIicEE[_ZTVN5boost15program_options11typed_valueIicEE]+0x38): undefined reference to `boost::program_options::value_semantic_codecvt_helper<char>::parse(boost::any&, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&, bool) const'
+HeatEqnFDM-main.o:(.rodata._ZTVN5boost15program_options11typed_valueINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEcEE[_ZTVN5boost15program_options11typed_valueINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEcEE]+0x38): undefined reference to `boost::program_options::value_semantic_codecvt_helper<char>::parse(boost::any&, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&, bool) const'
+HeatEqnFDM-main.o:(.rodata._ZTVN5boost15program_options11typed_valueIdcEE[_ZTVN5boost15program_options11typed_valueIdcEE]+0x38): undefined reference to `boost::program_options::value_semantic_codecvt_helper<char>::parse(boost::any&, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&, bool) const'
+collect2: error: ld returned 1 exit status
+make[3]: *** [HeatEqnFDM] Fehler 1
+make[3]: Leaving directory `/home/h1/feldhoff/scafes-work-taurus2/trunk/build/examples/HeatEqnFDM'
+make[2]: *** [all-recursive] Fehler 1
+make[2]: Leaving directory `/home/h1/feldhoff/scafes-work-taurus2/trunk/build/examples'
+make[1]: *** [all-recursive] Fehler 1
+make[1]: Leaving directory `/home/h1/feldhoff/scafes-work-taurus2/trunk/build'
+make: *** [all] Fehler 2
+
+
+********************************************************************************
+Known Error:
+============
+[KF, 06/01/2015]:
+ZIH_TAURUS_PHASE2_GCC_5_1_0
+scafes trunk rev. 654
+with
+module load boost/1.57
+module load gcc/4.9.1
+-bash-4.1$ ldd a.out
+        linux-vdso.so.1 =>  (0x00007fff5ed3f000)
+        libboost_regex.so.1.57.0 => /sw/taurus/libraries/boost/1.57.0-intel2013-sp1/lib/libboost_regex.so.1.57.0 (0x00007f5404fce000)
+        libboost_program_options.so.1.57.0 => /sw/taurus/libraries/boost/1.57.0-intel2013-sp1/lib/libboost_program_options.so.1.57.0 (0x00007f5404d2c000)
+        libboost_serialization.so.1.57.0 => /sw/taurus/libraries/boost/1.57.0-intel2013-sp1/lib/libboost_serialization.so.1.57.0 (0x00007f5404a9d000)
+        libboost_mpi.so.1.57.0 => /sw/taurus/libraries/boost/1.57.0-intel2013-sp1/lib/libboost_mpi.so.1.57.0 (0x00007f5404866000)
+        libmpi_cxx.so.1 => /opt/mpi/bullxmpi/1.2.8.4/lib/libmpi_cxx.so.1 (0x00007f540464c000)
+        libmpi.so.1 => /opt/mpi/bullxmpi/1.2.8.4/lib/libmpi.so.1 (0x00007f540429e000)
+        libdl.so.2 => /lib64/libdl.so.2 (0x00000037fa000000)
+        libnuma.so.1 => /usr/lib64/libnuma.so.1 (0x0000003803000000)
+        librt.so.1 => /lib64/librt.so.1 (0x00000037fa400000)
+        libnsl.so.1 => /lib64/libnsl.so.1 (0x0000003808000000)
+        libutil.so.1 => /lib64/libutil.so.1 (0x0000003806c00000)
+        libm.so.6 => /lib64/libm.so.6 (0x00000037f9800000)
+        libstdc++.so.6 => /sw/global/compilers/gcc/4.9.1/lib64/libstdc++.so.6 (0x00007f5403f7d000)
+        libgcc_s.so.1 => /sw/global/compilers/gcc/4.9.1/lib64/libgcc_s.so.1 (0x00007f5403d67000)
+        libpthread.so.0 => /lib64/libpthread.so.0 (0x00000037f9c00000)
+        libc.so.6 => /lib64/libc.so.6 (0x00000037f9400000)
+        libicuuc.so.42 => /usr/lib64/libicuuc.so.42 (0x0000003807000000)
+        libicui18n.so.42 => /usr/lib64/libicui18n.so.42 (0x0000003807800000)
+        libicudata.so.42 => /usr/lib64/libicudata.so.42 (0x000000380ec00000)
+        libimf.so => /sw/global/compilers/intel/2013/composer_xe_2013_sp1/lib/intel64/libimf.so (0x00007f54038a7000)
+        libsvml.so => /sw/global/compilers/intel/2013/composer_xe_2013_sp1/lib/intel64/libsvml.so (0x00007f5402e4c000)
+        libirng.so => /sw/global/compilers/intel/2013/composer_xe_2013_sp1/lib/intel64/libirng.so (0x00007f5402c44000)
+        libintlc.so.5 => /sw/global/compilers/intel/2013/composer_xe_2013_sp1/lib/intel64/libintlc.so.5 (0x00007f54029ee000)
+        /lib64/ld-linux-x86-64.so.2 (0x00000037f9000000)
+
+
+sbatch ./011-run-HeatEqnOne3D-ts20-adolc_no-asy...
+
+ 23 srun: debug:  In MPIR_Breakpoint
+ 24 /home/h1/feldhoff/scafes-work-taurus2/trunk/./a.out: error while loading shared libraries: libicuuc.so.42: cannot open shared obj    ect file: No such file or directory
+ 25 /home/h1/feldhoff/scafes-work-taurus2/trunk/./a.out: error while loading shared libraries: libicuuc.so.42: cannot open shared obj    ect file: No such file or directory
+ 26 srun: debug:  task 0 done
+ 27 srun: debug:  task 1 done
+ 28 srun: Received task exit notification for 2 tasks (status=0x7f00).
+ 29 srun: error: taurusi6376: tasks 0-1: Exited with exit code 127
+ 30 srun: First task exited. Terminating job in 600s.
+ 31 srun: debug:  IO thread exiting
+
+Reason:
+======
+libicuuc.so.42 is not available on compute nodes, but only on login node.
+This library is needed by boost(?!).
+
+
+
+================================================================================
+[KF, 06/08/2015]
+scafes trunk rev. 674
+ATLAS_PGI_15_1
+
+Question:
+=========
+  CXX      HeatEqnFDM-main.o
+pgc++-Warning-Unknown switch: -fopenmp
+pgc++-Warning-Unknown switch: -fopenmp
+  CXXLD    HeatEqnFDM
+pgc++-Warning-Unknown switch: -fopenmp
+pgc++-Warning-Unknown switch: -pthread
+pgc++-Warning-Unknown switch: -fopenmp
+make[2]: Leaving directory `/fastfs/zihforschung/jenkins3/workspace/ScaFES/SCAFES_ATLAS_COMPILETESTS/CONFIG/ZIH_ATLAS_GCC_4_9_1/label/ZIH_Atlas_ScaFES/software_trunk/build/examples/HeatEqnFDM'
+Making check in EMFDTD
+make[2]: Entering directory `/fastfs/zihforschung/jenkins3/workspace/ScaFES/SCAFES_ATLAS_COMPILETESTS/CONFIG/ZIH_ATLAS_GCC_4_9_1/label/ZIH_Atlas_ScaFES/software_trunk/build/examples/EMFDTD'
+  CXX      EMFDTDsimulate-simulate.o
+pgc++-Warning-Unknown switch: -fopenmp
+"../.././../examples/EMFDTD/sources/ModulatedGaussianSource.hpp", line 34: warning:
+          extra ";" ignored
+      };
+       ^
+
+"../.././../examples/EMFDTD/EMFDTD.hpp", line 216: warning: extra ";" ignored
+      };
+       ^
+
+"../.././../examples/EMFDTD/EMFDTD.hpp", line 469: warning: statement is
+          unreachable
+          if (world.rank()==0) {
+          ^
+          detected during:
+            instantiation of "std::vector<CT, std::allocator<CT>> EMFDTDng<CT,
+                      ForwardOnly>::load_reference(const std::string &, const
+                      unsigned int &) [with CT=double, ForwardOnly=true]" at
+                      line 145
+            instantiation of "EMFDTDng<CT, ForwardOnly>::EMFDTDng(const
+                      ScaFES::Parameters &, const ScaFES::GridGlobal<3UL> &,
+                      const EMFDTDng<CT, ForwardOnly>::PTree &) [with
+                      CT=double, ForwardOnly=true]" at line 29 of
+                      "../.././../examples/EMFDTD/simulate.cpp"
+
+pgc++-Warning-Unknown switch: -fopenmp
+"../.././../examples/EMFDTD/EMFDTD.hpp", line 470: warning: statement is
+          unreachable
+          if (world.rank()==0) {
+          ^
+          detected during:
+            instantiation of "std::vector<CT, std::allocator<CT>> EMFDTDng<CT,
+                      ForwardOnly>::load_reference(const std::string &, const
+                      unsigned int &) [with CT=double, ForwardOnly=true]" at
+                      line 145
+            instantiation of "EMFDTDng<CT, ForwardOnly>::EMFDTDng(const
+                      ScaFES::Parameters &, const ScaFES::GridGlobal<3UL> &,
+                      const EMFDTDng<CT, ForwardOnly>::PTree &) [with
+                      CT=double, ForwardOnly=true]" at line 29 of
+                      "../.././../examples/EMFDTD/simulate.cpp"
+
+  CXXLD    EMFDTDsimulate
+pgc++-Warning-Unknown switch: -fopenmp
+pgc++-Warning-Unknown switch: -pthread
+pgc++-Warning-Unknown switch: -fopenmp
+
+
+CXX      HeatEqnFdmStencilWidthOne1D-main1D.o
+  CXX      HeatEqnFdmStencilWidthOne2D-main2D.o
+  CXX      HeatEqnFdmStencilWidthOne3D-main3D.o
+pgc++-Warning-Unknown switch: -fopenmp
+pgc++-Warning-Unknown switch: -fopenmp
+pgc++-Warning-Unknown switch: -fopenmp
+"../../.././../tests/system/HeatEqnFdmStencilWidthOne/main1D.cpp", line 48: warning:
+          last line of file ends without a newline
+  }
+   ^
+
+"../../.././../src/ScaFES_Ntuple.hpp", line 275: warning: pointless comparison
+          of unsigned integer with zero
+      for (std::size_t iii = 0; iii < NN; ++iii)
+                                    ^
+          detected during:
+            instantiation of
+                      "ScaFES::Ntuple<TT, NN>::Ntuple() [with TT=int, NN=0UL]"
+                      at line 690 of "../../.././../src/ScaFES_GridGlobal.hpp"
+            instantiation of "void
+                      ScaFES::GridGlobal<DIM>::searchNeighbours(const int &)
+                      [with DIM=1UL]" at line 780 of
+                      "../../.././../src/ScaFES_GridGlobal.hpp"
+            instantiation of "void ScaFES::GridGlobal<DIM>::searchNeighbours()
+                      [with DIM=1UL]" at line 845 of
+                      "../../.././../src/ScaFES_GridGlobal.hpp"
+            instantiation of "void
+                      ScaFES::GridGlobal<DIM>::initDependentMembers() [with
+                      DIM=1UL]" at line 405 of
+                      "../../.././../src/ScaFES_GridGlobal.hpp"
+            instantiation of "ScaFES::GridGlobal<DIM>::GridGlobal(const
+                      ScaFES::Parameters &) [with DIM=1UL]" at line 11 of
+                      "../../.././../tests/system/HeatEqnFdmStencilWidthOne/mai
+                      n1D.cpp"
+
+"../../.././../src/ScaFES_Ntuple.hpp", line 650: warning: pointless comparison
+          of unsigned integer with zero
+          if (NN - 1 > iii)
+                     ^
+          detected during:
+            instantiation of "std::ostream &ScaFES::operator<<(std::ostream &,
+                      const ScaFES::Ntuple<TT, NN> &) [with TT=int, NN=1UL]"
+                      at line 775 of "../../.././../src/ScaFES_DataField.hpp"
+            instantiation of "void ScaFES::DataField<CT,
+                      DIM>::initDependentMembers() [with CT=adouble, DIM=1UL]"
+                      at line 631 of "../../.././../src/ScaFES_DataField.hpp"
+            instantiation of "ScaFES::DataField<CT, DIM>::DataField(const
+                      std::string &, const ScaFES::Parameters &, const
+                      ScaFES::GridGlobal<DIM> &, const ScaFES::Grid<DIM> &,
+                      const int &, CT *const &, const int &, const
+                      ScaFES::GridSub<DIM> &, const int &, const
+                      ScaFES::WriteHowOften &) [with CT=adouble, DIM=1UL]" at
+                      line 2100 of "../../.././../src/ScaFES_Problem.hpp"
+            instantiation of "void ScaFES::Problem<OWNPRBLM, CT,
+                      DIM>::copyDataFieldStructure(ScaFES::Problem<OWNPRBLM,
+                      CT, DIM>::ScaFES_VectDf<TT> &, const
+                      ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_VectDf<CT> &,
+                      const std::vector<TT, std::allocator<TT>> &) [with
+                      OWNPRBLM=HeatEqnFdmStencilWidthOne<double, 1UL>,
+                      CT=double, DIM=1UL, TT=adouble]" at line 4970 of
+                      "../../.././../src/ScaFES_Problem.hpp"
+            instantiation of "void ScaFES::Problem<OWNPRBLM, CT,
+                      DIM>::traceTypeTwo(const std::string &,
+                      ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_VectDf<CT> &,
+                      ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_VectDf<CT> &,
+                      const ScaFES::Problem<OWNPRBLM, CT,
+                      DIM>::ScaFES_VectDf<CT> &, const
+                      ScaFES::Problem<OWNPRBLM, CT, DIM>::ScaFES_VectDf<CT> &,
+                      const int &, const int &, const int &, const int &,
+                      ScaFES::Problem<OWNPRBLM, CT,
+                      DIM>::ScaFES_FuncTypeTwoToImplement<TT>,
+                      ScaFES::Problem<OWNPRBLM, CT,
+                      DIM>::ScaFES_FuncTypeTwoToImplement<TT>) [with
+                      OWNPRBLM=HeatEqnFdmStencilWidthOne<double, 1UL>,
+                      CT=double, DIM=1UL, TT=adouble]" at line 4729 of
+                      "../../.././../src/ScaFES_Problem.hpp"
+            instantiation of "void ScaFES::Problem<OWNPRBLM, CT,
+                      DIM>::traceUpdatePhase(const int &) [with
+                      OWNPRBLM=HeatEqnFdmStencilWidthOne<double, 1UL>,
+                      CT=double, DIM=1UL]" at line 2250 of
+                      "../../.././../src/ScaFES_Problem.hpp"
+            instantiation of "void ScaFES::Problem<OWNPRBLM, CT,
+                      DIM>::iterateOverTime() [with
+                      OWNPRBLM=HeatEqnFdmStencilWidthOne<double, 1UL>,
+                      CT=double, DIM=1UL]" at line 46 of
+                      "../../.././../tests/system/HeatEqnFdmStencilWidthOne/mai
+                      n1D.cpp"
+
+
+================================================================================
+[KF, 06/09/2015]
+NVCC
+Taurus
+CUDA
+Intel 2015
+
+> nvcc --keep -ccbin=/sw/global/compilers/intel/2015/bin/icc --compiler-options="-I.././../src -I../src -I. -I.././../src -I.. --std=c++11"  .././../src/ScaFES_ProblemCuda.cu
+In file included from /sw/taurus/libraries/cuda/6.5.14/include/cuda_runtime.h(59),
+                 from .././../src/ScaFES_ProblemCuda.cu(0):
+/sw/taurus/libraries/cuda/6.5.14/include/host_config.h(72): error: #error directive: -- unsupported ICC configuration! Only ICC 14.0 on Linux x86_64 is supported!
+  #error -- unsupported ICC configuration! Only ICC 14.0 on Linux x86_64 is supported!
+   ^
+
+
+================================================================================
+[KF, 06/12/2015]
+scafes trunk rev. 680
+ZIH_ATLAS_GCC_5_1_0
+with Boost enabled:
+export SCAFESCC_ENABLE_BOOST="yes"
+export SCAFESCC_ENABLE_BOOST_SERIALIZATION="yes"
+export SCAFESCC_ENABLE_BOOST_MPI="yes"
+
+make[2]: Entering directory `/fastfs/zihforschung/jenkins3/workspace/ScaFES/SCAFES_ATLAS_COMPILETESTS/CONFIG/ZIH_ATLAS_GCC_5_1_0/label/ZIH_Atlas_ScaFES/software_trunk/build/examples'
+Making all in HeatEqnFDM
+make[3]: Entering directory `/fastfs/zihforschung/jenkins3/workspace/ScaFES/SCAFES_ATLAS_COMPILETESTS/CONFIG/ZIH_ATLAS_GCC_5_1_0/label/ZIH_Atlas_ScaFES/software_trunk/build/examples/HeatEqnFDM'
+/bin/sh ../../libtool  --tag=CXX   --mode=link g++  -DNDEBUG -Wall -Wextra -O3 -g -mtune=bdver1 -march=bdver1 -std=c++11    -o HeatEqnFDM HeatEqnFDM-main.o ../../src/libscafes.la -L/sw/global/libraries/boost/1.54//lib -lboost_program_options -lboost_regex -lboost_serialization -L/sw/atlas/libraries/openmpi/1.6.4/x86_64/lib -lmpi_cxx -lmpi -ldl -lm -lnuma -Wl,--export-dynamic -lrt -lnsl -lutil -lm -ldl -lboost_mpi -fopenmp -L/sw/global/libraries/netcdf/4.1.3-intel2013/lib -lnetcdf -L/sw/atlas/libraries/adolc/2.4.1/lib -ladolc
+libtool: link: g++ -DNDEBUG -Wall -Wextra -O3 -g -mtune=bdver1 -march=bdver1 -std=c++11 -o .libs/HeatEqnFDM HeatEqnFDM-main.o -Wl,--export-dynamic -fopenmp  ../../src/.libs/libscafes.so /sw/global/compilers/gcc/5.1.0/lib/../lib64/libstdc++.so -L/sw/global/libraries/boost/1.54//lib -lboost_program_options -lboost_regex -lboost_serialization -L/sw/atlas/libraries/openmpi/1.6.4/x86_64/lib /sw/atlas/libraries/openmpi/1.6.4/x86_64/lib/libmpi_cxx.so -L/sw/atlas/sources/libraries/openmpi/openmpi-1.6.4/opal/mca/hwloc/hwloc132/hwloc/src /sw/atlas/libraries/openmpi/1.6.4/x86_64/lib/libmpi.so -lnuma -lnsl -lutil -ldl -lboost_mpi -L/sw/global/libraries/netcdf/4.1.3-intel2013/lib /sw/global/libraries/netcdf/4.1.3-intel2013/lib/libnetcdf.so -L/usr/lib64/lib /sw/global/libraries/hdf5/1.8.10-intel2013/lib/libhdf5_hl.so /sw/global/libraries/hdf5/1.8.10-intel2013/lib/libhdf5.so -lrt -lz -L/sw/atlas/libraries/adolc/2.4.1/lib /sw/atlas/libraries/adolc/2.4.1/lib64/libadolc.so /sw/global/compilers/gcc/4.7.1/lib/../lib64/libstdc++.so -lm -pthread -fopenmp -Wl,-rpath -Wl,/fastfs/zihforschung/jenkins3/workspace/ScaFES/SCAFES_ATLAS_COMPILETESTS/CONFIG/ZIH_ATLAS_GCC_5_1_0/label/ZIH_Atlas_ScaFES/software_trunk/software/lib -Wl,-rpath -Wl,/sw/global/compilers/gcc/5.1.0/lib/../lib64 -Wl,-rpath -Wl,/sw/atlas/libraries/openmpi/1.6.4/x86_64/lib -Wl,-rpath -Wl,/sw/global/libraries/netcdf/4.1.3-intel2013/lib -Wl,-rpath -Wl,/sw/global/libraries/hdf5/1.8.10-intel2013/lib -Wl,-rpath -Wl,/sw/atlas/libraries/adolc/2.4.1/lib64 -Wl,-rpath -Wl,/sw/global/compilers/gcc/4.7.1/lib/../lib64
+/sw/global/compilers/gcc/5.1.0/lib/gcc/x86_64-unknown-linux-gnu/5.1.0/../../../../x86_64-unknown-linux-gnu/bin/ld: /lib64/libz.so.1: no version information available (required by /sw/global/compilers/gcc/5.1.0/lib/gcc/x86_64-unknown-linux-gnu/5.1.0/../../../../x86_64-unknown-linux-gnu/bin/ld)
+HeatEqnFDM-main.o: In function `boost::program_options::typed_value<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, char>::xparse(boost::any&, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&) const':
+/sw/global/libraries/boost/1.54/include/boost/program_options/detail/value_semantic.hpp:170: undefined reference to `boost::program_options::validate(boost::any&, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >*, int)'
+HeatEqnFDM-main.o: In function `void boost::archive::save_access::save_primitive<boost::archive::binary_oarchive, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >(boost::archive::binary_oarchive&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)':
+/sw/global/libraries/boost/1.54/include/boost/archive/detail/oserializer.hpp:88: undefined reference to `boost::archive::basic_binary_oprimitive<boost::archive::binary_oarchive, char, std::char_traits<char> >::save(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'
+HeatEqnFDM-main.o: In function `boost::program_options::validation_error::validation_error(boost::program_options::validation_error::kind_t, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, int)':
+/sw/global/libraries/boost/1.54/include/boost/program_options/errors.hpp:372: undefined reference to `boost::program_options::validation_error::get_template[abi:cxx11](boost::program_options::validation_error::kind_t)'
+/sw/global/libraries/boost/1.54/include/boost/program_options/errors.hpp:372: undefined reference to `boost::program_options::error_with_option_name::error_with_option_name(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, int)'
+[...]
+
+Possible Reason:
+================
+stdlib of GCC 5.1.0 is incompatible to older Boost version 1.54
+
+Solution:
+=========
+1. Reinstall using Boost with GCC 5.1.0
+2. or use a newer version of Boost.
+
+
+
+================================================================================
+[KF, 06/12/2015]
+scafes trunk rev. 680
+Build out-of-tree
+intel/2013
+
+Currently Loaded Modulefiles:
+  1) autoconf/2.69                              6) pdt/3.18.1                                11) openmpi/1.6                               16) intel/2013                                21) gcovr/3.2
+  2) automake/1.14                              7) dyninst/8.1.1                             12) python/2.7                                17) hdf5/1.8.10-intel2013
+  3) libtool/2.4.2                              8) ctool/2.12                                13) vampirtrace/5.14.3-gcc-4.6.2-openmpi-1.6  18) netcdf/4.1.3-intel2013
+  4) m4/1.4.16                                  9) papi/4.2.1                                14) boost/1.49                                19) adolc/2.4.1
+  5) autotools/default                         10) java/jdk1.7.0_03                          15) gcc/4.9.1                                 20) gmock/1.6.0
+feldhoff@atlas1:~/scafes-work-atlas/trunk> scafes
+scafescc.sh   scafesrun.sh
+feldhoff@atlas1:~/scafes-work-atlas/trunk> ./scripts/scafescc.sh tests/system/HeatEqnFdmStencilWidthOne/main3D.cpp
++++ mpic++ -I/home/feldhoff/scafes-work-atlas/trunk/software/include -std=c++11 -I/sw/global/libraries/boost/1.49//include -fopenmp -I/sw/atlas/libraries/adolc/2.4.1/include -I/sw/global/libraries/netcdf/4.1.3-intel2013/include -DNDEBUG -Wall -Wextra -O3 -g -mtune=bdver1 -march=bdver1 -L/home/feldhoff/scafes-work-atlas/trunk/software/lib -L/sw/global/libraries/boost/1.49//lib -fopenmp -L/sw/atlas/libraries/adolc/2.4.1/lib -L/sw/global/libraries/netcdf/4.1.3-intel2013/lib tests/system/HeatEqnFdmStencilWidthOne/main3D.cpp   -lboost_regex -lboost_program_options -lboost_serialization -lboost_mpi -ladolc -lnetcdf +++
+icpc: command line warning #10159: invalid argument for option '-m'
+icpc: command line warning #10159: invalid argument for option '-m'
+as: /lib64/libz.so.1: no version information available (required by as)
+/home/feldhoff/scafes-work-atlas/trunk/software/include/ScaFES_Problem.hpp(262): error: implicitly generated assignment operator cannot copy:
+            const member "ScaFES::Problem<OWNPRBLM, CT, DIM>::mUseLeapfrogIntegration [with OWNPRBLM=HeatEqnFdmStencilWidthOne<double, 3UL>, CT=double, DIM=3UL]"
+  class Problem
+        ^
+          detected during instantiation of class "ScaFES::Problem<OWNPRBLM, CT, DIM> [with OWNPRBLM=HeatEqnFdmStencilWidthOne<double, 3UL>, CT=double, DIM=3UL]" at line 42 of "tests/system/HeatEqnFdmStencilWidthOne/main3D.cpp"
+
+/home/feldhoff/scafes-work-atlas/trunk/software/include/ScaFES_Problem.hpp(3623): error: expression must have integral or unscoped enum type
+                  case ScaFES::WriteHowOften::AT_START:
+
+
+================================================================================
+[KF, 06/12/2015]
+Source:
+https://gitlab.phys.ethz.ch/hpcse_fs15/lecture/raw/c2e5e8793bb8dfd41ee36abce9d2aa9085b9955f/exercises/ex03/solutions/numa_allocator.hpp
+Class for NUMA aware allocating of std::vector objects.
+
+#ifdef _WIN32
+#include <malloc.h>
+#endif
+#include <cstdlib>
+
+#if __cplusplus >= 201103L
+#define NOEXCEPT_SPEC noexcept
+#else
+#define NOEXCEPT_SPEC
+#endif
+
+template <typename T>
+class numa_allocator {
+  public:
+    typedef T*              pointer;
+    typedef T const*        const_pointer;
+    typedef T&              reference;
+    typedef T const&        const_reference;
+    typedef T               value_type;
+    typedef std::size_t     size_type;
+    typedef std::ptrdiff_t  difference_type;
+
+    template <typename U>
+    struct rebind {
+        typedef numa_allocator<U> other;
+    };
+
+    numa_allocator() NOEXCEPT_SPEC {
+    }
+
+    numa_allocator(numa_allocator const& a) NOEXCEPT_SPEC {
+    }
+
+    template <typename U>
+    numa_allocator(numa_allocator<U> const& b) NOEXCEPT_SPEC {
+    }
+
+    pointer allocate(size_type n) {
+        void* p = malloc(n*sizeof(T));
+        if(p == 0)
+            throw std::bad_alloc();
+
+        // NUMA first touch policy
+        char * const pend = reinterpret_cast<char*>(p) + n*sizeof(T);
+#pragma omp parallel for schedule(static)
+        for(char* p1 = reinterpret_cast<char*>(p); p1 < pend; ++p1)
+            *p1 = 0;
+        return reinterpret_cast<pointer>(p);
+    }
+
+    void deallocate(pointer p, size_type /*n*/) NOEXCEPT_SPEC {
+        std::free(p);
+    }
+
+    size_type max_size() const NOEXCEPT_SPEC {
+        std::allocator<T> a;
+        return a.max_size();
+    }
+
+#if __cplusplus >= 201103L
+    template <typename C, class... Args>
+    void construct(C* c, Args&&... args) {
+        new ((void*)c) C(std::forward<Args>(args)...);
+    }
+#else
+    void construct(pointer p, const_reference t) {
+        new((void *)p) T(t);
+    }
+#endif
+
+    template <typename C>
+    void destroy(C* c) {
+        c->~C();
+    }
+
+    bool operator == (numa_allocator const& a2) const NOEXCEPT_SPEC {
+        return true;
+    }
+
+    bool operator != (numa_allocator const& a2) const NOEXCEPT_SPEC {
+        return false;
+    }
+
+    template <typename U>
+    bool operator == (numa_allocator<U> const& b) const NOEXCEPT_SPEC {
+        return false;
+    }
+
+    template <typename U>
+    bool operator != (numa_allocator<U> const& b) const NOEXCEPT_SPEC {
+        return true;
+    }
+};
+
+#undef NOEXPECT_SPEC
+
+Next steps:
+===========
+Check license of source code.
+Think about integrating class into ScaFES_Problem.hpp
+(all memory members: mMem...)
+
+//          this->mMemoryVectUnknownDfsOne.reserve(N_COLUMNS_VECTUNKNOWN *
+//                                                    this->nElemsUnknownDfs());
+// #pragma omp parallel for schedule(static)
+//             for(int ll=0; ll < N_COLUMNS_VECTUNKNOWN * this->nElemsUnknownDfs(); ++ll)
+//             {
+//                 this->mMemoryVectUnknownDfsOne.push_back(static_cast<CT>(0));
+//             }
+
+
+
+################################################################################
+Problem:
+=======
+[KF, 06/17/2015]
+Job did not finish:
+vi a.out-JUQUEEN-trunk-mpi262144-omp00001-nNodes4096x4096x4096-decompUNI-nPart64x64x64-divide1x1x1-adolcNO-asyncNO-gradNO-nTs000020-tEnd1-nLayers1-201506162311.out
+
+ScaFES : Rank=0:  * Partition the global grid...
+2015-06-16 23:21:15.501 (WARN ) [0x40000f38f40] :ibm.runjob.LogSignalInfo: received signal 24
+2015-06-16 23:21:15.501 (WARN ) [0x40000f38f40] :ibm.runjob.LogSignalInfo: signal sent from USER
+2015-06-16 23:21:15.501 (WARN ) [0x40000f38f40] :ibm.runjob.LogSignalInfo: sent from uid 0 (root)
+
+Core file has been written.
+
+
+Reason:
+=======
+Reason could be find out by debugging the core file.
+
+hdr090@juqueen2:~/scafes/scafes-work/trunk $ gdb ./a.out core.17657
+GNU gdb (GDB) Red Hat Enterprise Linux (7.2-75.el6)
+Copyright (C) 2010 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "ppc64-redhat-linux-gnu".
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>...
+Reading symbols from /homea/hdr09/hdr090/scafes/scafes-work/trunk/a.out...done.
+
+warning: core file may not match specified executable file.
+[New Thread 17657]
+Missing separate debuginfo for
+Try: yum --enablerepo='*-debug*' install /usr/lib/debug/.build-id/34/2ef525b0cbd75af3d6c45ba9c01d4bec02428a
+Missing separate debuginfo for
+Try: yum --enablerepo='*-debug*' install /usr/lib/debug/.build-id/a3/6ae73fe9bbc7822a25c079e500ae9d226661a4
+Reading symbols from /lib64/libtinfo.so.5...(no debugging symbols found)...done.
+Loaded symbols for /lib64/libtinfo.so.5
+Reading symbols from /lib64/libdl.so.2...(no debugging symbols found)...done.
+Loaded symbols for /lib64/libdl.so.2
+Reading symbols from /lib64/libc.so.6...(no debugging symbols found)...done.
+Loaded symbols for /lib64/libc.so.6
+Reading symbols from /lib64/ld64.so.1...(no debugging symbols found)...done.
+Loaded symbols for /lib64/ld64.so.1
+Reading symbols from /usr/lib64/gconv/ISO8859-1.so...(no debugging symbols found)...done.
+Loaded symbols for /usr/lib64/gconv/ISO8859-1.so
+Core was generated by `/bin/bash /homea/hdr09/hdr090/scafes/opt/scafes-trunk/bin/scafesrun.sh '.
+Program terminated with signal 24, CPU time limit exceeded.
+#0  0x000000806c77573c in __waitpid_nocancel () from /lib64/libc.so.6
+Missing separate debuginfos, use: debuginfo-install glibc-2.12-1.149.el6_6.5.ppc64 ncurses-libs-5.7-3.20090208.el6.ppc64
+
+
+Solution:
+=========
+Increase CPU time limit.
+
+
+
+################################################################################
+Problem:
+=======
+[KF, 2015-11-12]
+MPI enabled
+BOOST.MPI not enabled
+2 MPI processes
+
+ScaFES : Rank=0:  * Partition the global grid...
+ScaFES : Rank=0:       * time(gridGlobal):
+ScaFES : Rank=0:       ----> t(gridGlobal) with barriers =  0.00002 s. <-------
+ScaFES : Rank=0:    Partitioned.
+[earth:15863] *** An error occurred in MPI_comm_size
+[earth:15863] *** on communicator MPI_COMM_WORLD
+[earth:15863] *** MPI_ERR_COMM: invalid communicator
+[earth:15863] *** MPI_ERRORS_ARE_FATAL: your MPI job will now abort
+--------------------------------------------------------------------------
+mpirun has exited due to process rank 0 with PID 15863 on
+node earth exiting improperly. There are two reasons this could occur:
+
+1. this process did not call "init" before exiting, but others in
+the job did. This can cause a job to hang indefinitely while it waits
+for all processes to call "init". By rule, if one process calls "init",
+then ALL processes must call "init" prior to termination.
+
+2. this process called "init", but exited without calling "finalize".
+By rule, all processes that call "init" MUST call "finalize" prior to
+exiting or it will be considered an "abnormal termination"
+
+This may have caused other processes in the application to be
+terminated by signals sent by mpirun (as reported here).
+--------------------------------------------------------------------------
+[earth:15862] 1 more process has sent help message help-mpi-errors.txt / mpi_errors_are_fatal
+[earth:15862] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+
+

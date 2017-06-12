@@ -1,0 +1,38 @@
+
+#------------------------------------------------------------------------------#
+SCAFES_TESTS_DIR=$(top_srcdir)/examples
+
+CPPFLAGS_COMMON= \
+        -I$(top_srcdir)/src \
+        @NETCDF_CPPFLAGS@ \
+        @BOOST_CPPFLAGS@ \
+        @MPI_CPPFLAGS@ \
+        @OPENMP_CXXFLAGS@
+
+LDADD_COMMON = \
+        $(top_srcdir)/src/libscafes.la \
+        @BOOST_LDFLAGS@ \
+        @BOOST_PROGRAM_OPTIONS_LIB@ \
+        @BOOST_REGEX_LIB@ \
+        @BOOST_SERIALIZATION_LIB@ \
+        @MPI_LDFLAGS@ \
+        @BOOST_MPI_LIB@ \
+        @OPENMP_CXXFLAGS@ \
+        @NETCDF_LDFLAGS@
+DEPENDENCIES_COMMON= $(top_srcdir)/src/libscafes.la
+
+################################################################################
+include_HEADERS=
+noinst_PROGRAMS=
+EXTRA_DIST=
+
+################################################################################
+include_HEADERS +=
+noinst_PROGRAMS += MaxwellEqnsFDTD
+MaxwellEqnsFDTD_SOURCES = main.cpp
+MaxwellEqnsFDTD_CPPFLAGS = $(CPPFLAGS_COMMON)
+MaxwellEqnsFDTD_LDFLAGS = $(LDFLAGS_COMMON)
+MaxwellEqnsFDTD_LDADD = $(LDADD_COMMON)
+MaxwellEqnsFDTD_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+
+EXTRA_DIST += $(SCAFES_TESTS_DIR)/MaxwellEqnsFDTD/RUN.sh

@@ -1,0 +1,65 @@
+#------------------------------------------------------------------------------#
+CPPFLAGS_COMMON= \
+        -I$(top_srcdir)/src \
+        -I$(top_builddir)/src \
+        @NETCDF_CPPFLAGS@ \
+        @BOOST_CPPFLAGS@ \
+        @MPI_CPPFLAGS@ \
+        @OPENMP_CXXFLAGS@ \
+        @ADOLC_CPPFLAGS@ \
+        $(VTxxxCPPFLAGS) \
+        $(VTOPARIxxxCPPFLAGS)
+
+LDFLAGS_COMMON = $(VTxxxCPPFLAGS) \
+                 $(VTOPARIxxxCPPFLAGS)
+
+LDADD_COMMON = \
+        $(top_builddir)/src/libscafes.la \
+        @BOOST_LDFLAGS@ \
+        @BOOST_PROGRAM_OPTIONS_LIB@ \
+        @BOOST_REGEX_LIB@ \
+        @BOOST_SERIALIZATION_LIB@ \
+        @MPI_LDFLAGS@ \
+        @BOOST_MPI_LIB@ \
+        @OPENMP_CXXFLAGS@ \
+        @NETCDF_LDFLAGS@ \
+        @ADOLC_LDFLAGS@
+DEPENDENCIES_COMMON= $(top_builddir)/src/libscafes.la
+
+################################################################################
+include_HEADERS=
+bin_PROGRAMS=
+noinst_HEADERS=
+check_PROGRAMS=
+EXTRA_DIST=
+
+################################################################################
+noinst_HEADERS +=
+check_PROGRAMS += PropagationFromLeftLowerCorner1D
+PropagationFromLeftLowerCorner1D_SOURCES = \
+    PropagationFromLeftLowerCorner.hpp \
+    main1D.cpp
+PropagationFromLeftLowerCorner1D_CPPFLAGS = $(CPPFLAGS_COMMON)
+PropagationFromLeftLowerCorner1D_LDFLAGS = $(LDFLAGS_COMMON)
+PropagationFromLeftLowerCorner1D_LDADD = $(LDADD_COMMON)
+PropagationFromLeftLowerCorner1D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+#------------------------------------------------------------------------------#
+noinst_HEADERS +=
+check_PROGRAMS += PropagationFromLeftLowerCorner2D
+PropagationFromLeftLowerCorner2D_SOURCES = \
+    PropagationFromLeftLowerCorner.hpp \
+    main2D.cpp
+PropagationFromLeftLowerCorner2D_CPPFLAGS = $(CPPFLAGS_COMMON)
+PropagationFromLeftLowerCorner2D_LDFLAGS = $(LDFLAGS_COMMON)
+PropagationFromLeftLowerCorner2D_LDADD = $(LDADD_COMMON)
+PropagationFromLeftLowerCorner2D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+#------------------------------------------------------------------------------#
+noinst_HEADERS +=
+check_PROGRAMS += PropagationFromLeftLowerCorner3D
+PropagationFromLeftLowerCorner3D_SOURCES = \
+    PropagationFromLeftLowerCorner.hpp \
+    main3D.cpp
+PropagationFromLeftLowerCorner3D_CPPFLAGS = $(CPPFLAGS_COMMON)
+PropagationFromLeftLowerCorner3D_LDFLAGS = $(LDFLAGS_COMMON)
+PropagationFromLeftLowerCorner3D_LDADD = $(LDADD_COMMON)
+PropagationFromLeftLowerCorner3D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
