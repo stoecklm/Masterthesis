@@ -7,7 +7,7 @@ SUBDIRS += LameNavierEqnFDMFirstOrder
 if AMHAVEBOOST
 if AMHAVEBOOSTMPI
 if AMHAVEADOLC
-SUBDIRS += EMFDTD
+#SUBDIRS += EMFDTD
 endif
 endif
 endif

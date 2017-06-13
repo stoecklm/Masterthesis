@@ -2245,3 +2245,48 @@ terminated by signals sent by mpirun (as reported here).
 [earth:15862] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
 
 
+################################################################################
+Problem:
+=======
+[MS, 06/13/2017]
+Example does not compile for GCC/5.3.0 on Taurus AND for llvm/clang++/4.0.0 on macOS Sierra
+
+Compiler (llvm/clang++ on macOS Sierra 10.12.5) error during make process of EMFDTD example shipped with trunk r766:
+
+In file included from ../.././../examples/EMFDTD/simulate.cpp:10:
+In file included from ../.././../src/ScaFES.hpp:409:
+In file included from ../.././../src/ScaFES_Problem.hpp:26:
+In file included from /usr/local/Cellar/llvm/4.0.0_1/bin/../include/c++/v1/unordered_map:369:
+In file included from /usr/local/Cellar/llvm/4.0.0_1/bin/../include/c++/v1/__hash_table:19:
+In file included from /usr/local/Cellar/llvm/4.0.0_1/bin/../include/c++/v1/cmath:305:
+/usr/local/Cellar/llvm/4.0.0_1/bin/../include/c++/v1/math.h:878:5: error: static_assert failed ""
+    static_assert((!(std::is_same<_A1, __result_type>::value &&
+    ^             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../.././../examples/EMFDTD/CPMLParams.hpp:32:29: note: in instantiation of function template specialization 'pow<double, double>' requested here
+            const T wd=std::pow<T>(w/(d-1.), m);
+                            ^
+../.././../examples/EMFDTD/EMFDTD.hpp:194:7: note: in instantiation of member function 'CPMLParams<double>::CPMLParams' requested here
+    , cpmlp_(dt_,
+      ^
+../.././../examples/EMFDTD/simulate.cpp:29:28: note: in instantiation of member function 'EMFDTDng<double, true>::EMFDTDng' requested here
+    EMFDTDng<double, true> EM(cl, grid, pt);
+                           ^
+
+
+Solution (for macOS with llvm/clang++-4.0.0):
+=========
+Change Template parameter of std::pow<> from 'T' to 'const T':
+
+CPMLParams.hpp:32: const T wd=std::pow<const T>(w/(d-1.), m);
+CPMLParams.hpp:33: const T dw_a=std::pow<const T>((d-1.-w)/(d-1.), m_a);
+
+Solution (for Taurus with GCC/5.3.0):
+=========
+leave example as shipped with trunk r766:
+
+CPMLParams.hpp:32: const T wd=std::pow<T>(w/(d-1.), m);
+CPMLParams.hpp:33: const T dw_a=std::pow<T>((d-1.-w)/(d-1.), m_a);
+
+Solution:
+=========
+Example will therefore be removed from Makefile.am so it can be compiled on both systems
