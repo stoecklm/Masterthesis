@@ -147,6 +147,67 @@
  * bottom of the Ubuntu Software Center in the status bar has been activated.
  * Otherwise, not all packages which can be installed will be seen.
  *
+ * \section macos_installation How to install ScaFES on macOS Sierra 10.12.5:
+ * Install scafes-trunk on macOS Sierra 10.12.5 in combination with homebrew (https://brew.sh/).
+ * Homebrew can be used to install missing programs, packages, libraries, ... .
+ * Homebrew does use the system's default compiler, i.e. Apple LLVM version 8.1.0 (clang-802.0.42) for macOS Sierra 10.12.5.
+ * Therefore ScaFES should be build with the same compiler.
+ * An newer version of LLVM/clang++ compiler can be installed with homebrew if OpenMP is desired.
+ * List of programs that need to be installed with homebrew:
+
+        brew install llvm
+        brew install boost@1.57 --c++11 --with-mpi --without-single
+        brew install homebrew/science/adol-c
+        brew install homebrew/science/hdf5
+        brew install homebrew/science/netcdf
+        brew install homebrew/science/parallel-netcdf
+        brew install automake
+        brew install doxygen
+        brew install graphviz
+
+ * this will install the following programs by dependency:
+
+        open-mpi
+        autoconf
+
+ * call bootstrap script:
+
+        ./bootstrap.sh
+
+ * call configure script (should be called from a build folder with ./../configure):
+
+        export CC='/usr/local/opt/llvm/bin/clang'
+        export CFLAGS='-O3 -Wall'
+        export CXX='/usr/local/opt/llvm/bin/clang++'
+        export CXXFLAGS='-DNDEBUG -Wall -Wextra -Wno-unused -O3'
+        export LDFLAGS='-L/usr/local/opt/llvm/lib'
+        export CPPFLAGS='-I/usr/local/opt/llvm/include'
+        ./configure \
+        --enable-dist="no" \
+        --with-mpi='/usr/local/opt/openmpi' \
+        --enable-mpi="yes" \
+        --enable-openmp="yes" \
+        --with-boost='/usr/local/opt/boost@1.57' \
+        --with-boost-libdir='/usr/local/opt/boost@1.57/lib' \
+        --with-boost-serialization \
+        --enable-boost-mpi="yes" \
+        --with-netcdf='/usr/local/opt/parallel-netcdf' \
+        --with-hdf5='/usr/local/opt/hdf5/' \
+        --enable-netcdf="yes" \
+        --enable-adolc="yes" \
+        --with-adolc='/usr/local/opt/adol-c' \
+        --enable-gmock="yes" \
+        --with-gmock='/usr/local/opt/gmock' \
+        --enable-doc="yes" \
+        --prefix=<installdir>
+
+ * call make and make install
+
+        make
+        make install
+
+ * See also INSTALL for more information to build ScaFES.
+
  * \section Netcdf_file_correct How can be checked if the data fields were written correctly to the NetCDF data file?
 
          ncdump <datafile.nc>
