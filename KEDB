@@ -2290,3 +2290,17 @@ CPMLParams.hpp:33: const T dw_a=std::pow<T>((d-1.-w)/(d-1.), m_a);
 Solution:
 =========
 Example will therefore be removed from Makefile.am so it can be compiled on both systems
+
+
+################################################################################
+Problem:
+=======
+[MS, 06/15/2017]
+Main page, FAQ, ... is missing in doc in ScaFES 2.3.0 release.
+
+Source code for Main Page is included in ScaFES.hpp, but will not be built by doxygen.
+
+
+Solution:
+=========
+pending
