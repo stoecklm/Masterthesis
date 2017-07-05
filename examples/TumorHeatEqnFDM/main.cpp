@@ -10,7 +10,7 @@
 /** Space dimension of problem. */
 const int DIM = 3;
 
-/** Main program for HeatEqnFDM. */
+/** Main program for TumorHeatEqnFDM. */
 int main(int argc, char *argv[]) {
     ScaFES::Parameters paramsCl(argc, argv);
     ScaFES::GridGlobal<DIM> gg(paramsCl);
@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
     computeError[2] = false;
     std::vector<double> geomparamsInit;
 
-    HeatEqnFDM<double, DIM> ppp(paramsCl, gg, false, nameDatafield, stencilWidth,
+    TumorHeatEqnFDM<double, DIM> ppp(paramsCl, gg, false, nameDatafield, stencilWidth,
                                 isKnownDf, nLayers, defaultValue, writeToFile,
                                 computeError, geomparamsInit);
     ppp.iterateOverTime();

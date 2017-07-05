@@ -91,7 +91,7 @@
  * \f}
 */
 template<typename CT, std::size_t DIM>
-class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
+class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM> {
   public:
     /** All fields which are related to the underlying problem
      * are added in terms of an entry of the parameters of
@@ -109,7 +109,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
      *                     and exact solution be computed?
      * @param geomparamsInit Initial guess of geometrical parameters.
      */
-    HeatEqnFDM(ScaFES::Parameters const& params,
+    TumorHeatEqnFDM(ScaFES::Parameters const& params,
                ScaFES::GridGlobal<DIM> const& gg,
                bool useLeapfrog,
                std::vector<std::string> const& nameDatafield,
@@ -121,7 +121,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
                  = std::vector<ScaFES::WriteHowOften>(),
                std::vector<bool> const& computeError = std::vector<bool>(),
                std::vector<CT> const& geomparamsInit = std::vector<CT>() )
-        : ScaFES::Problem<HeatEqnFDM<CT, DIM>, CT, DIM>(params, gg, useLeapfrog,
+        : ScaFES::Problem<TumorHeatEqnFDM<CT, DIM>, CT, DIM>(params, gg, useLeapfrog,
                                                         nameDatafield, stencilWidth,
                                                         isKnownDf, nLayers,
                                                         defaultValue, writeToFile,
