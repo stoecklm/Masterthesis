@@ -138,10 +138,11 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
         ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
         vNew[0](idxNode) = 0.0;
         vNew[1](idxNode) = 0.0;
-        vNew[2](idxNode) = 1.0;
+        //vNew[2](idxNode) = 1.0;
+        vNew[2](idxNode) = 0.0;
         for (std::size_t pp = 0; pp < DIM; ++pp) {
-            vNew[2](idxNode) *= ( x[pp] * (x[pp] - 0.5)
-                                 * (x[pp] - 0.5) * (1.0 - x[pp]) );
+            //vNew[2](idxNode) *= ( x[pp] * (x[pp] - 0.5)
+            //                     * (x[pp] - 0.5) * (1.0 - x[pp]) );
         }
     }
 
@@ -166,10 +167,11 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
                    ScaFES::Ntuple<int,DIM> const& idxNode,
                    int const& /*timestep*/) {
         ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
-        vNew[0](idxNode) = 1.0;
+        //vNew[0](idxNode) = 1.0;
+        vNew[0](idxNode) = 0.0;
         for (std::size_t pp = 0; pp < DIM; ++pp) {
-            vNew[0](idxNode) *= ( x[pp] * (x[pp] - 0.5)
-                                  * (x[pp] - 0.5) * (1.0 - x[pp]) );
+            //vNew[0](idxNode) *= ( x[pp] * (x[pp] - 0.5)
+            //                      * (x[pp] - 0.5) * (1.0 - x[pp]) );
         }
     }
 
@@ -197,14 +199,14 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
                      std::vector<ScaFES::DataField<TT,DIM>> const& vOld,
                      ScaFES::Ntuple<int,DIM> const& idxNode,
                      int const& /*timestep*/) {
-        vNew[0](idxNode) = vOld[0](idxNode)
-                            + this->tau() * this->knownDf(0, idxNode);
+        //vNew[0](idxNode) = vOld[0](idxNode)
+        //                    + this->tau() * this->knownDf(0, idxNode);
         for (std::size_t pp = 0; pp < DIM; ++pp) {
-            vNew[0](idxNode) += this->tau() * (
-                 2.0 * vOld[0](idxNode)
-                     - vOld[0](this->connect(idxNode, 2*pp))
-                     - vOld[0](this->connect(idxNode, 2*pp+1)) )
-                     / (this->gridsize(pp) * this->gridsize(pp));
+            //vNew[0](idxNode) += this->tau() * (
+            //     2.0 * vOld[0](idxNode)
+            //         - vOld[0](this->connect(idxNode, 2*pp))
+            //         - vOld[0](this->connect(idxNode, 2*pp+1)) )
+            //         / (this->gridsize(pp) * this->gridsize(pp));
         }
     }
 
@@ -217,7 +219,7 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
                       std::vector<ScaFES::DataField<TT,DIM>>const& /*vOld*/,
                       ScaFES::Ntuple<int,DIM> const& idxNode,
                       int const& /*timestep*/) {
-        vNew[0](idxNode) = this->knownDf(1, idxNode);
+        //vNew[0](idxNode) = this->knownDf(1, idxNode);
     }
 
     /** Updates (2nd cycle) all unknown fields at one given global inner grid node.
