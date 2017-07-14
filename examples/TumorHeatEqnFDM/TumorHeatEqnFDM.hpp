@@ -7,9 +7,10 @@
 /**
  *  @file TumorHeatEqnFDM.hpp
  *
- *  @brief Implementation of n-dimensional heat equation problem on unit hybercube.
+ *  @brief Implementation of n-dimensional heat equation problem on unit plane.
  */
 
+#include <iostream>
 #include "ScaFES.hpp"
 
 /*******************************************************************************
@@ -18,7 +19,7 @@
  * \class TumorHeatEqnFDM
  *  @brief Class for discretized heat equation problem.
  *
- * \section heatEqnFDM 3D Heat Equation Problem on Unit Cube
+ * \section heatEqnFDM 2D Heat Equation Problem on unit plane
  *
  *
  * \subsection mathdescr Mathematical Description
@@ -135,14 +136,9 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
     void evalInner(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
                    ScaFES::Ntuple<int,DIM> const& idxNode,
                    int const& /*timestep*/) {
-        ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
-        vNew[0](idxNode) = 0.0;
-        vNew[1](idxNode) = 0.0;
-        vNew[2](idxNode) = 0.0; // 1.0;
-        for (std::size_t pp = 0; pp < DIM; ++pp) {
-            //vNew[2](idxNode) *= ( x[pp] * (x[pp] - 0.5)
-            //                     * (x[pp] - 0.5) * (1.0 - x[pp]) );
-        }
+        vNew[0](idxNode) = 0.0; /* this->knownDf(0, idxNode) */
+        vNew[1](idxNode) = 0.0; /* this->knownDf(1, idxNode) */
+        vNew[2](idxNode) = 0.0; /* this->knownDf(2, idxNode) */
     }
 
     /** Evaluates all fields at one given global border grid node.
@@ -153,7 +149,9 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
     void evalBorder(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
                     ScaFES::Ntuple<int,DIM> const& idxNode,
                     int const& timestep) {
-            this->evalInner(vNew, idxNode, timestep);
+        vNew[0](idxNode) = 0.0; /* this->knownDf(0, idxNode) */
+        vNew[1](idxNode) = 0.0; /* this->knownDf(1, idxNode) */
+        vNew[2](idxNode) = 0.0; /* this->knownDf(2, idxNode) */
     }
 
     /** Initializes all unknown fields at one given global inner grid node.
@@ -165,12 +163,7 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
                    std::vector<TT> const& /*vOld*/,
                    ScaFES::Ntuple<int,DIM> const& idxNode,
                    int const& /*timestep*/) {
-        ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
         vNew[0](idxNode) = 1.0;
-        //for (std::size_t pp = 0; pp < DIM; ++pp) {
-        //    vNew[0](idxNode) *= ( x[pp] * (x[pp] - 0.5)
-        //                          * (x[pp] - 0.5) * (1.0 - x[pp]) );
-        //}
     }
 
     /** Initializes all unknown fields at one given global border grid node.
@@ -184,7 +177,6 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
                     std::vector<TT> const& vOld,
                     ScaFES::Ntuple<int,DIM> const& idxNode,
                     int const& timestep) {
-        //this->template initInner<TT>(vNew, vOld, idxNode, timestep);
         vNew[0](idxNode) = 100.0;
     }
 
@@ -198,14 +190,14 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
                      std::vector<ScaFES::DataField<TT,DIM>> const& vOld,
                      ScaFES::Ntuple<int,DIM> const& idxNode,
                      int const& /*timestep*/) {
-        //vNew[0](idxNode) = vOld[0](idxNode)
-        //                    + this->tau() * this->knownDf(0, idxNode);
+        vNew[0](idxNode) = vOld[0](idxNode)
+                            + this->tau() * this->knownDf(0, idxNode);
         for (std::size_t pp = 0; pp < DIM; ++pp) {
             vNew[0](idxNode) += this->tau() * (
                  -2.0 * vOld[0](idxNode)
-                     + vOld[0](this->connect(idxNode, 2*pp))
-                     + vOld[0](this->connect(idxNode, 2*pp+1)) )
-                     / (this->gridsize(pp) * this->gridsize(pp));
+                      + vOld[0](this->connect(idxNode, 2*pp))
+                      + vOld[0](this->connect(idxNode, 2*pp+1)) )
+                      / (this->gridsize(pp) * this->gridsize(pp));
         }
     }
 
