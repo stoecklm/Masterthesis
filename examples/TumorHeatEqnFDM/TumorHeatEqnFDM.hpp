@@ -30,6 +30,41 @@
 template<typename CT, std::size_t DIM>
 class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM> {
   public:
+
+    /** constant rho_brain. Material parameter (density) for the brain. */
+    const double RHO_BRAIN = 1040.0; /* kg/m^3 */
+
+    /** constant c_brain. Material parameter (specific heat capacity)
+     * for the brain. */
+    const double C_BRAIN = 3650.0; /* J/(kg K) */
+
+    /** constant lambda_brain. Material parameter (thermal conductivity)
+     * for the brain. */
+    const double LAMBDA_BRAIN = 0.6; /* W/(m K) */
+
+    /** constant rho_blood. Material parameter (density) for blood. */
+    const double RHO_BLOOD = 1047.0; /* kg/m^3 */
+
+    /** constant c_blood. Material parameter (specific heat capacity)
+     * for blood. */
+    const double C_BLOOD = 3600.0; /* J/(kg K) */
+
+    /** constant w_brain. Material parameter (perfusion) for the brain. */
+    const double W_BRAIN = 0.0399; /* 1/s */
+
+    /** constant T_blood. Parameter (temperature) for blood. */
+    const double T_BLOOD = 310.15; /* K */
+
+    /** constant T_amb. Parameter (temperature) for ambient. */
+    const double T_AMB = 291.15; /* K */
+
+    /** constant alpha_amb. Parameter (heat transfer coefficent)
+     for ambient. */
+    const double ALPHA_AMB = 10.0; /* W/(m^2 K) */
+
+    /** constant Q_M_BRAIN. Material parameter (metabolism) for the brain. */
+    const double Q_M_BRAIN = 49937.0; /* W/(m^3) */
+
     /** All fields which are related to the underlying problem
      * are added in terms of an entry of the parameters of
      * type \c std::vector.
