@@ -15,12 +15,12 @@ int main(int argc, char *argv[]) {
     ScaFES::Parameters paramsCl(argc, argv);
     ScaFES::GridGlobal<DIM> gg(paramsCl);
     std::vector<std::string> nameDatafield(6);
-    nameDatafield[0] = "T"; /* Temperature vector. */
-    nameDatafield[1] = "rho"; /* rho (density) vector. */
-    nameDatafield[2] = "c"; /* c (specific heat capacity) vector. */
+    nameDatafield[0] = "T";      /* Temperature vector. */
+    nameDatafield[1] = "rho";    /* rho (density) vector. */
+    nameDatafield[2] = "c";      /* c (specific heat capacity) vector. */
     nameDatafield[3] = "lambda"; /* lambda (thermal conductivity) vector. */
-    nameDatafield[4] = "w"; /* w (perfusion) vector. */
-    nameDatafield[5] = "Q_m"; /* Q_m (metabolism) vector. */
+    nameDatafield[4] = "w";      /* w (perfusion) vector. */
+    nameDatafield[5] = "Q_m";    /* Q_m (metabolism) vector. */
     std::vector<int> stencilWidth(6);
     stencilWidth[0] = 1;
     stencilWidth[1] = 0;
@@ -30,11 +30,11 @@ int main(int argc, char *argv[]) {
     stencilWidth[5] = 0;
     std::vector<bool> isKnownDf(6);
     isKnownDf[0] = false;
-    isKnownDf[1] = false;
-    isKnownDf[2] = false;
-    isKnownDf[3] = false;
-    isKnownDf[4] = false;
-    isKnownDf[5] = false;
+    isKnownDf[1] = true;
+    isKnownDf[2] = true;
+    isKnownDf[3] = true;
+    isKnownDf[4] = true;
+    isKnownDf[5] = true;
     std::vector<int> nLayers(6);
     nLayers[0] = 0;
     nLayers[1] = 0;
