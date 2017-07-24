@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
     nameDatafield[2] = "c";      /* c (specific heat capacity) vector. */
     nameDatafield[3] = "lambda"; /* lambda (thermal conductivity) vector. */
     nameDatafield[4] = "w";      /* w (perfusion) vector. */
-    nameDatafield[5] = "Q_m";    /* Q_m (metabolism) vector. */
+    nameDatafield[5] = "q_m";    /* q_m (metabolism) vector. */
     std::vector<int> stencilWidth(6);
     stencilWidth[0] = 1;
     stencilWidth[1] = 0;

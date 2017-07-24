@@ -66,7 +66,7 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
      for ambient. */
     const double ALPHA_AMB = 10.0; /* W/(m^2 K) */
 
-    /** constant Q_M_BRAIN. Material parameter (metabolism) for the brain. */
+    /** constant q_M_brain. Material parameter (metabolism) for the brain. */
     const double Q_M_BRAIN = 49937.0; /* W/(m^3) */
 
     /** All fields which are related to the underlying problem
@@ -116,7 +116,7 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
         vNew[2](idxNode) = C_BRAIN;      /* knownDf(2, idxNode). c.      */
         vNew[3](idxNode) = LAMBDA_BRAIN; /* knownDf(3, idxNode). lambda. */
         vNew[4](idxNode) = W_BRAIN;      /* knownDf(4, idxNode). w.      */
-        vNew[5](idxNode) = Q_M_BRAIN;    /* knownDf(5, idxNode). Q_m.    */
+        vNew[5](idxNode) = Q_M_BRAIN;    /* knownDf(5, idxNode). q_m.    */
     }
 
     /** Evaluates all fields at one given global border grid node.
@@ -132,7 +132,7 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
         vNew[2](idxNode) = C_BRAIN;      /* knownDf(2, idxNode). c.      */
         vNew[3](idxNode) = LAMBDA_BRAIN; /* knownDf(3, idxNode). lambda. */
         vNew[4](idxNode) = W_BRAIN;      /* knownDf(4, idxNode). w.      */
-        vNew[5](idxNode) = Q_M_BRAIN;    /* knownDf(5, idxNode). Q_m.    */
+        vNew[5](idxNode) = Q_M_BRAIN;    /* knownDf(5, idxNode). q_m.    */
     }
 
     /** Initializes all unknown fields at one given global inner grid node.
@@ -171,6 +171,12 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
                      std::vector<ScaFES::DataField<TT,DIM>> const& vOld,
                      ScaFES::Ntuple<int,DIM> const& idxNode,
                      int const& /*timestep*/) {
+        /* knownDf(1, idxNode). rho.    */
+        /* knownDf(2, idxNode). c.      */
+        /* knownDf(3, idxNode). lambda. */
+        /* knownDf(4, idxNode). w.      */
+        /* knownDf(5, idxNode). q_m.    */
+        vNew[0](idxNode) = vOld[0](idxNode);
         for (std::size_t pp = 0; pp < DIM; ++pp) {
             vNew[0](idxNode) += this->tau()
             * (this->knownDf(3, idxNode)
