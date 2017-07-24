@@ -202,9 +202,43 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
      */
     template<typename TT>
     void updateBorder(std::vector<ScaFES::DataField<TT,DIM>>& vNew,
-                      std::vector<ScaFES::DataField<TT,DIM>>const& /*vOld*/,
+                      std::vector<ScaFES::DataField<TT,DIM>>const& vOld,
                       ScaFES::Ntuple<int,DIM> const& idxNode,
                       int const& /*timestep*/) {
+        if (idxNode.elem(2) == (this->nNodes(2)-1)) {
+            /* knownDf(1, idxNode). rho.    */
+            /* knownDf(2, idxNode). c.      */
+            /* knownDf(3, idxNode). lambda. */
+            /* knownDf(4, idxNode). w.      */
+            /* knownDf(5, idxNode). q_m.    */
+            vNew[0](idxNode) = vOld[0](idxNode);
+            /* First and second dimension. */
+            for (std::size_t pp = 0; pp < 2; ++pp) {
+                vNew[0](idxNode) += this->tau()
+                * (this->knownDf(3, idxNode)
+                    / (this->knownDf(1, idxNode) * this->knownDf(2, idxNode)))
+                * ((vOld[0](this->connect(idxNode, 2*pp))
+                   + vOld[0](this->connect(idxNode, 2*pp+1))
+                   - 2.0 * vOld[0](idxNode))
+                    / (this->gridsize(pp) * this->gridsize(pp)));
+            }
+            /* Third dimension. */
+            vNew[0](idxNode) += this->tau()
+            * (this->knownDf(3, idxNode)
+                / (this->knownDf(1, idxNode) * this->knownDf(2, idxNode)))
+            * (2 * vOld[0](this->connect(idxNode, 2*2))
+               + 2 * this->gridsize(2) * (ALPHA_AMB/this->knownDf(3, idxNode)) * T_AMB
+               - 2.0 * vOld[0](idxNode) * (this->gridsize(2) * (ALPHA_AMB/this->knownDf(3, idxNode)))
+               / (this->gridsize(2) * this->gridsize(2)));
+            vNew[0](idxNode) -= this->tau() * (
+                (RHO_BLOOD * C_BLOOD)
+                / (this->knownDf(1, idxNode) * this->knownDf(2, idxNode)))
+            * (this->knownDf(4, idxNode)
+            * (vOld[0](idxNode) - T_BLOOD));
+            vNew[0](idxNode) += this->tau() * (
+                (1.0/(this->knownDf(1, idxNode) * this->knownDf(2, idxNode))))
+            * this->knownDf(5, idxNode);
+        }
     }
 
     /** Updates (2nd cycle) all unknown fields at one given global inner grid node.
