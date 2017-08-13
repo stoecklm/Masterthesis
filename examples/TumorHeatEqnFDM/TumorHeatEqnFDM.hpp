@@ -72,7 +72,7 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
     const double ALPHA_AMB = 10.0; /* W/(m^2 K) */
 
     /** constant q_M_brain. Material parameter (metabolism) for the brain. */
-    const double Q_M_BRAIN = 49937.0; /* W/(m^3) */
+    const double Q_DOT_M_BRAIN = 49937.0; /* W/(m^3) */
 
     /** constant sphereRadius. Geometry parameter (radius) for tumor. */
     const double sphereRadius = 0.025;
@@ -128,12 +128,12 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
     void evalInner(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
                    ScaFES::Ntuple<int,DIM> const& idxNode,
                    int const& /*timestep*/) {
-        /* vNew[0](idxNode) = 0.0;          knownDf(0, idxNode). T.      */
-        vNew[1](idxNode) = RHO_BRAIN;    /* knownDf(1, idxNode). rho.    */
-        vNew[2](idxNode) = C_BRAIN;      /* knownDf(2, idxNode). c.      */
-        vNew[3](idxNode) = LAMBDA_BRAIN; /* knownDf(3, idxNode). lambda. */
-        vNew[4](idxNode) = W_BRAIN;      /* knownDf(4, idxNode). w.      */
-        vNew[5](idxNode) = Q_M_BRAIN;    /* knownDf(5, idxNode). q_m.    */
+        vNew[0](idxNode) = RHO_BRAIN;     /* knownDf(0, idxNode). rho.     */
+        vNew[1](idxNode) = C_BRAIN;       /* knownDf(1, idxNode). c.       */
+        vNew[2](idxNode) = LAMBDA_BRAIN;  /* knownDf(2, idxNode). lambda.  */
+        vNew[3](idxNode) = W_BRAIN;       /* knownDf(3, idxNode). w.       */
+        vNew[4](idxNode) = Q_DOT_M_BRAIN; /* knownDf(4, idxNode). q_dot_m. */
+        /* vNew[5](idxNode) = 0.0;           knownDf(5, idxNode). T.       */
     }
 
     /** Evaluates all fields at one given global border grid node.
@@ -144,12 +144,12 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
     void evalBorder(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
                     ScaFES::Ntuple<int,DIM> const& idxNode,
                     int const& timestep) {
-        /* vNew[0](idxNode) = 0.0;          knownDf(0, idxNode). T.      */
-        vNew[1](idxNode) = RHO_BRAIN;    /* knownDf(1, idxNode). rho.    */
-        vNew[2](idxNode) = C_BRAIN;      /* knownDf(2, idxNode). c.      */
-        vNew[3](idxNode) = LAMBDA_BRAIN; /* knownDf(3, idxNode). lambda. */
-        vNew[4](idxNode) = W_BRAIN;      /* knownDf(4, idxNode). w.      */
-        vNew[5](idxNode) = Q_M_BRAIN;    /* knownDf(5, idxNode). q_m.    */
+        vNew[0](idxNode) = RHO_BRAIN;     /* knownDf(0, idxNode). rho.     */
+        vNew[1](idxNode) = C_BRAIN;       /* knownDf(1, idxNode). c.       */
+        vNew[2](idxNode) = LAMBDA_BRAIN;  /* knownDf(2, idxNode). lambda.  */
+        vNew[3](idxNode) = W_BRAIN;       /* knownDf(3, idxNode). w.       */
+        vNew[4](idxNode) = Q_DOT_M_BRAIN; /* knownDf(4, idxNode). q_dot_m. */
+        /* vNew[5](idxNode) = 0.0;           knownDf(5, idxNode). T.       */
     }
 
     /** Initializes all unknown fields at one given global inner grid node.
@@ -199,11 +199,12 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
                      std::vector<ScaFES::DataField<TT,DIM>> const& vOld,
                      ScaFES::Ntuple<int,DIM> const& idxNode,
                      int const& /*timestep*/) {
-        /* knownDf(1, idxNode). rho.    */
-        /* knownDf(2, idxNode). c.      */
-        /* knownDf(3, idxNode). lambda. */
-        /* knownDf(4, idxNode). w.      */
-        /* knownDf(5, idxNode). q_m.    */
+        /* knownDf(0, idxNode). rho.     */
+        /* knownDf(1, idxNode). c.       */
+        /* knownDf(2, idxNode). lambda.  */
+        /* knownDf(3, idxNode). w.       */
+        /* knownDf(4, idxNode). q_dot_m. */
+        /* knownDf(5, idxNode). T.       */
         double sphereCo =
             (this->coordinates(idxNode).elem(0) - x0)
             * (this->coordinates(idxNode).elem(0) - x0)
@@ -217,8 +218,8 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
             vNew[0](idxNode) = vOld[0](idxNode);
             for (std::size_t pp = 0; pp < DIM; ++pp) {
                 vNew[0](idxNode) += this->tau()
-                * (this->knownDf(3, idxNode)
-                    / (this->knownDf(1, idxNode) * this->knownDf(2, idxNode)))
+                * (this->knownDf(2, idxNode)
+                    / (this->knownDf(0, idxNode) * this->knownDf(1, idxNode)))
                 * ((vOld[0](this->connect(idxNode, 2*pp))
                    + vOld[0](this->connect(idxNode, 2*pp+1))
                    - 2.0 * vOld[0](idxNode))
@@ -226,12 +227,12 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
             }
             vNew[0](idxNode) += this->tau() * (
                 (RHO_BLOOD * C_BLOOD)
-                / (this->knownDf(1, idxNode) * this->knownDf(2, idxNode)))
-            * (this->knownDf(4, idxNode)
+                / (this->knownDf(0, idxNode) * this->knownDf(1, idxNode)))
+            * (this->knownDf(3, idxNode)
             * (T_BLOOD - vOld[0](idxNode)));
             vNew[0](idxNode) += this->tau() * (
-                (1.0/(this->knownDf(1, idxNode) * this->knownDf(2, idxNode))))
-            * this->knownDf(5, idxNode);
+                (1.0/(this->knownDf(0, idxNode) * this->knownDf(1, idxNode))))
+            * this->knownDf(4, idxNode);
         }
     }
 
@@ -245,17 +246,18 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
                       ScaFES::Ntuple<int,DIM> const& idxNode,
                       int const& /*timestep*/) {
         if (idxNode.elem(2) == (this->nNodes(2)-1)) {
-            /* knownDf(1, idxNode). rho.    */
-            /* knownDf(2, idxNode). c.      */
-            /* knownDf(3, idxNode). lambda. */
-            /* knownDf(4, idxNode). w.      */
-            /* knownDf(5, idxNode). q_m.    */
+            /* knownDf(0, idxNode). rho.    */
+            /* knownDf(1, idxNode). c.      */
+            /* knownDf(2, idxNode). lambda. */
+            /* knownDf(3, idxNode). w.      */
+            /* knownDf(4, idxNode). q_dot_m.    */
+            /* knownDf(5, idxNode). T.      */
             vNew[0](idxNode) = vOld[0](idxNode);
             /* First and second dimension. */
             for (std::size_t pp = 0; pp < 2; ++pp) {
                 vNew[0](idxNode) += this->tau()
-                * (this->knownDf(3, idxNode)
-                    / (this->knownDf(1, idxNode) * this->knownDf(2, idxNode)))
+                * (this->knownDf(2, idxNode)
+                    / (this->knownDf(0, idxNode) * this->knownDf(1, idxNode)))
                 * ((vOld[0](this->connect(idxNode, 2*pp))
                    + vOld[0](this->connect(idxNode, 2*pp+1))
                    - 2.0 * vOld[0](idxNode))
@@ -263,20 +265,20 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
             }
             /* Third dimension. */
             vNew[0](idxNode) += this->tau()
-            * (this->knownDf(3, idxNode)
-                / (this->knownDf(1, idxNode) * this->knownDf(2, idxNode)))
-            * (2 * vOld[0](this->connect(idxNode, 2*2))
-               + 2 * this->gridsize(2) * (ALPHA_AMB/this->knownDf(3, idxNode)) * T_AMB
-               - 2.0 * vOld[0](idxNode) * (this->gridsize(2) * (ALPHA_AMB/this->knownDf(3, idxNode)))
-               / (this->gridsize(2) * this->gridsize(2)));
+            * (this->knownDf(2, idxNode)
+                / (this->knownDf(0, idxNode) * this->knownDf(1, idxNode)))
+            * (((2.0 * this->gridsize(2) * (ALPHA_AMB/this->knownDf(2, idxNode)) * T_AMB)
+                + (2.0 * vOld[0](this->connect(idxNode, 2*2)))
+                - (2.0 * vOld[0](idxNode) * (this->gridsize(2) * (ALPHA_AMB/this->knownDf(2, idxNode)) + 1.0)))
+                / (this->gridsize(2) * this->gridsize(2)));
             vNew[0](idxNode) += this->tau() * (
                 (RHO_BLOOD * C_BLOOD)
-                / (this->knownDf(1, idxNode) * this->knownDf(2, idxNode)))
-            * (this->knownDf(4, idxNode)
+                / (this->knownDf(0, idxNode) * this->knownDf(1, idxNode)))
+            * (this->knownDf(3, idxNode)
             * (T_BLOOD - vOld[0](idxNode)));
             vNew[0](idxNode) += this->tau() * (
-                (1.0/(this->knownDf(1, idxNode) * this->knownDf(2, idxNode))))
-            * this->knownDf(5, idxNode);
+                (1.0/(this->knownDf(0, idxNode) * this->knownDf(1, idxNode))))
+            * this->knownDf(4, idxNode);
         }
     }
 
