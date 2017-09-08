@@ -31,6 +31,43 @@ template<typename CT, std::size_t DIM>
 class ZhangExampleFDM : public ScaFES::Problem<ZhangExampleFDM<CT,DIM>, CT, DIM> {
   public:
 
+    /** constant k. Material parameter (thermal conductivity) for tissue. */
+    const double K = 0.5; /* W m^-1 K^-1 */
+
+    /** constant eta_b. Material parameter (perfusion) for tissue. */
+    const double ETA_B = 10e-4; /* s^-1 */
+
+    /** constant rho_b. Material parameter (density) for blood. */
+    const double RHO_B = 1052.0; /* kg m^-3 */
+
+    /** constant c_pb. Material parameter (specific heat capacity) for blood. */
+    const double C_PB = 3800.0; /* J kg^-1 K^-1 */
+
+    /** constant T_a. Material parameter (temperature) for blood. */
+    const double T_A = 37.0; /* degree Celcius */
+
+    /** constant Q_m. Material parameter (metabolic heat) for tissue. */
+    const double Q_M = 400.0; /* W m^-3 */
+
+    /** constant Q_s. Parameter (spatial heating). */
+    const double Q_S = 0.0; /* W m^-3 */
+
+    /** constant rho. Material parameter (density) for tissue. */
+    const double RHO = 1052.0; /* kg m^-3 */
+
+    /** constant c_p. Material parameter (specific heat capacity) for tissue. */
+    const double C_P = 3800.0; /* J kg^-1 K^-1 */
+
+    /** constant T_L. Boundary condition (temperature) for problem. */
+    const double T_L = 30.0; /* degree Celcius */
+
+    /** constant L. Geometry parameter (length) for tissue. */
+    const double L = 0.04; /* m */
+
+    /** constant T_e. Initial condition (temperature) for problem. */
+    const double T_E = T_A + ((Q_M + Q_S)/(ETA_B * RHO_B * C_PB));
+
+
     /** All fields which are related to the underlying problem
      * are added in terms of an entry of the parameters of
      * type \c std::vector.
@@ -119,6 +156,7 @@ class ZhangExampleFDM : public ScaFES::Problem<ZhangExampleFDM<CT,DIM>, CT, DIM>
                      std::vector<ScaFES::DataField<TT,DIM>> const& vOld,
                      ScaFES::Ntuple<int,DIM> const& idxNode,
                      int const& /*timestep*/) {
+        std::cout << this->gridsize(0) << std::endl;
     }
 
     /** Updates all unknown fields at one given global border grid node.
