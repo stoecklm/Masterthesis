@@ -505,6 +505,11 @@ AC_CONFIG_FILES([examples/TumorHeatEqnFDM/RUN.sh],
        [chmod +x examples/TumorHeatEqnFDM/RUN.sh])
 AC_CONFIG_FILES([examples/TumorHeatEqnFDM/TESTMATRIX_RUN.sh],
        [chmod +x examples/TumorHeatEqnFDM/TESTMATRIX_RUN.sh])
+AC_CONFIG_FILES(examples/ZhangExampleFDM/Makefile)
+AC_CONFIG_FILES([examples/ZhangExampleFDM/RUN.sh],
+       [chmod +x examples/ZhangExampleFDM/RUN.sh])
+AC_CONFIG_FILES([examples/ZhangExampleFDM/TESTMATRIX_RUN.sh],
+       [chmod +x examples/ZhangExampleFDM/TESTMATRIX_RUN.sh])
 ##if test "$distributeSoftware" = "no"; then
 ##    AC_CONFIG_FILES(examples/MaxwellEqnsFDTD/Makefile)
 ##fi

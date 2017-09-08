@@ -4,6 +4,7 @@ SUBDIRS += WaveEqnFDM
 SUBDIRS += LameNavierEqnFDM
 SUBDIRS += LameNavierEqnFDMFirstOrder
 SUBDIRS += TumorHeatEqnFDM
+SUBDIRS += ZhangExampleFDM
 
 if AMHAVEBOOST
 if AMHAVEBOOSTMPI

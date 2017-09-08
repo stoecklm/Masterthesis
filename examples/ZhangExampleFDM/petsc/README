@@ -1,0 +1,86 @@
+===============================
+Comparison of ScaFES with PETSc
+===============================
+
+Problem
+=======
+2D Heat Equation on unit square.
+* Given initial solution
+  utilde(x,y) := x*(x-0.5)*(x-0.5)*(1-x) * y*(y-0.5)*(y-0.5)*(1-y)
+* Find u = u(x,y) such that
+          \partial_t(u) - (u_xx + u_yy) = 0    in \Omega:=(0,1)^2,
+          u(., 0) = utilde                     in \Omega,
+          u(. , t) = 0                         on \partial\Omega.
+
+Discretized Problem
+===================
+* Discretization in space: Finite Difference Method.
+* Discretization in time:  Forward Euler method.
+* Let n the number of grid nodes in dimension x.
+* Let m the number of grid nodes in dimension y.
+* Assume that n = m ===> h:= h_x = h_y.
+* Let dt the given time step size.
+* Find U^{n+1} such that
+       U^{n+1}_{i,j} = ( -4 U^{n}_{i,j} + U^{n}_{i+1,j}+ U^{n}_{i,j+1}
+                                    + U^{n}_{i-1,j}+ U^{n}_{i,j-1} ) * dt/(h^2)
+                           + U^{n}_{i,j}  for all i, j = 1, ..., n-1
+
+
+
+================================================================================
+Implementation in PETSc
+=======================
+* The problem was formulated as A*U = F in each time step.
+* The source code is an extension of the PETSc example
+
+             petsc/src/ts/examples/tutorials/ex4.c
+
+  which solves the 1D heat equation using finite differences and the Euler
+  method with parallel PETSc matrices and PETSc vectors.
+  The source code is free available under the PETSc BSD-style license.
+* The CPU time needed for solving the system A*U = F is measured.
+
+
+Run the PETSc code
+==================
+* Load necessary modules:
+  On ZIH cluster Taurus (earlier versions did not work):
+
+      module load petsc/3.4.3-complex
+
+* Compile and execute:
+
+     make HeatEqnFDM_Petsc
+     mpirun -np <p> ./HeatEqnFDM_Petsc -m <M> -n <N> -t <T> -tt <TT>
+
+       -p <p>   Number of processes.
+       -m <M>   Number of nodes in x direction.
+       -n <N>   Number of nodes in y direction.
+       -t <T>   Number of time steps.
+       -tt <TT> Maximal number of time steps (dt = 1/TT; default: TT=5000)
+
+Visualization of the results
+============================
+Three files will be written:
+Each file was created using PETSc::VecView(),
+* xx.data     Grid in x direction.
+* yy.data     Grid in y direction.
+* value.data  Solution vector.
+
+Remark: Boundary conditions are incorperated in the matrix vector formulation.
+        Thus, boundary conditions are not included in the file value.data.
+
+* Collect all files in one file using a Python script.
+
+    python createPlotfile.py
+ 
+Remark: The number of rows must be set in createPlotfile.py
+        plus 3 for PETSc header.
+
+* Open the file plot.3D using VisIt 
+
+      - open -> plot.3D (Open file as type: Guess from file/extension)
+        -> Add -> Pseudocolor -> value -> Draw
+      - PlotAtts -> Pseudocolor -> PointSize = 20 -> Apply
+
+  
