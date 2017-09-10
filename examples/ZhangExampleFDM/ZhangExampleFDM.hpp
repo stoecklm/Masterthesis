@@ -156,7 +156,6 @@ class ZhangExampleFDM : public ScaFES::Problem<ZhangExampleFDM<CT,DIM>, CT, DIM>
                      std::vector<ScaFES::DataField<TT,DIM>> const& vOld,
                      ScaFES::Ntuple<int,DIM> const& idxNode,
                      int const& /*timestep*/) {
-        std::cout << this->gridsize(0) << std::endl;
     }
 
     /** Updates all unknown fields at one given global border grid node.
