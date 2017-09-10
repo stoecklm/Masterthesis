@@ -131,6 +131,8 @@ class ZhangExampleFDM : public ScaFES::Problem<ZhangExampleFDM<CT,DIM>, CT, DIM>
                    std::vector<TT> const& /*vOld*/,
                    ScaFES::Ntuple<int,DIM> const& idxNode,
                    int const& /*timestep*/) {
+        /* Uniform distribution as initial condition. */
+        vNew[0](idxNode) = T_E; /* knownDf(0, idxNode). T. */
     }
 
     /** Initializes all unknown fields at one given global border grid node.
@@ -144,6 +146,8 @@ class ZhangExampleFDM : public ScaFES::Problem<ZhangExampleFDM<CT,DIM>, CT, DIM>
                    std::vector<TT> const& /*vOld*/,
                    ScaFES::Ntuple<int,DIM> const& idxNode,
                    int const& /*timestep*/) {
+        /* Uniform distribution as initial condition. */
+        vNew[0](idxNode) = T_E; /* knownDf(0, idxNode). T. */
     }
 
     /** Updates all unknown fields at one given global inner grid node.
@@ -156,6 +160,22 @@ class ZhangExampleFDM : public ScaFES::Problem<ZhangExampleFDM<CT,DIM>, CT, DIM>
                      std::vector<ScaFES::DataField<TT,DIM>> const& vOld,
                      ScaFES::Ntuple<int,DIM> const& idxNode,
                      int const& /*timestep*/) {
+        vNew[0](idxNode) = vOld[0](idxNode);
+        for (std::size_t pp = 0; pp < DIM; ++pp) {
+            vNew[0](idxNode) += this->tau()
+                             * (K/(RHO * C_P))
+                             * ((vOld[0](this->connect(idxNode, 2*pp))
+                                 + vOld[0](this->connect(idxNode, 2*pp+1))
+                                 - 2.0 * vOld[0](idxNode))
+                             /(this->gridsize(pp) * this->gridsize(pp)));
+        }
+        vNew[0](idxNode) += this->tau()
+                         * ((ETA_B * RHO_B * C_PB)/(RHO * C_P))
+                         * (T_A - vOld[0](idxNode));
+        vNew[0](idxNode) += this->tau()
+                         * (Q_M/(RHO * C_P));
+        vNew[0](idxNode) += this->tau()
+                         * (Q_S/(RHO * C_P));
     }
 
     /** Updates all unknown fields at one given global border grid node.
@@ -167,6 +187,30 @@ class ZhangExampleFDM : public ScaFES::Problem<ZhangExampleFDM<CT,DIM>, CT, DIM>
                       std::vector<ScaFES::DataField<TT,DIM>>const& vOld,
                       ScaFES::Ntuple<int,DIM> const& idxNode,
                       int const& /*timestep*/) {
+        /* First node in 1D.
+         * Adiabatic boundary conditon. */
+        if (idxNode.elem(0) == 0) {
+            vNew[0](idxNode) = vOld[0](idxNode);
+            for (std::size_t pp = 0; pp < DIM; ++pp) {
+                vNew[0](idxNode) += this->tau()
+                                 * (K/(RHO * C_P))
+                                 * ((2.0 * vOld[0](this->connect(idxNode, 2*pp))
+                                     - 2.0 * vOld[0](idxNode))
+                                 /(this->gridsize(pp) * this->gridsize(pp)));
+            }
+            vNew[0](idxNode) += this->tau()
+                             * ((ETA_B * RHO_B * C_PB)/(RHO * C_P))
+                             * (T_A - vOld[0](idxNode));
+            vNew[0](idxNode) += this->tau()
+                             * (Q_M/(RHO * C_P));
+            vNew[0](idxNode) += this->tau()
+                             * (Q_S/(RHO * C_P));
+        }
+        /* Last node in 1D.
+         * Isothermal boundary conditon. */
+        if (idxNode.elem(0) == (this->nNodes(0)-1)) {
+            vNew[0](idxNode) = T_L;
+        }
     }
 
     /** Updates (2nd cycle) all unknown fields at one given global inner grid node.
