@@ -188,13 +188,14 @@ class ZhangExampleFDM : public ScaFES::Problem<ZhangExampleFDM<CT,DIM>, CT, DIM>
                       ScaFES::Ntuple<int,DIM> const& idxNode,
                       int const& /*timestep*/) {
         /* First node in 1D.
-         * Adiabatic boundary conditon. */
+         * Adiabatic boundary conditon.
+         * 2*pp+1 is current idxNode+1, i.e. right-hand side neighbour. */
         if (idxNode.elem(0) == 0) {
             vNew[0](idxNode) = vOld[0](idxNode);
             for (std::size_t pp = 0; pp < DIM; ++pp) {
                 vNew[0](idxNode) += this->tau()
                                  * (K/(RHO * C_P))
-                                 * ((2.0 * vOld[0](this->connect(idxNode, 2*pp))
+                                 * ((2.0 * vOld[0](this->connect(idxNode, 2*pp+1))
                                      - 2.0 * vOld[0](idxNode))
                                  /(this->gridsize(pp) * this->gridsize(pp)));
             }
