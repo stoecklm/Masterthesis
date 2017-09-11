@@ -2304,3 +2304,27 @@ Source code for Main Page is included in ScaFES.hpp, but will not be built by do
 Solution:
 =========
 pending
+
+
+################################################################################
+Problem:
+=======
+[MS, 09/11/2017]
+One dimensional (1D) problems cannot be executed.
+
+Dimension of problem and its geometry needs to be defined in RUN.sh.in.
+If dimension, nodes, coordinates, ... are set to 1D, the following errors occurs,
+after RUN.sh is executed:
+
+"ERROR: The parameter --nPartitions=1x1x1 is not of a format like --nPartitions=n0. Exit..."
+
+This error occurs whether --nPartitions is set or not.
+ScaFES does not regonize --nPartitions=1 as a valid parameter.
+Therefore --nPartitions is set to the default value, which is 1x1x1.
+
+Parameters will be parsed in scripts/scafesrun.sh.
+nPartitions is set to default value in scripts/scafesrun.sh:580-595.
+
+Solution:
+=========
+pending
