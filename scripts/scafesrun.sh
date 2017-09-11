@@ -587,11 +587,13 @@ for idxTestMpi in `seq 0 $endTestMpi`; do
             esac
 
             if [ "$isGivenInPartitionGridFormat" == "no" ] ; then
-                 nPartitions="$currNprocessesMpi";
-                 for idxDim in `seq 2 $spaceDim`; do
-                     tmpPart="${nPartitions}x1"
-                     nPartitions=$tmpPart;
-                 done
+                nPartitions="$currNprocessesMpi";
+                if (("$spaceDim" > 1)); then
+                    for idxDim in `seq 2 $spaceDim`; do
+                        tmpPart="${nPartitions}x1"
+                        nPartitions=$tmpPart;
+                    done
+                fi
             fi
 
             echo -e "\n\n  +-------------------------------+";

@@ -2319,12 +2319,12 @@ after RUN.sh is executed:
 "ERROR: The parameter --nPartitions=1x1x1 is not of a format like --nPartitions=n0. Exit..."
 
 This error occurs whether --nPartitions is set or not.
-ScaFES does not regonize --nPartitions=1 as a valid parameter.
-Therefore --nPartitions is set to the default value, which is 1x1x1.
+ScaFES does not regonize --nPartitions=1 as a valid parameter since it does not contain the letter "x", see scripts/scafesrun.sh:586.
+--nPartitions is set to a default value, which is 1x1x1 and therefore wrong for a 1D example.
 
 Parameters will be parsed in scripts/scafesrun.sh.
 nPartitions is set to default value in scripts/scafesrun.sh:580-595.
 
 Solution:
 =========
-pending
+Added if statement so that the default value for a 1D example will be build correctly, see scripts/scafesrun.sh:591.
