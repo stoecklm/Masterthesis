@@ -2328,3 +2328,9 @@ nPartitions is set to default value in scripts/scafesrun.sh:580-595.
 Solution:
 =========
 Added if statement so that the default value for a 1D example will be build correctly, see scripts/scafesrun.sh:591.
+
+Also add
+
+export SCAFESRUN_PARTITION_GRID="1"
+
+to RUN.sh.in.
