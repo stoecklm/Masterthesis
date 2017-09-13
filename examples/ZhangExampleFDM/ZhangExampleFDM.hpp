@@ -10,6 +10,9 @@
  *  @brief Implementation of n-dimensional Pennes bio heat equation problem on unit cube.
  */
 
+#define _USE_MATH_DEFINES
+
+#include <cmath>
 #include <iostream>
 #include "ScaFES.hpp"
 
@@ -35,7 +38,7 @@ class ZhangExampleFDM : public ScaFES::Problem<ZhangExampleFDM<CT,DIM>, CT, DIM>
     const double K = 0.5; /* W m^-1 K^-1 */
 
     /** constant eta_b. Material parameter (perfusion) for tissue. */
-    const double ETA_B = 10e-4; /* s^-1 */
+    const double ETA_B = 1.0e-4; /* s^-1 */
 
     /** constant rho_b. Material parameter (density) for blood. */
     const double RHO_B = 1052.0; /* kg m^-3 */
@@ -66,6 +69,20 @@ class ZhangExampleFDM : public ScaFES::Problem<ZhangExampleFDM<CT,DIM>, CT, DIM>
 
     /** constant T_e. Initial condition (temperature) for problem. */
     const double T_E = T_A + ((Q_M + Q_S)/(ETA_B * RHO_B * C_PB));
+
+    /** constant alpha. Material parameter (thermal diffusivity) for problem. */
+    const double ALPHA = K/(RHO * C_P);
+
+    /** constant eta_star. Material parameter for problem. */
+    const double ETA_STAR = (ETA_B * RHO_B * C_PB)/(RHO * C_P);
+
+    /** m_max. Mathematical parameter. */
+    /* Use M_MAX = 1000000 for SCAFESRUN_END_TIME=200. */
+    //const int M_MAX = 1000000;
+    /* Use M_MAX = 1000000 for SCAFESRUN_END_TIME=1000. */
+    const int M_MAX = 1000000;
+    /* Try M_MAX = 1000 for SCAFESRUN_END_TIME=5000. */
+    //const int M_MAX = 1000;
 
 
     /** All fields which are related to the underlying problem
@@ -109,7 +126,28 @@ class ZhangExampleFDM : public ScaFES::Problem<ZhangExampleFDM<CT,DIM>, CT, DIM>
      */
     void evalInner(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
                    ScaFES::Ntuple<int,DIM> const& idxNode,
-                   int const& /*timestep*/) {
+                   int const& timestep) {
+        double beta_m = 0.0;
+        double sum = 0.0; /* Value of sum from m=1 to m=m_max-1. */
+        double valueCurrIter = 0.0; /* Value for current iteration of loop. */
+        double time = timestep * this->tau();
+        double x = idxNode.elem(0) * this->gridsize(0);
+        if (x == L) {
+            x = L - 0.00001;
+        }
+        for (int m = 1; m < M_MAX; ++m) {
+            beta_m = ((m - 0.5) * M_PI)/L;
+            valueCurrIter = std::pow(-1, (m-1));
+            valueCurrIter *= beta_m;
+            valueCurrIter *= std::cos(beta_m * x);
+            valueCurrIter *= 1.0 - std::exp(-1.0*(ALPHA * beta_m * beta_m + ETA_STAR) * time);
+            valueCurrIter /= (ALPHA * beta_m * beta_m) + ETA_STAR;
+            sum += valueCurrIter;
+        }
+        vNew[0](idxNode) = sum;
+        vNew[0](idxNode) *= T_L - T_E;
+        vNew[0](idxNode) *= (2.0 * ALPHA)/L;
+        vNew[0](idxNode) += T_E;
     }
 
     /** Evaluates all fields at one given global border grid node.
@@ -120,6 +158,7 @@ class ZhangExampleFDM : public ScaFES::Problem<ZhangExampleFDM<CT,DIM>, CT, DIM>
     void evalBorder(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
                     ScaFES::Ntuple<int,DIM> const& idxNode,
                     int const& timestep) {
+        this->evalInner(vNew, idxNode, timestep);
     }
 
     /** Initializes all unknown fields at one given global inner grid node.
@@ -143,11 +182,11 @@ class ZhangExampleFDM : public ScaFES::Problem<ZhangExampleFDM<CT,DIM>, CT, DIM>
      */
     template<typename TT>
     void initBorder(std::vector< ScaFES::DataField<TT, DIM> >& vNew,
-                   std::vector<TT> const& /*vOld*/,
+                   std::vector<TT> const& vOld,
                    ScaFES::Ntuple<int,DIM> const& idxNode,
-                   int const& /*timestep*/) {
+                   int const& timestep) {
         /* Uniform distribution as initial condition. */
-        vNew[0](idxNode) = T_E; /* knownDf(0, idxNode). T. */
+        this->initInner(vNew, vOld, idxNode, timestep);
     }
 
     /** Updates all unknown fields at one given global inner grid node.
@@ -161,14 +200,12 @@ class ZhangExampleFDM : public ScaFES::Problem<ZhangExampleFDM<CT,DIM>, CT, DIM>
                      ScaFES::Ntuple<int,DIM> const& idxNode,
                      int const& /*timestep*/) {
         vNew[0](idxNode) = vOld[0](idxNode);
-        for (std::size_t pp = 0; pp < DIM; ++pp) {
-            vNew[0](idxNode) += this->tau()
-                             * (K/(RHO * C_P))
-                             * ((vOld[0](this->connect(idxNode, 2*pp))
-                                 + vOld[0](this->connect(idxNode, 2*pp+1))
-                                 - 2.0 * vOld[0](idxNode))
-                             /(this->gridsize(pp) * this->gridsize(pp)));
-        }
+        vNew[0](idxNode) += this->tau()
+                         * (K/(RHO * C_P))
+                         * ((vOld[0](this->connect(idxNode, 2*0))
+                             + vOld[0](this->connect(idxNode, 2*0+1))
+                             - 2.0 * vOld[0](idxNode))
+                         /(this->gridsize(0) * this->gridsize(0)));
         vNew[0](idxNode) += this->tau()
                          * ((ETA_B * RHO_B * C_PB)/(RHO * C_P))
                          * (T_A - vOld[0](idxNode));
@@ -192,13 +229,11 @@ class ZhangExampleFDM : public ScaFES::Problem<ZhangExampleFDM<CT,DIM>, CT, DIM>
          * 2*pp+1 is current idxNode+1, i.e. right-hand side neighbour. */
         if (idxNode.elem(0) == 0) {
             vNew[0](idxNode) = vOld[0](idxNode);
-            for (std::size_t pp = 0; pp < DIM; ++pp) {
-                vNew[0](idxNode) += this->tau()
-                                 * (K/(RHO * C_P))
-                                 * ((2.0 * vOld[0](this->connect(idxNode, 2*pp+1))
-                                     - 2.0 * vOld[0](idxNode))
-                                 /(this->gridsize(pp) * this->gridsize(pp)));
-            }
+            vNew[0](idxNode) += this->tau()
+                             * (K/(RHO * C_P))
+                             * ((2.0 * vOld[0](this->connect(idxNode, 2*0+1))
+                                 - 2.0 * vOld[0](idxNode))
+                             /(this->gridsize(0) * this->gridsize(0)));
             vNew[0](idxNode) += this->tau()
                              * ((ETA_B * RHO_B * C_PB)/(RHO * C_P))
                              * (T_A - vOld[0](idxNode));

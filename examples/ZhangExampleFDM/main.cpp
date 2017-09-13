@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
     defaultValue[0] = 0.0;
     std::vector<ScaFES::WriteHowOften> writeToFile(1, ScaFES::WriteHowOften::LIKE_GIVEN_AT_CL);
     std::vector<bool> computeError(1);
-    computeError[0] = false;
+    computeError[0] = true;
     std::vector<double> geomparamsInit;
 
     ZhangExampleFDM<double, DIM> ppp(paramsCl, gg, false, nameDatafield, stencilWidth,
