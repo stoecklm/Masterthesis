@@ -2310,7 +2310,7 @@ pending
 Problem:
 =======
 [MS, 09/11/2017]
-One dimensional (1D) problems cannot be executed.
+One dimensional (1D) problems cannot be executed (valid for macOS Sierra 10.12.6)
 
 Dimension of problem and its geometry needs to be defined in RUN.sh.in.
 If dimension, nodes, coordinates, ... are set to 1D, the following errors occurs,
@@ -2324,6 +2324,18 @@ ScaFES does not regonize --nPartitions=1 as a valid parameter since it does not 
 
 Parameters will be parsed in scripts/scafesrun.sh.
 nPartitions is set to default value in scripts/scafesrun.sh:580-595.
+
+Reason:
+=========
+Tool seq works different on macOS Sierra and ubuntu.
+Difference for "seq 2 1".
+Output fon macOS Sierra:
+2
+1
+
+No output on Ubuntu.
+
+Default value will be built differently on both systems.
 
 Solution:
 =========
