@@ -7,28 +7,111 @@
 /**
  *  @file ZhangExampleFDM.hpp
  *
- *  @brief Implementation of n-dimensional Pennes bio heat equation problem on unit cube.
+ *  @brief Implementation of a 1-dimensional Pennes bioheat equation problem
+ *  based on Zhang (2008): "Lattice Boltzmann method for solving the bioheat equation".
  */
 
 #define _USE_MATH_DEFINES
 
 #include <cmath>
-#include <iostream>
 #include "ScaFES.hpp"
 
 /*******************************************************************************
  ******************************************************************************/
 /**
  * \class ZhangExampleFDM
- *  @brief Class for discretized heat equation problem.
+ *  @brief Class for discretized example of a 1D Pennes bioheat equation problem.
  *
- * \section ZhangExampleFDM 1D Pennes Bioheat Equation Problem based on Zhang (2008)
- *
+ * \section zhangExampleFDM 1D Pennes Bioheat Equation Problem based on Zhang (2008)
  *
  * \subsection mathdescr Mathematical Description
+ * Given:
+ * <ul>
+ * <li> time interval \f[[t_S; t_E] \mbox{ with } 0 \le t_S < t_E,\f] </li>
+ * <li> domain \f[\Omega := (0,0.04)^1,\f] </li>
+ * <li> source metabolism heat \f[Q_m: \bar{\Omega} \times (t_S;t_E] \to R, \quad
+        Q_m(x,t) \neq 0,\f] </li>
+ * <li> source spatial heating \f[Q_s: \bar{\Omega} \times (t_S;t_E] \to R, \quad
+        Q_s(x,t) := 0,\f] </li>
+ * <li> boundary condition (left node) \f[g: \partial\Omega \times (t_S;t_E] \to R, \quad
+         \mathrm{adiabatic},\f] </li>
+ * <li> boundary condition (right node) \f[g: \partial\Omega \times (t_S;t_E] \to R, \quad
+         \mathrm{isothermal},\f] </li>
+ * <li> initial condition \f[\widetilde{y}: \bar{\Omega} \to R, \quad
+        \widetilde{y}(x) := T_a + \frac{Q_m + Q_s}{\eta_b \rho_b c_{pb}}.\f]
+ * </ul>
+ * Find \f[y: \bar{\Omega} \times [t_S; t_E] \to {R}\f] such that
+ * \f{eqnarray*}{
+ *  k \nabla^2 y + \eta_b \rho_b c_{pb} (T_a - y) + Q_m + Q_s
+ * &=& \rho c_p \frac{\partial y}{\partial t}\quad \mbox{in }
+ *          \Omega \times (t_S;t_E], \\
+ *                      y & =&  g \quad \quad \quad \mbox{on }
+ *          \partial\Omega \times (t_S;t_E], \\
+ *             y(\cdot,t_S) & =& \widetilde{y} \quad \quad  \quad \mbox{in } \bar{\Omega}.
+ * \f}
+ *
  * \subsection mathdiscretization Discretization of the problem
  * \subsubsection discrTD Discretization of the time interval and the domain
- * \subsubsection discrHeatEqn Discretization of Pennes bioheat equation
+ * Let the time interval [t_S;t_E] be uniformly discretised with
+ * \f[t_l := \{ t_S + l \cdot \tau\}_l \f]
+ * with time step size tau > 0.
+ *
+ * Let the domain Omega be uniformly discretised with
+ * \f[ x_{(i)} :=  \{ (i \cdot h_0) \}_{(i)}
+ * \f]
+ * with grid sizes h_p>0 for all p.
+ * <ul>
+ * <li>G_I: Set of all interior grid nodes, </li>
+ * <li>G_BL: Left boundary grid node,</li>
+ * <li>G_BR: Right boundary grid node,</li>
+ * <li>G := G_I with G_BL and G_BR: Set of all grid nodes</li>
+ * </ul>
+ *
+ * \subsubsection discrZhangEx Discretization of Pennes bioheat equation
+ * Define the following vectors:
+ * \f{eqnarray*}{
+ * T^{(l)}_{(i)} &:=& y(x_{(i)},t_l), \\
+ * \widetilde{T}_{(i)} &:=& \widetilde{y}(x_{(i)}) \\
+ * && \quad \mbox{for all } t_l \in \tau_h, x_{(i)} \in \Omega_h.
+ * \f}
+ * Discretize derivative in time using explicit Euler scheme and
+ * discretize derivative in space using central difference scheme:
+ * \f{eqnarray*}{
+ * T^{(l+1)}_{i} &=& T_{i}^{l}
+ * + \tau \cdot \frac{k}{\rho c_p}
+ * \frac{T^{l}_{i+1} + T^{l}_{i-1} - 2 \cdot T^{l}_{i}}{h_0^2} \\
+ * && + \tau \cdot \frac{\eta_b \rho_b c_{pb}}{\rho c_p} (T_a - T^l_i) \\
+ * && + \tau \cdot \frac{Q_m}{\rho c_p} \\
+ * && + \tau \cdot \frac{Q_s}{\rho c_p}
+ * \quad \quad \forall l, \, \forall {(i)} \in \cal{G}_I, \\
+ * \f}
+ * Left boundary (first node):
+ * \f{eqnarray*}{
+ * T^{(l+1)}_{i} &=& T_{i}^{l}
+ * + \tau \cdot \frac{k}{\rho c_p}
+ * \frac{2 \cdot T^{l}_{i+1} - 2 \cdot T^{l}_{i}}{h_0^2} \\
+ * && + \tau \cdot \frac{\eta_b \rho_b c_{pb}}{\rho c_p} (T_a - T^l_i) \\
+ * && + \tau \cdot \frac{Q_m}{\rho c_p} \\
+ * && + \tau \cdot \frac{Q_s}{\rho c_p}
+ * \quad \quad \forall l, \, \forall {(i)} \in \cal{G}_{BL}, \\
+ * \f}
+ * Right boundary (last node):
+ * \f[  T^{l+1} = T_L
+ * \quad \quad \forall l, \, \forall {(i)} \in \cal{G}_{BR},\f]
+ * Initial condition:
+ * \f[  T^{(0)}_{(i)}  =  \widetilde{T}_{(i)}
+ * \quad \quad \forall {(i)} \in \cal{G}.\f]
+ *
+ * \subsection analyitcalsol Analytical solution of the problem
+ * \f[  T(x,t) = T_e + \frac{2 \cdot \alpha}{L} \cdot (T_L - T_e)
+ *      \cdot \sum^{\infty}_{m=1} \bigg((-1)^{m-1} \cdot \beta_m
+ *      \cdot \cos(\beta_m \cdot x)
+ *      \cdot \frac{1 - e^{-(\alpha \cdot \beta^2_m + \eta^*) \cdot t}}
+ *      {\alpha \cdot \beta^2_m + \eta^*} \bigg) \f]
+ * with
+ * \f[  \alpha = \frac{k}{\rho \cdot c_p}, \f]
+ * \f[  \beta_m = \frac{(m - 0.5) \cdot \pi}{L} \ \mathrm{and} \f]
+ * \f[  \eta^* = \frac{\eta_b \cdot \rho_b \cdot c_{pb}}{\rho \cdot c_p}. \f]
 */
 template<typename CT, std::size_t DIM>
 class ZhangExampleFDM : public ScaFES::Problem<ZhangExampleFDM<CT,DIM>, CT, DIM> {

@@ -11,6 +11,7 @@ doxygen.stamp: Doxyfile \
                $(top_builddir)/src/ScaFES.hpp \
                $(top_builddir)/examples/HeatEqnFDM/HeatEqnFDM.hpp \
                $(top_builddir)/examples/WaveEqnFDM/WaveEqnFDM.hpp \
+               $(top_builddir)/examples/ZhangExampleFDM/ZhangExampleFDM.hpp \
                $(top_builddir)/examples/LameNavierEqnFDM/LameNavierEqnFDM.hpp \
                $(top_builddir)/examples/LameNavierEqnFDMFirstOrder/LameNavierEqnFDMFirstOrder.hpp
 	doxygen $<
