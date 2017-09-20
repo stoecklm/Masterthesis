@@ -474,6 +474,9 @@ AC_CONFIG_FILES([tests/system/PropagationFromLeftLowerCorner/TESTMATRIX_RUN_2D.s
        [chmod +x tests/system/PropagationFromLeftLowerCorner/TESTMATRIX_RUN_2D.sh])
 AC_CONFIG_FILES([tests/system/PropagationFromLeftLowerCorner/TESTMATRIX_RUN_3D.sh],
        [chmod +x tests/system/PropagationFromLeftLowerCorner/TESTMATRIX_RUN_3D.sh])
+AC_CONFIG_FILES(tests/system/HeatEqnFDM/Makefile)
+AC_CONFIG_FILES([tests/system/HeatEqnFDM/RUN.sh],
+       [chmod +x tests/system/HeatEqnFDM/RUN.sh])
 AC_CONFIG_FILES(examples/Makefile)
 AC_CONFIG_FILES(examples/HeatEqnFDM/Makefile)
 AC_CONFIG_FILES([examples/HeatEqnFDM/RUN.sh],

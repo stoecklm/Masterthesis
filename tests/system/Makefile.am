@@ -1,3 +1,4 @@
 SUBDIRS = HeatEqnFdmStencilWidthOne \
           HeatEqnFdmStencilWidthVar \
-          PropagationFromLeftLowerCorner
+          PropagationFromLeftLowerCorner \
+          HeatEqnFDM
