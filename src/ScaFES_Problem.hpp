@@ -1,5 +1,5 @@
 /* ScaFES
- * Copyright (c) 2011-2016, ZIH, TU Dresden, Federal Republic of Germany.
+ * Copyright (c) 2011-2017, ZIH, TU Dresden, Federal Republic of Germany.
  * For details, see the files COPYING and LICENSE in the base directory
  * of the package.
  */
@@ -601,7 +601,7 @@ protected:
     void setCommunicationMode();
 
     /** Determines if gradients should be computed during
-     * init and update phase. */
+     * initialization and update phase. */
     void setCompGradients();
 
     /*------------------------------------------------------------------------*/
@@ -659,7 +659,7 @@ protected:
 
     /*------------------------------------------------------------------------*/
     /*------------------------------------------------------------------------*/
-    /** Evaluates phase TypeOne using asynchronous MPI communication. */
+    /** Evaluates phase type 1 using asynchronous MPI communication. */
     void evalTypeOneAsynchronously(
         const std::string& whichPhase, ScaFES_VectDf<CT>& dfDep,
         ScaFES_VectDf<CT>& dfGradDep, const std::vector<CT>& dfIndep,
@@ -668,7 +668,7 @@ protected:
         ScaFES_FuncTypeOneToImplement<CT> funcPhaseInner,
         ScaFES_FuncTypeOneToImplement<CT> funcPhaseBorder);
 
-    /** Evaluates phase type2 using asynchronous MPI communication. */
+    /** Evaluates phase type 2 using asynchronous MPI communication. */
     void evalTypeTwoAsynchronously(
         const std::string& whichPhase, ScaFES_VectDf<CT>& dfDep,
         ScaFES_VectDf<CT>& dfGradDep, const ScaFES_VectDf<CT>& dfIndep,
@@ -686,7 +686,7 @@ protected:
         ScaFES_FuncTypeThreeToImplement<CT> funcPhaseInner,
         ScaFES_FuncTypeThreeToImplement<CT> funcPhaseBorder);
 
-    /** Evaluates TypeOne using synchronous MPI communication. */
+    /** Evaluates type 1 using synchronous MPI communication. */
     void evalTypeOneSynchronously(
         const std::string& whichPhase, ScaFES_VectDf<CT>& dfDepDomain,
         ScaFES_VectDf<CT>& dfDepGradDomain, ScaFES_VectDf<CT>& dfDepBdry,
@@ -696,7 +696,7 @@ protected:
         ScaFES_FuncTypeOneToImplement<CT> funcPhaseInner,
         ScaFES_FuncTypeOneToImplement<CT> funcPhaseBorder);
 
-    /** Evaluates type2 using synchronous MPI communication. */
+    /** Evaluates type 2 using synchronous MPI communication. */
     void evalTypeTwoSynchronously(
         const std::string& whichPhase, ScaFES_VectDf<CT>& dfDepDomain,
         ScaFES_VectDf<CT>& dfDepGradDomain, ScaFES_VectDf<CT>& dfDepBdry,
@@ -709,7 +709,7 @@ protected:
         ScaFES_FuncTypeTwoToImplement<CT> funcPhaseInner,
         ScaFES_FuncTypeTwoToImplement<CT> funcPhaseBorder);
 
-    /** Computes TypeThree3 using synchronous MPI communication. */
+    /** Computes type 3 using synchronous MPI communication. */
     void evalTypeThreeSynchronously(
         const std::string& whichPhase, CT& dfDep, std::vector<CT>& dfGradDep,
         const ScaFES_VectDf<CT>& dfIndepDomain,
@@ -1190,18 +1190,18 @@ protected:
     std::vector<CT*> mMemoryVectGradUnknownDfsRowsTwo;
 
     /** Temporary vector defined at the domain
-     * in order to realize asynchron. communication with ADOL-C. */
+     * in order to implement asynchronous communication with ADOL-C. */
     ScaFES_VectDf<CT> mVectUnknownDfsDomTmp;
 
     /** Temporary vector defined at the boundary
-     * in order to realize asynchron. communication with ADOL-C. */
+     * in order to implement asynchronous communication with ADOL-C. */
     ScaFES_VectDf<CT> mVectUnknownDfsBdryTmp;
 
-    /** Temporary gradient in order to realize asynchron. communication
+    /** Temporary gradient in order to implement asynchronous communication
      * when using ADOL-C tapes. */
     ScaFES_VectDf<CT> mVectGradUnknownDfsDomTmp;
 
-    /** Temporary gradient in order to realize asynchron. communication
+    /** Temporary gradient in order to implement asynchronous communication
      * when using ADOL-C tapes. */
     ScaFES_VectDf<CT> mVectGradUnknownDfsBdryTmp;
 
@@ -1407,7 +1407,7 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
     }
 
     /*------------------------------------------------------------------------*/
-    // Determine memHole wrt to global grid for all data fields.
+    // Determine memHole wrt. to global grid for all data fields.
     std::vector<ScaFES::GridSub<DIM>> memHoleGlobal(nDataFields);
     for (int ii = 0; ii < nDataFields; ++ii)
     {
@@ -1508,8 +1508,8 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
     }
     CT* elemDataKnownDfCurr = this->mMemoryVectKnownDf.data();
     /*------------------------------------------------------------------------*/
-    // First, all data fields which are defined at the whole domain.
-    // Second, all data fields which are defined at the boundary, only.
+    // Firstly, all data fields which are defined at the whole domain.
+    // Secondly, all data fields which are defined at the boundary, only.
     // This reordering of the data fields is important for the ADOL-C tracing
     // and evaluation as the fields must be available as a continuous memory
     // lump.
@@ -1528,11 +1528,11 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
             }
             else
             {
-                // Create reference data field regardless if error should be
+                // Create reference data fields regardless if error should be
                 // computed or not. This important for the correct order of
                 // the data fields.
-                // BUT: Memory for reference data field will be created only in
-                // case OF ERROR COMPUTATIONS.
+                // BUT: Memory for reference data fields will be created only
+                // if error should be computed.
                 std::string nameDf = nameDatafield.at(ii) + "SolDom";
                 this->mVectKnownDfDom.push_back(ScaFES::DataField<CT, DIM>(
                     nameDf, &(this->mParams), this->globalGrid(), memAll.at(ii),
@@ -1604,7 +1604,7 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
     // Process all UNKNOWN data fields.
     // Create one large memory block for all UNKNOWN data fields.
     // Use old / new scheme.
-    // First, allocate memory for all old data fields (independent ones),
+    // Firstly, allocate memory for all old data fields (independent ones),
     // then, allocate memory for all new data fields (dependent ones).
     const int N_COLUMNS_VECTUNKNOWN = 1;
     if (0 < this->nElemsUnknownDfs())
@@ -2954,7 +2954,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::compErrOfUnknownDfs()
                 if (this->mComputeError.at(ii))
                 {
                     this->mVectUnknownDfsDomNew[idDf]
-                        .compErrLinf(this->mVectKnownDfDom[idDf]);
+                        .compErrLinf(this->mVectKnownDfDom[ii]);
                 }
                 ++idDf;
             }
@@ -2972,7 +2972,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::compErrOfUnknownDfs()
                     if (this->mComputeError.at(ii))
                     {
                         this->mVectUnknownDfsBdryNew[idDf]
-                            .compErrLinf(this->mVectKnownDfBdry[idDf]);
+                            .compErrLinf(this->mVectKnownDfBdry[ii]);
                     }
                     ++idDf;
                 }
@@ -3403,7 +3403,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalGlobInner(ScaFES_VectDf<TT>& dfDep,
         (0 < this->params().indentDepth()))
     {
         std::cout << this->mParams.getPrefix()
-                                       << "   Evaluated."
+                  << "   Evaluated."
                   << std::endl;
     }
 }
@@ -3722,7 +3722,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalTypeOneAsynchronously(
         (0 < this->params().indentDepth()))
     {
         std::cout << this->mParams.getPrefix()
-                  << " * Evaluates phase "
+                  << " * Evaluate phase "
                   << whichPhase << " asynchronously: " << dfDep.at(0).name()
                   << "..." << std::endl;
     }
@@ -3855,7 +3855,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalTypeTwoAsynchronously(
         (0 < this->params().indentDepth()))
     {
         std::cout << this->mParams.getPrefix()
-                  << " * Evaluates phase "
+                  << " * Evaluate phase "
                   << whichPhase << " asynchronously: " << dfDep.at(0).name()
                   << "..." << std::endl;
     }
@@ -3984,7 +3984,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalTypeThreeAsynchronously(
         (0 < this->params().indentDepth()))
     {
         std::cout << this->mParams.getPrefix()
-                  << " * Evaluates phase "
+                  << " * Evaluate phase "
                   << whichPhase << " asynchronously: "
                   << " * " << whichPhase
                   << " asynchronously: " << dfIndep.at(0).name() << "..."
@@ -4079,7 +4079,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalTypeOneSynchronously(
         (0 < this->params().indentDepth()))
     {
         std::cout << this->mParams.getPrefix()
-                  << " * Evaluates phase "
+                  << " * Evaluate phase "
                   << whichPhase
                   << " synchronously: " << dfDepDomain.at(0).name() << "..."
                   << std::endl;
@@ -4159,7 +4159,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalTypeTwoSynchronously(
         (0 < this->params().indentDepth()))
     {
         std::cout << this->mParams.getPrefix()
-                                       << " * Evaluates phase "
+                  << " * Evaluate phase "
                   << whichPhase
                   << " synchronously: " << dfDepDomain.at(0).name() << "..."
                   << std::endl;
@@ -4265,7 +4265,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalTypeThreeSynchronously(
         (0 < this->params().indentDepth()))
     {
         std::cout << this->mParams.getPrefix()
-                  << " * Evaluates phase " << whichPhase
+                  << " * Evaluate phase " << whichPhase
                   << " synchronously: " << dfIndepDomain.at(0).name() << "..."
                   << std::endl;
     }

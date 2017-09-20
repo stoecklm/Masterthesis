@@ -1485,6 +1485,17 @@ double DataField<CT, DIM>::compErrLinf(const ScaFES::DataField<CT, DIM>& df)
         {
             for (int kk = 0; kk < this->nColumns(); ++kk)
             {
+                /* For debugging purposes, only. */
+                /*
+                std::cout << mParams->getPrefix()
+                          << " * compare fields ( "
+                          << name() << " " << df.name() << "): "
+                          << std::scientific << this->elemData(ii + kk)
+                          << "  " << this->elemData(ii + kk)  << "  "
+                          << ::fabs(this->elemData(ii + kk) - df(idxNode, kk))
+                          << std::fixed
+                          << std::endl;
+                */
                 if (::fabs(this->elemData(ii + kk) - df(idxNode, kk)) > errLinf)
                 {
                     errLinf = ::fabs(this->elemData(ii + kk) - df(idxNode, kk));
