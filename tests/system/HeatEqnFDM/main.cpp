@@ -8,7 +8,7 @@
 #include "HeatEqnFDM.hpp"
 
 /** Space dimension of problem. */
-const int DIM = 1;
+const int DIM = 2;
 
 /** Main program for HeatEqnFDM. */
 int main(int argc, char *argv[]) {

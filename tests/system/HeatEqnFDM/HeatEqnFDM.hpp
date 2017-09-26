@@ -90,6 +90,23 @@
 */
 template<typename CT, std::size_t DIM>
 class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
+
+    /* Defines types of equation which can be used for validation. */
+    enum typeOfEqn {constant = 0, linear = 1, quadratic = 2, cubic = 3};
+
+    /* Defines type of equation used for validation. */
+    const int eqnDegree = 1;
+
+    /** constant rho. Material parameter (density) for brain. */
+    const double RHO = 1.0; /* kg/m^3 */
+
+    /** constant c. Material parameter (specific heat capacity) for brain. */
+    const double C = 1.0; /* J/(kg K) */
+
+    /** constant lambda. Material parameter (thermal conductivity)
+     * for brain. */
+    const double LAMBDA = 1.0; /* W/(m K) */
+
   public:
     /** All fields which are related to the underlying problem
      * are added in terms of an entry of the parameters of
@@ -135,19 +152,83 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
                    int const& timestep) {
         ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
         double t = this->time(timestep);
-        vNew[0](idxNode) = 1;
+        /* Vector for F. */
+        vNew[0](idxNode) = 0;
+        /* Derivative in time. */
+        double dTdt = 1.0;
         for (std::size_t pp = 0; pp < DIM; ++pp) {
-            vNew[0](idxNode) += x[pp];
+            if (eqnDegree > constant) {
+                dTdt += x[pp];
+            }
+            if (eqnDegree > linear) {
+                for (std::size_t ii = pp; ii < DIM; ++ii) {
+                    dTdt += x[pp]*x[ii];
+                }
+            }
+            if (eqnDegree > quadratic) {
+                for (std::size_t ii = 0; ii < DIM; ++ii) {
+                    dTdt += x[pp]*x[pp]*x[ii];
+                }
+            }
+        }
+        vNew[0](idxNode) += RHO * C * dTdt;
+        /* Derivatives in space. */
+        for (std::size_t pp = 0; pp < DIM; pp++) {
+            double d2Tdx2 = 0.0;
+            if (eqnDegree > linear) {
+                d2Tdx2 = 2.0;
+            }
+            if (eqnDegree > quadratic) {
+                for (std::size_t ii = 0; ii < DIM; ++ii) {
+                    if (pp != ii) {
+                        d2Tdx2 += 2.0*x[ii];
+                    } else {
+                        d2Tdx2 += 6.0*x[ii];
+                    }
+                }
+            }
+            vNew[0](idxNode) -= LAMBDA * d2Tdx2;
         }
 
-        vNew[1](idxNode) = t;
+        /* Vector for G. */
+        /* Analytical solution for G. */
+        vNew[1](idxNode) = 1.0;
         for (std::size_t pp = 0; pp < DIM; ++pp) {
-            vNew[1](idxNode) += (t * x[pp]);
+            if (eqnDegree > constant) {
+                vNew[1](idxNode) += x[pp];
+            }
+            if (eqnDegree > linear) {
+                for (std::size_t ii = pp; ii < DIM; ++ii) {
+                    vNew[1](idxNode) += x[pp]*x[ii];
+                }
+            }
+            if (eqnDegree > quadratic) {
+                for (std::size_t ii = 0; ii < DIM; ++ii) {
+                    vNew[1](idxNode) += x[pp]*x[pp]*x[ii];
+                }
+            }
         }
-        vNew[2](idxNode) = t;
+        vNew[1](idxNode) *= t;
+
+        /* Vector for U. */
+        /* Analytical solution for U. */
+        vNew[2](idxNode) = 1.0;
         for (std::size_t pp = 0; pp < DIM; ++pp) {
-            vNew[2](idxNode) += (t * x[pp]);
+            if (eqnDegree > constant) {
+                vNew[2](idxNode) += x[pp];
+            }
+            if (eqnDegree > linear) {
+                for (std::size_t ii = pp; ii < DIM; ++ii) {
+                    vNew[2](idxNode) += x[pp]*x[ii];
+                }
+            }
+            if (eqnDegree > quadratic) {
+                for (std::size_t ii = 0; ii < DIM; ++ii) {
+                    vNew[2](idxNode) += x[pp]*x[pp]*x[ii];
+                }
+            }
         }
+        vNew[2](idxNode) *= t;
     }
 
     /** Evaluates all fields at one given global border grid node.
@@ -171,11 +252,26 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
                    ScaFES::Ntuple<int,DIM> const& idxNode,
                    int const& timestep) {
         ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
-        double t = this->time(timestep);
-        vNew[0](idxNode) = t;
+        double t_s = this->time(timestep);
+        /* Vector for U. */
+        /* Initial condition for U. */
+        vNew[0](idxNode) = 1.0;
         for (std::size_t pp = 0; pp < DIM; ++pp) {
-            vNew[0](idxNode) += (t * x[pp]);
+            if (eqnDegree > constant) {
+                vNew[0](idxNode) += x[pp];
+            }
+            if (eqnDegree > linear) {
+                for (std::size_t ii = pp; ii < DIM; ii++) {
+                    vNew[0](idxNode) += x[pp]*x[ii];
+                }
+            }
+            if (eqnDegree > quadratic) {
+                for (std::size_t ii = 0; ii < DIM; ii++) {
+                    vNew[0](idxNode) += x[pp]*x[pp]*x[ii];
+                }
+            }
         }
+        vNew[0](idxNode) *= t_s;
     }
 
     /** Initializes all unknown fields at one given global border grid node.
@@ -203,9 +299,10 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
                      ScaFES::Ntuple<int,DIM> const& idxNode,
                      int const& /*timestep*/) {
         vNew[0](idxNode) = vOld[0](idxNode)
-                            + this->tau() * this->knownDf(0, idxNode);
+                            + this->tau() * (1/(RHO*C))
+                            * this->knownDf(0, idxNode);
         for (std::size_t pp = 0; pp < DIM; ++pp) {
-            vNew[0](idxNode) += this->tau() * (
+            vNew[0](idxNode) += this->tau() * (LAMBDA/(RHO*C)) * (
                      vOld[0](this->connect(idxNode, 2*pp))
                      + vOld[0](this->connect(idxNode, 2*pp+1))
                      - 2.0 * vOld[0](idxNode) )
