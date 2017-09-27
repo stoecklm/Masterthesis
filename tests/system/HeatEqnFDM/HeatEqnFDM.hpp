@@ -152,6 +152,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
                    int const& timestep) {
         ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
         double t = this->time(timestep);
+
         /* Vector for F. */
         vNew[0](idxNode) = 0;
         /* Derivative in time. */
@@ -169,9 +170,14 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
                 for (std::size_t ii = 0; ii < DIM; ++ii) {
                     dTdt += x[pp]*x[pp]*x[ii];
                 }
+                for (std::size_t ii = pp+1; ii < DIM; ++ii) {
+                    for (std::size_t jj = ii+1; jj < DIM; ++jj) {
+                        dTdt += x[pp]*x[ii]*x[jj];
+                    }
+                }
             }
         }
-        vNew[0](idxNode) += RHO * C * dTdt;
+        vNew[0](idxNode) = RHO * C * dTdt;
         /* Derivatives in space. */
         for (std::size_t pp = 0; pp < DIM; pp++) {
             double d2Tdx2 = 0.0;
@@ -187,7 +193,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
                     }
                 }
             }
-            vNew[0](idxNode) -= LAMBDA * d2Tdx2;
+            vNew[0](idxNode) -= LAMBDA * t * d2Tdx2;
         }
 
         /* Vector for G. */
@@ -205,6 +211,11 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
             if (eqnDegree > quadratic) {
                 for (std::size_t ii = 0; ii < DIM; ++ii) {
                     vNew[1](idxNode) += x[pp]*x[pp]*x[ii];
+                }
+                for (std::size_t ii = pp+1; ii < DIM; ++ii) {
+                    for (std::size_t jj = ii+1; jj < DIM; ++jj) {
+                        vNew[1](idxNode) += x[pp]*x[ii]*x[jj];
+                    }
                 }
             }
         }
@@ -225,6 +236,11 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
             if (eqnDegree > quadratic) {
                 for (std::size_t ii = 0; ii < DIM; ++ii) {
                     vNew[2](idxNode) += x[pp]*x[pp]*x[ii];
+                }
+                for (std::size_t ii = pp+1; ii < DIM; ++ii) {
+                    for (std::size_t jj = ii+1; jj < DIM; ++jj) {
+                        vNew[2](idxNode) += x[pp]*x[ii]*x[jj];
+                    }
                 }
             }
         }
@@ -268,6 +284,11 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
             if (eqnDegree > quadratic) {
                 for (std::size_t ii = 0; ii < DIM; ii++) {
                     vNew[0](idxNode) += x[pp]*x[pp]*x[ii];
+                }
+                for (std::size_t ii = pp+1; ii < DIM; ++ii) {
+                    for (std::size_t jj = ii+1; jj < DIM; ++jj) {
+                        vNew[0](idxNode) += x[pp]*x[ii]*x[jj];
+                    }
                 }
             }
         }
