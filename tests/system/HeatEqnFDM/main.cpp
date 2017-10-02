@@ -8,7 +8,7 @@
 #include "HeatEqnFDM.hpp"
 
 /** Space dimension of problem. */
-const int DIM = 2;
+const int DIM = 3;
 
 /** Main program for HeatEqnFDM. */
 int main(int argc, char *argv[]) {
@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
     defaultValue[0] = 0.0;
     defaultValue[1] = 0.0;
     defaultValue[2] = 0.0;
-    std::vector<ScaFES::WriteHowOften> writeToFile(3, ScaFES::WriteHowOften::LIKE_GIVEN_AT_CL);
+    std::vector<ScaFES::WriteHowOften> writeToFile(3, ScaFES::WriteHowOften::NEVER);
     std::vector<bool> computeError(3);
     computeError[0] = false;
     computeError[1] = false;
@@ -47,11 +47,11 @@ int main(int argc, char *argv[]) {
 
     double sumHsquared = 0.0;
     for (std::size_t pp = 0; pp < DIM; ++pp) {
-        sumHsquared += (ppp.gridsize(pp) * ppp.gridsize(pp));
+        sumHsquared += 1.0/(ppp.gridsize(pp) * ppp.gridsize(pp));
     }
-    /* Stability condition: \sum_p h_p^2 \ge 2 \tau */
-    /* nTimesteps >= 2/dim * (nNodes - 1)^2 + 1 */
-    if (sumHsquared < 2.0 * ppp.tau()) {
+    /* Stability condition: 1/(\sum_p 1/h_p^2) \ge 2 \tau */
+    /* nTimesteps >= 2 * dim * (nNodes - 1)^2 */
+    if ((1.0/sumHsquared) < 2.0 * ppp.tau()) {
         std::cerr << "\nERROR: Stability condition is not fulfilled."
                    << std::endl;
     }
