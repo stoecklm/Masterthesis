@@ -94,7 +94,8 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
     /* Defines types of equation which can be used for validation. */
     enum typeOfEqn {constant = 0, linear = 1, quadratic = 2, cubic = 3};
 
-    /* Defines type of equation used for validation. */
+    /* Defines type of equation used for validation.
+     * To be changed by user. */
     const int eqnDegree = 1;
 
     /** constant rho. Material parameter (density) for brain. */
@@ -154,7 +155,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
         double t = this->time(timestep);
 
         /* Vector for F. */
-        vNew[0](idxNode) = 0;
+        vNew[0](idxNode) = 0.0;
         /* Derivative in time. */
         double dTdt = 1.0;
         for (std::size_t pp = 0; pp < DIM; ++pp) {
@@ -255,7 +256,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
     void evalBorder(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
                     ScaFES::Ntuple<int,DIM> const& idxNode,
                     int const& timestep) {
-            this->evalInner(vNew, idxNode, timestep);
+        this->evalInner(vNew, idxNode, timestep);
     }
 
     /** Initializes all unknown fields at one given global inner grid node.
@@ -269,6 +270,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
                    int const& timestep) {
         ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
         double t_s = this->time(timestep);
+
         /* Vector for U. */
         /* Initial condition for U. */
         vNew[0](idxNode) = 1.0;
@@ -320,7 +322,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
                      ScaFES::Ntuple<int,DIM> const& idxNode,
                      int const& /*timestep*/) {
         vNew[0](idxNode) = vOld[0](idxNode)
-                            + this->tau() * (1/(RHO*C))
+                            + this->tau() * (1.0/(RHO*C))
                             * this->knownDf(0, idxNode);
         for (std::size_t pp = 0; pp < DIM; ++pp) {
             vNew[0](idxNode) += this->tau() * (LAMBDA/(RHO*C)) * (
