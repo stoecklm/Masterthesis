@@ -11,6 +11,7 @@
  */
 
 #include "ScaFES.hpp"
+#include "analyticalSolutions.hpp"
 
 /*******************************************************************************
  ******************************************************************************/
@@ -155,97 +156,18 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
         double t = this->time(timestep);
 
         /* Vector for F. */
-        vNew[0](idxNode) = 0.0;
         /* Derivative in time. */
-        double dTdt = 1.0;
-        for (std::size_t pp = 0; pp < DIM; ++pp) {
-            if (eqnDegree > constant) {
-                dTdt += x[pp];
-            }
-            if (eqnDegree > linear) {
-                for (std::size_t ii = pp; ii < DIM; ++ii) {
-                    dTdt += x[pp]*x[ii];
-                }
-            }
-            if (eqnDegree > quadratic) {
-                for (std::size_t ii = 0; ii < DIM; ++ii) {
-                    dTdt += x[pp]*x[pp]*x[ii];
-                }
-                for (std::size_t ii = pp+1; ii < DIM; ++ii) {
-                    for (std::size_t jj = ii+1; jj < DIM; ++jj) {
-                        dTdt += x[pp]*x[ii]*x[jj];
-                    }
-                }
-            }
-        }
-        vNew[0](idxNode) = RHO * C * dTdt;
+        vNew[0](idxNode) = RHO * C * linearFunctionTimeDerivative<CT,DIM>(x);
         /* Derivatives in space. */
-        for (std::size_t pp = 0; pp < DIM; pp++) {
-            double d2Tdx2 = 0.0;
-            if (eqnDegree > linear) {
-                d2Tdx2 = 2.0;
-            }
-            if (eqnDegree > quadratic) {
-                for (std::size_t ii = 0; ii < DIM; ++ii) {
-                    if (pp != ii) {
-                        d2Tdx2 += 2.0*x[ii];
-                    } else {
-                        d2Tdx2 += 6.0*x[ii];
-                    }
-                }
-            }
-            vNew[0](idxNode) -= LAMBDA * t * d2Tdx2;
-        }
+        vNew[0](idxNode) -= LAMBDA * linearFunctionSpaceDerivatives<CT>();
 
         /* Vector for G. */
         /* Analytical solution for G. */
-        vNew[1](idxNode) = 1.0;
-        for (std::size_t pp = 0; pp < DIM; ++pp) {
-            if (eqnDegree > constant) {
-                vNew[1](idxNode) += x[pp];
-            }
-            if (eqnDegree > linear) {
-                for (std::size_t ii = pp; ii < DIM; ++ii) {
-                    vNew[1](idxNode) += x[pp]*x[ii];
-                }
-            }
-            if (eqnDegree > quadratic) {
-                for (std::size_t ii = 0; ii < DIM; ++ii) {
-                    vNew[1](idxNode) += x[pp]*x[pp]*x[ii];
-                }
-                for (std::size_t ii = pp+1; ii < DIM; ++ii) {
-                    for (std::size_t jj = ii+1; jj < DIM; ++jj) {
-                        vNew[1](idxNode) += x[pp]*x[ii]*x[jj];
-                    }
-                }
-            }
-        }
-        vNew[1](idxNode) *= t;
+        vNew[1](idxNode) = linearFunction(x, t);
 
         /* Vector for U. */
         /* Analytical solution for U. */
-        vNew[2](idxNode) = 1.0;
-        for (std::size_t pp = 0; pp < DIM; ++pp) {
-            if (eqnDegree > constant) {
-                vNew[2](idxNode) += x[pp];
-            }
-            if (eqnDegree > linear) {
-                for (std::size_t ii = pp; ii < DIM; ++ii) {
-                    vNew[2](idxNode) += x[pp]*x[ii];
-                }
-            }
-            if (eqnDegree > quadratic) {
-                for (std::size_t ii = 0; ii < DIM; ++ii) {
-                    vNew[2](idxNode) += x[pp]*x[pp]*x[ii];
-                }
-                for (std::size_t ii = pp+1; ii < DIM; ++ii) {
-                    for (std::size_t jj = ii+1; jj < DIM; ++jj) {
-                        vNew[2](idxNode) += x[pp]*x[ii]*x[jj];
-                    }
-                }
-            }
-        }
-        vNew[2](idxNode) *= t;
+        vNew[2](idxNode) = linearFunction(x, t);
     }
 
     /** Evaluates all fields at one given global border grid node.
@@ -273,28 +195,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
 
         /* Vector for U. */
         /* Initial condition for U. */
-        vNew[0](idxNode) = 1.0;
-        for (std::size_t pp = 0; pp < DIM; ++pp) {
-            if (eqnDegree > constant) {
-                vNew[0](idxNode) += x[pp];
-            }
-            if (eqnDegree > linear) {
-                for (std::size_t ii = pp; ii < DIM; ii++) {
-                    vNew[0](idxNode) += x[pp]*x[ii];
-                }
-            }
-            if (eqnDegree > quadratic) {
-                for (std::size_t ii = 0; ii < DIM; ii++) {
-                    vNew[0](idxNode) += x[pp]*x[pp]*x[ii];
-                }
-                for (std::size_t ii = pp+1; ii < DIM; ++ii) {
-                    for (std::size_t jj = ii+1; jj < DIM; ++jj) {
-                        vNew[0](idxNode) += x[pp]*x[ii]*x[jj];
-                    }
-                }
-            }
-        }
-        vNew[0](idxNode) *= t_s;
+        vNew[0](idxNode) = linearFunction(x, t_s);
     }
 
     /** Initializes all unknown fields at one given global border grid node.
