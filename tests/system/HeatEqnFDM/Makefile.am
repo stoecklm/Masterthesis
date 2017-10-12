@@ -60,7 +60,8 @@ noinst_PROGRAMS =
 noinst_PROGRAMS += HeatEqnFDM
 HeatEqnFDM_SOURCES = main.cpp \
                      HeatEqnFDM.hpp \
-                     analyticalSolutions.hpp
+                     analyticalSolutions.hpp \
+                     boundaryConditions.hpp
 HeatEqnFDM_CPPFLAGS = $(CPPFLAGS_COMMON)
 HeatEqnFDM_LDFLAGS = $(LDFLAGS_COMMON)
 HeatEqnFDM_LDADD = $(LDADD_COMMON)
