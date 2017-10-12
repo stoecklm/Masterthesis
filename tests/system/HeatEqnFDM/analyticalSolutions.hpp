@@ -13,23 +13,30 @@
 #define ANALYTICAL_SOLUTIONS_HPP_
 
 /* Functions for constant analytical solutions. */
-template<typename TT>
-TT consFuncArg(void) {
+template<typename TT, std::size_t DIM>
+TT consFuncArg(ScaFES::Ntuple<TT,DIM> const& /*x*/ ) {
     return 1.0;
 }
 
-template<typename TT>
-TT consFuncTimeDerivative(void) {
+template<typename TT, std::size_t DIM>
+TT consFuncTimeDerivative(ScaFES::Ntuple<TT,DIM> const& /*x*/) {
     return consFuncArg<TT>();
 }
 
-template<typename TT>
-TT consFuncSumOfSpaceDerivatives2ndOrder(void) {
+template<typename TT, std::size_t DIM>
+TT consFuncSpaceDerivative1stOrder(ScaFES::Ntuple<TT,DIM> const& /*x*/,
+                                   TT const& /*t*/, std::size_t /*currDIM*/) {
     return 0.0;
 }
 
-template<typename TT>
-TT consFunc(TT const& t) {
+template<typename TT, std::size_t DIM>
+TT consFuncSumOfSpaceDerivatives2ndOrder(ScaFES::Ntuple<TT,DIM> const& /*x*/,
+                                         TT const& /*t*/) {
+    return 0.0;
+}
+
+template<typename TT, std::size_t DIM>
+TT consFunc(ScaFES::Ntuple<TT,DIM> const& /*x*/, TT const& t) {
     return t*consFuncArg<TT>();
 }
 
@@ -48,8 +55,15 @@ TT linFuncTimeDerivative(ScaFES::Ntuple<TT,DIM> const& x) {
     return linFuncArg<TT,DIM>(x);
 }
 
-template<typename TT>
-TT linFuncSumOfSpaceDerivatives2ndOrder(void) {
+template<typename TT, std::size_t DIM>
+TT linFuncSpaceDerivative1stOrder(ScaFES::Ntuple<TT,DIM> const& /*x*/,
+                                  TT const& t, std::size_t /*currDIM*/) {
+    return t;
+}
+
+template<typename TT, std::size_t DIM>
+TT linFuncSumOfSpaceDerivatives2ndOrder(ScaFES::Ntuple<TT,DIM> const& /*x*/,
+                                        TT const& /*t*/) {
     return 0.0;
 }
 
@@ -77,22 +91,23 @@ TT quadFuncTimeDerivative(ScaFES::Ntuple<TT,DIM> const& x) {
 }
 
 template<typename TT, std::size_t DIM>
-TT quadFuncSumOfSpaceDerivatives2ndOrder(ScaFES::Ntuple<TT,DIM> const& x,
-                                         TT const& t) {
-    TT sumSpaceDerivative = 0.0;
-    TT spaceDerivative = 0.0;
+TT quadFuncSpaceDerivative1stOrder(ScaFES::Ntuple<TT,DIM> const& x,
+                                   TT const& t, std::size_t currDIM) {
+    TT spaceDerivative = 1.0;
     for (std::size_t pp = 0; pp < DIM; pp++) {
-        spaceDerivative = 2.0;
-        for (std::size_t ii = 0; ii < DIM; ++ii) {
-            if (pp != ii) {
-                spaceDerivative += 2.0*x[ii];
-            } else {
-                spaceDerivative += 6.0*x[ii];
-            }
+        if (pp == currDIM) {
+            spaceDerivative += 2.0*x[pp];
+        } else {
+            spaceDerivative += x[pp];
         }
-        sumSpaceDerivative += t * spaceDerivative;
     }
-    return sumSpaceDerivative;
+    return t*spaceDerivative;
+}
+
+template<typename TT, std::size_t DIM>
+TT quadFuncSumOfSpaceDerivatives2ndOrder(ScaFES::Ntuple<TT,DIM> const& /*x*/,
+                                         TT const& t) {
+    return DIM*2.0*t;
 }
 
 template<typename TT, std::size_t DIM>
@@ -124,6 +139,60 @@ TT cubicFuncArg(ScaFES::Ntuple<TT,DIM> const& x) {
 template<typename TT, std::size_t DIM>
 TT cubicFuncTimeDerivative(ScaFES::Ntuple<TT,DIM> const& x) {
     return cubicFuncArg<TT,DIM>(x);
+}
+
+template<typename TT, std::size_t DIM>
+TT cubicFuncSpaceDerivative1stOrder(ScaFES::Ntuple<TT,DIM> const& x,
+                                    TT const& t, std::size_t currDIM) {
+    TT spaceDerivative = 1.0;
+    for (std::size_t pp = 0; pp < DIM; pp++) {
+        if (pp == currDIM) {
+            spaceDerivative += 2.0*x[pp];
+        } else {
+            spaceDerivative += x[pp];
+        }
+    }
+    for (std::size_t pp = 0; pp < DIM; pp++) {
+        if (pp == currDIM) {
+            spaceDerivative += 3.0*x[pp]*x[pp];
+        } else {
+            spaceDerivative += x[pp]*x[pp];
+        }
+    }
+    for (std::size_t pp = 0; pp < DIM; pp++) {
+        if (pp != currDIM) {
+            spaceDerivative += 2.0*x[currDIM]*x[pp];
+        }
+    }
+    if (DIM == 3) {
+        if (currDIM == 0) {
+            spaceDerivative += x[1]*x[2];
+        } else if (currDIM == 1) {
+            spaceDerivative += x[0]*x[2];
+        } else /* (currDIM == 2) */ {
+            spaceDerivative += x[0]*x[1];
+        }
+    }
+    return t*spaceDerivative;
+}
+
+template<typename TT, std::size_t DIM>
+TT cubicFuncSumOfSpaceDerivatives2ndOrder(ScaFES::Ntuple<TT,DIM> const& x,
+                                          TT const& t) {
+    TT sumSpaceDerivative = 0.0;
+    TT spaceDerivative = 0.0;
+    for (std::size_t pp = 0; pp < DIM; pp++) {
+        spaceDerivative = 2.0;
+        for (std::size_t ii = 0; ii < DIM; ++ii) {
+            if (pp != ii) {
+                spaceDerivative += 2.0*x[ii];
+            } else {
+                spaceDerivative += 6.0*x[ii];
+            }
+        }
+        sumSpaceDerivative += t * spaceDerivative;
+    }
+    return sumSpaceDerivative;
 }
 
 template<typename TT, std::size_t DIM>

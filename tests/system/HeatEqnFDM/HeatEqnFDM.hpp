@@ -159,15 +159,15 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
         /* Derivative in time. */
         vNew[0](idxNode) = RHO * C * linFuncTimeDerivative<CT,DIM>(x);
         /* Derivatives in space. */
-        vNew[0](idxNode) -= LAMBDA * linFuncSumOfSpaceDerivatives2ndOrder<CT>();
+        vNew[0](idxNode) -= LAMBDA * linFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
 
         /* Vector for G. */
         /* Analytical solution for G. */
-        vNew[1](idxNode) = linFunc(x, t);
+        vNew[1](idxNode) = linFunc<CT,DIM>(x, t);
 
         /* Vector for U. */
         /* Analytical solution for U. */
-        vNew[2](idxNode) = linFunc(x, t);
+        vNew[2](idxNode) = linFunc<CT,DIM>(x, t);
     }
 
     /** Evaluates all fields at one given global border grid node.
@@ -195,7 +195,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
 
         /* Vector for U. */
         /* Initial condition for U. */
-        vNew[0](idxNode) = linFunc(x, t_s);
+        vNew[0](idxNode) = linFunc<CT,DIM>(x, t_s);
     }
 
     /** Initializes all unknown fields at one given global border grid node.
