@@ -14,28 +14,28 @@
 
 /* Functions for constant analytical solutions. */
 template<typename TT>
-TT constantFunctionArgument(void) {
+TT consFuncArg(void) {
     return 1.0;
 }
 
 template<typename TT>
-TT constantFunctionTimeDerivative(void) {
-    return constantFunctionArgument<TT>();
+TT consFuncTimeDerivative(void) {
+    return consFuncArg<TT>();
 }
 
 template<typename TT>
-TT constantFunctionSpaceDerivatives(void) {
+TT consFuncSumOfSpaceDerivatives2ndOrder(void) {
     return 0.0;
 }
 
 template<typename TT>
-TT constantFunction(TT const& t) {
-    return t*constantFunctionArgument<TT>();
+TT consFunc(TT const& t) {
+    return t*consFuncArg<TT>();
 }
 
 /* Functions for linear analytical solutions. */
 template<typename TT, std::size_t DIM>
-TT linearFunctionArgument(ScaFES::Ntuple<TT,DIM> const& x) {
+TT linFuncArg(ScaFES::Ntuple<TT,DIM> const& x) {
     TT argument = 1.0;
     for (std::size_t pp = 0; pp < DIM; ++pp) {
         argument += x[pp];
@@ -44,23 +44,23 @@ TT linearFunctionArgument(ScaFES::Ntuple<TT,DIM> const& x) {
 }
 
 template<typename TT, std::size_t DIM>
-TT linearFunctionTimeDerivative(ScaFES::Ntuple<TT,DIM> const& x) {
-    return linearFunctionArgument<TT,DIM>(x);
+TT linFuncTimeDerivative(ScaFES::Ntuple<TT,DIM> const& x) {
+    return linFuncArg<TT,DIM>(x);
 }
 
 template<typename TT>
-TT linearFunctionSpaceDerivatives(void) {
+TT linFuncSumOfSpaceDerivatives2ndOrder(void) {
     return 0.0;
 }
 
 template<typename TT, std::size_t DIM>
-TT linearFunction(ScaFES::Ntuple<TT,DIM> const& x, TT const& t) {
-    return t*linearFunctionArgument<TT,DIM>(x);
+TT linFunc(ScaFES::Ntuple<TT,DIM> const& x, TT const& t) {
+    return t*linFuncArg<TT,DIM>(x);
 }
 
 /* Functions for quadratic analytical solutions. */
 template<typename TT, std::size_t DIM>
-TT quadraticFunctionArgument(ScaFES::Ntuple<TT,DIM> const& x) {
+TT quadFuncArg(ScaFES::Ntuple<TT,DIM> const& x) {
     TT argument = 1.0;
     for (std::size_t pp = 0; pp < DIM; ++pp) {
         argument += x[pp];
@@ -72,12 +72,13 @@ TT quadraticFunctionArgument(ScaFES::Ntuple<TT,DIM> const& x) {
 }
 
 template<typename TT, std::size_t DIM>
-TT quadraticFunctionTimeDerivative(ScaFES::Ntuple<TT,DIM> const& x) {
-    return quadraticFunctionArgument<TT,DIM>(x);
+TT quadFuncTimeDerivative(ScaFES::Ntuple<TT,DIM> const& x) {
+    return quadFuncArg<TT,DIM>(x);
 }
 
 template<typename TT, std::size_t DIM>
-TT quadraticFunctionSpaceDerivatives(ScaFES::Ntuple<TT,DIM> const& x, TT const& t) {
+TT quadFuncSumOfSpaceDerivatives2ndOrder(ScaFES::Ntuple<TT,DIM> const& x,
+                                         TT const& t) {
     TT sumSpaceDerivative = 0.0;
     TT spaceDerivative = 0.0;
     for (std::size_t pp = 0; pp < DIM; pp++) {
@@ -95,13 +96,13 @@ TT quadraticFunctionSpaceDerivatives(ScaFES::Ntuple<TT,DIM> const& x, TT const& 
 }
 
 template<typename TT, std::size_t DIM>
-TT quadraticFunction(ScaFES::Ntuple<TT,DIM> const& x, TT const& t) {
-    return t*quadraticFunctionArgument<TT,DIM>(x);
+TT quadFunc(ScaFES::Ntuple<TT,DIM> const& x, TT const& t) {
+    return t*quadFuncArg<TT,DIM>(x);
 }
 
 /* Functions for cubic analytical solutions. */
 template<typename TT, std::size_t DIM>
-TT cubicFunctionArgument(ScaFES::Ntuple<TT,DIM> const& x) {
+TT cubicFuncArg(ScaFES::Ntuple<TT,DIM> const& x) {
     TT argument = 1.0;
     for (std::size_t pp = 0; pp < DIM; ++pp) {
         argument += x[pp];
@@ -121,13 +122,13 @@ TT cubicFunctionArgument(ScaFES::Ntuple<TT,DIM> const& x) {
 }
 
 template<typename TT, std::size_t DIM>
-TT cubicFunctionTimeDerivative(ScaFES::Ntuple<TT,DIM> const& x) {
-    return cubicFunctionArgument<TT,DIM>(x);
+TT cubicFuncTimeDerivative(ScaFES::Ntuple<TT,DIM> const& x) {
+    return cubicFuncArg<TT,DIM>(x);
 }
 
 template<typename TT, std::size_t DIM>
-TT cubicFunction(ScaFES::Ntuple<TT,DIM> const& x, TT const& t) {
-    return t*cubicFunctionArgument<TT,DIM>(x);
+TT cubicFunc(ScaFES::Ntuple<TT,DIM> const& x, TT const& t) {
+    return t*cubicFuncArg<TT,DIM>(x);
 }
 
 #endif
