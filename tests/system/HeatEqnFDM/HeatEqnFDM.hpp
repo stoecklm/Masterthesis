@@ -93,11 +93,10 @@ template<typename CT, std::size_t DIM>
 class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
 
     /* Defines types of equation which can be used for validation. */
-    enum typeOfEqn {constant = 0, linear = 1, quadratic = 2, cubic = 3};
+    enum typesOfEqn {constant = 0, linear = 1, quadratic = 2, cubic = 3};
 
-    /* Defines type of equation used for validation.
-     * To be changed by user. */
-    const int eqnDegree = 1;
+    /* Defines types of boundary conditions. */
+    enum typesOfBCs {dirichlet = 1, neumann = 2, cauchy = 3};
 
     /** constant rho. Material parameter (density) for brain. */
     const double RHO = 1.0; /* kg/m^3 */
@@ -108,6 +107,18 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
     /** constant lambda. Material parameter (thermal conductivity)
      * for brain. */
     const double LAMBDA = 1.0; /* W/(m K) */
+
+    /** constant alpha. Material parameter (heat transfer coefficient)
+     * for brain. */
+    const double ALPHA = 1.0; /* W/(m^2 K) */
+
+    /** constant T_inf. Parameter (ambient temperature)
+     * for brain. */
+    const double T_INF = 1.0; /* K */
+
+    /** constant q_dot. Material parameter (heat flux)
+     * for brain. */
+    const double Q_DOT = 1.0; /* W/(m^2) */
 
   public:
     /** All fields which are related to the underlying problem
@@ -125,6 +136,8 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
      * @param computeError Should the Linf error between the numerical
      *                     and exact solution be computed?
      * @param geomparamsInit Initial guess of geometrical parameters.
+     * @param eqnDegree_ Type of degree used for test.
+     * @param boundaryCond_ Type of boundary condition used for test.
      */
     HeatEqnFDM(ScaFES::Parameters const& params,
                ScaFES::GridGlobal<DIM> const& gg,
@@ -137,13 +150,22 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
                std::vector<ScaFES::WriteHowOften> const& writeToFile
                  = std::vector<ScaFES::WriteHowOften>(),
                std::vector<bool> const& computeError = std::vector<bool>(),
-               std::vector<CT> const& geomparamsInit = std::vector<CT>() )
+               std::vector<CT> const& geomparamsInit = std::vector<CT>(),
+               int const& eqnDegree_ = 1,
+               int const& boundaryCond_ = 1)
         : ScaFES::Problem<HeatEqnFDM<CT, DIM>, CT, DIM>(params, gg, useLeapfrog,
                                                         nameDatafield, stencilWidth,
                                                         isKnownDf, nLayers,
                                                         defaultValue, writeToFile,
-                                                        computeError, geomparamsInit)
+                                                        computeError, geomparamsInit),
+          eqnDegree(eqnDegree_), boundaryCond(boundaryCond_)
         { }
+
+    /* Member function for type of analytical solution which will be used. */
+    int const eqnDegree;
+
+    /* Member function for type of boundary condition which will be used. */
+    int const boundaryCond;
 
     /** Evaluates all fields at one given global inner grid node.
      *  @param vNew Set of all fields.
@@ -154,20 +176,42 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
                    int const& timestep) {
         ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
         double t = this->time(timestep);
+        int eq = this->eqnDegree;
 
         /* Vector for F. */
-        /* Derivative in time. */
-        vNew[0](idxNode) = RHO * C * linFuncTimeDerivative<CT,DIM>(x);
-        /* Derivatives in space. */
-        vNew[0](idxNode) -= LAMBDA * linFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
+        if (eq == constant) {
+            vNew[0](idxNode) = RHO * C * consFuncTimeDerivative<CT,DIM>(x);
+            vNew[0](idxNode) -= LAMBDA * consFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
+        } else if (eq == linear) {
+            vNew[0](idxNode) = RHO * C * linFuncTimeDerivative<CT,DIM>(x);
+            vNew[0](idxNode) -= LAMBDA * linFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
+        } else if (eq == quadratic) {
+            vNew[0](idxNode) = RHO * C * quadFuncTimeDerivative<CT,DIM>(x);
+            vNew[0](idxNode) -= LAMBDA * quadFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
+        } else if (eq == cubic) {
+            vNew[0](idxNode) = RHO * C * cubicFuncTimeDerivative<CT,DIM>(x);
+            vNew[0](idxNode) -= LAMBDA * cubicFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
+        } else {
+            vNew[0](idxNode) = 0.0;
+        }
 
         /* Vector for G. */
         /* Analytical solution for G. */
-        vNew[1](idxNode) = linFunc<CT,DIM>(x, t);
+        vNew[1](idxNode) = 0.0;
 
         /* Vector for U. */
         /* Analytical solution for U. */
-        vNew[2](idxNode) = linFunc<CT,DIM>(x, t);
+        if (eq == constant) {
+            vNew[2](idxNode) = consFunc<CT,DIM>(x, t);
+        } else if (eq == linear) {
+            vNew[2](idxNode) = linFunc<CT,DIM>(x, t);
+        } else if (eq == quadratic) {
+            vNew[2](idxNode) = quadFunc<CT,DIM>(x, t);
+        } else if (eq == cubic) {
+            vNew[2](idxNode) = cubicFunc<CT,DIM>(x, t);
+        } else {
+            vNew[2](idxNode) = 0.0;
+        }
     }
 
     /** Evaluates all fields at one given global border grid node.
@@ -178,7 +222,91 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
     void evalBorder(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
                     ScaFES::Ntuple<int,DIM> const& idxNode,
                     int const& timestep) {
-        this->evalInner(vNew, idxNode, timestep);
+        ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
+        double t = this->time(timestep);
+        int eq = this->eqnDegree;
+        int bc = this->boundaryCond;
+
+        /* Vector for F. */
+        if (bc == dirichlet) {
+            if (eq == constant) {
+                vNew[0](idxNode) = RHO * C * consFuncTimeDerivative<CT,DIM>(x);
+                vNew[0](idxNode) -= LAMBDA * consFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
+            } else if (eq == linear) {
+                vNew[0](idxNode) = RHO * C * linFuncTimeDerivative<CT,DIM>(x);
+                vNew[0](idxNode) -= LAMBDA * linFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
+            } else if (eq == quadratic) {
+                vNew[0](idxNode) = RHO * C * quadFuncTimeDerivative<CT,DIM>(x);
+                vNew[0](idxNode) -= LAMBDA * quadFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
+            } else if (eq == cubic) {
+                vNew[0](idxNode) = RHO * C * cubicFuncTimeDerivative<CT,DIM>(x);
+                vNew[0](idxNode) -= LAMBDA * cubicFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
+            } else {
+                vNew[0](idxNode) = 0.0;
+            }
+        } else if (bc == neumann) {
+            if (eq == constant) {
+                vNew[0](idxNode) = LAMBDA * consFuncSpaceDerivative1stOrder<CT,DIM>(x, t, 0);
+                vNew[0](idxNode) += Q_DOT;
+            } else if (eq == linear) {
+                vNew[0](idxNode) = LAMBDA * linFuncSpaceDerivative1stOrder<CT,DIM>(x, t, 0);
+                vNew[0](idxNode) += Q_DOT;
+            } else if (eq == quadratic) {
+                /* to be implemented. */
+                vNew[0](idxNode) = 0.0;
+            } else if (eq == cubic) {
+                /* to be implemented. */
+                vNew[0](idxNode) = 0.0;
+            } else {
+                vNew[0](idxNode) = 0.0;
+            }
+        } else if (bc == cauchy) {
+            if (eq == constant) {
+                vNew[0](idxNode) = LAMBDA * consFuncSpaceDerivative1stOrder<CT,DIM>(x, t, 0);
+                vNew[0](idxNode) += ALPHA * (consFunc<CT,DIM>(x, t) - T_INF);
+            } else if (eq == linear) {
+                vNew[0](idxNode) = LAMBDA * linFuncSpaceDerivative1stOrder<CT,DIM>(x, t, 0);
+                vNew[0](idxNode) += ALPHA * (linFunc<CT,DIM>(x, t) - T_INF);
+            } else if (eq == quadratic) {
+                /* to be implemented. */
+                vNew[0](idxNode) = 0.0;
+            } else if (eq == cubic) {
+                /* to be implemented. */
+                vNew[0](idxNode) = 0.0;
+            } else {
+                vNew[0](idxNode) = 0.0;
+            }
+        } else {
+            vNew[0](idxNode) = 0.0;
+        }
+
+        /* Vector for G. */
+        /* Analytical solution for G. */
+        if (eq == constant) {
+            vNew[1](idxNode) = consFunc<CT,DIM>(x, t);
+        } else if (eq == linear) {
+            vNew[1](idxNode) = linFunc<CT,DIM>(x, t);
+        } else if (eq == quadratic) {
+            vNew[1](idxNode) = quadFunc<CT,DIM>(x, t);
+        } else if (eq == cubic) {
+            vNew[1](idxNode) = cubicFunc<CT,DIM>(x, t);
+        } else {
+            vNew[1](idxNode) = 0.0;
+        }
+
+        /* Vector for U. */
+        /* Analytical solution for U. */
+        if (eq == constant) {
+            vNew[2](idxNode) = consFunc<CT,DIM>(x, t);
+        } else if (eq == linear) {
+            vNew[2](idxNode) = linFunc<CT,DIM>(x, t);
+        } else if (eq == quadratic) {
+            vNew[2](idxNode) = quadFunc<CT,DIM>(x, t);
+        } else if (eq == cubic) {
+            vNew[2](idxNode) = cubicFunc<CT,DIM>(x, t);
+        } else {
+            vNew[2](idxNode) = 0.0;
+        }
     }
 
     /** Initializes all unknown fields at one given global inner grid node.
@@ -190,12 +318,23 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
                    std::vector<TT> const& /*vOld*/,
                    ScaFES::Ntuple<int,DIM> const& idxNode,
                    int const& timestep) {
-        ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
+        ScaFES::Ntuple<double,DIM> const x = this->coordinates(idxNode);
         double t_s = this->time(timestep);
+        int eq = this->eqnDegree;
 
         /* Vector for U. */
         /* Initial condition for U. */
-        vNew[0](idxNode) = linFunc<CT,DIM>(x, t_s);
+        if (eq == constant) {
+            vNew[0](idxNode) = consFunc<CT,DIM>(x, t_s);
+        } else if (eq == linear) {
+            vNew[0](idxNode) = linFunc<CT,DIM>(x, t_s);
+        } else if (eq == quadratic) {
+            vNew[0](idxNode) = quadFunc<CT,DIM>(x, t_s);
+        } else if (eq == cubic) {
+            vNew[0](idxNode) = cubicFunc<CT,DIM>(x, t_s);
+        } else {
+            vNew[0](idxNode) = 0.0;
+        }
     }
 
     /** Initializes all unknown fields at one given global border grid node.
