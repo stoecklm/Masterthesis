@@ -12,35 +12,60 @@
 #ifndef ANALYTICAL_SOLUTIONS_HPP_
 #define ANALYTICAL_SOLUTIONS_HPP_
 
-/* Functions for constant analytical solutions. */
+/** Calculates value of argument (value inside parenthesis)
+ *  of a constant function for given grid point.
+ *  @param x Coordinates for this grid point.
+ */
 template<typename TT, std::size_t DIM>
 TT consFuncArg(ScaFES::Ntuple<TT,DIM> const& /*x*/ ) {
     return 1.0;
 }
 
+/** Calculates value of time derivative of a constant function
+ *  for given grid point.
+ *  @param x Coordinates for this grid point.
+ */
 template<typename TT, std::size_t DIM>
 TT consFuncTimeDerivative(ScaFES::Ntuple<TT,DIM> const& /*x*/) {
     return consFuncArg<TT>();
 }
 
+/** Calculates value of first order space derivative of a constant function
+ *  for given grid point, time and orientation.
+ *  @param x Coordinates for this grid point.
+ *  @param t Absolute time.
+ *  @param currDIM Current dimension (orientation of points).
+ */
 template<typename TT, std::size_t DIM>
 TT consFuncSpaceDerivative1stOrder(ScaFES::Ntuple<TT,DIM> const& /*x*/,
                                    TT const& /*t*/, std::size_t /*currDIM*/) {
     return 0.0;
 }
 
+/** Calculates sum of second order space derivatives for all dimensions
+ *  of a constant function for given grid point and time.
+ *  @param x Coordinates for this grid point.
+ *  @param t Absolute time.
+ */
 template<typename TT, std::size_t DIM>
 TT consFuncSumOfSpaceDerivatives2ndOrder(ScaFES::Ntuple<TT,DIM> const& /*x*/,
                                          TT const& /*t*/) {
     return 0.0;
 }
 
+/** Calculates value of a constant function for given grid point and time.
+ *  @param x Coordinates for this grid point.
+ *  @param t Absolute time.
+ */
 template<typename TT, std::size_t DIM>
 TT consFunc(ScaFES::Ntuple<TT,DIM> const& /*x*/, TT const& t) {
     return t*consFuncArg<TT>();
 }
 
-/* Functions for linear analytical solutions. */
+/** Calculates value of time derivative of a linear function
+ *  for given grid point.
+ *  @param x Coordinates for this grid point.
+ */
 template<typename TT, std::size_t DIM>
 TT linFuncArg(ScaFES::Ntuple<TT,DIM> const& x) {
     TT argument = 1.0;
@@ -50,29 +75,51 @@ TT linFuncArg(ScaFES::Ntuple<TT,DIM> const& x) {
     return argument;
 }
 
+/** Calculates value of time derivative of a linear function
+ *  for given grid point.
+ *  @param x Coordinates for this grid point.
+ */
 template<typename TT, std::size_t DIM>
 TT linFuncTimeDerivative(ScaFES::Ntuple<TT,DIM> const& x) {
     return linFuncArg<TT,DIM>(x);
 }
 
+/** Calculates value of first order space derivative of a linear function
+ *  for given grid point, time and orientation.
+ *  @param x Coordinates for this grid point.
+ *  @param t Absolute time.
+ *  @param currDIM Current dimension (orientation of points).
+ */
 template<typename TT, std::size_t DIM>
 TT linFuncSpaceDerivative1stOrder(ScaFES::Ntuple<TT,DIM> const& /*x*/,
                                   TT const& t, std::size_t /*currDIM*/) {
     return t;
 }
 
+/** Calculates sum of second order space derivatives for all dimensions
+ *  of a linear function for given grid point and time.
+ *  @param x Coordinates for this grid point.
+ *  @param t Absolute time.
+ */
 template<typename TT, std::size_t DIM>
 TT linFuncSumOfSpaceDerivatives2ndOrder(ScaFES::Ntuple<TT,DIM> const& /*x*/,
                                         TT const& /*t*/) {
     return 0.0;
 }
 
+/** Calculates value of a linear function for given grid point and time.
+ *  @param x Coordinates for this grid point.
+ *  @param t Absolute time.
+ */
 template<typename TT, std::size_t DIM>
 TT linFunc(ScaFES::Ntuple<TT,DIM> const& x, TT const& t) {
     return t*linFuncArg<TT,DIM>(x);
 }
 
-/* Functions for quadratic analytical solutions. */
+/** Calculates value of time derivative of a quadratic function
+ *  for given grid point.
+ *  @param x Coordinates for this grid point.
+ */
 template<typename TT, std::size_t DIM>
 TT quadFuncArg(ScaFES::Ntuple<TT,DIM> const& x) {
     TT argument = 1.0;
@@ -85,11 +132,21 @@ TT quadFuncArg(ScaFES::Ntuple<TT,DIM> const& x) {
     return argument;
 }
 
+/** Calculates value of time derivative of a quadratic function
+ *  for given grid point.
+ *  @param x Coordinates for this grid point.
+ */
 template<typename TT, std::size_t DIM>
 TT quadFuncTimeDerivative(ScaFES::Ntuple<TT,DIM> const& x) {
     return quadFuncArg<TT,DIM>(x);
 }
 
+/** Calculates value of first order space derivative of a quadratic function
+ *  for given grid point, time and orientation.
+ *  @param x Coordinates for this grid point.
+ *  @param t Absolute time.
+ *  @param currDIM Current dimension (orientation of points).
+ */
 template<typename TT, std::size_t DIM>
 TT quadFuncSpaceDerivative1stOrder(ScaFES::Ntuple<TT,DIM> const& x,
                                    TT const& t, std::size_t currDIM) {
@@ -104,18 +161,30 @@ TT quadFuncSpaceDerivative1stOrder(ScaFES::Ntuple<TT,DIM> const& x,
     return t*spaceDerivative;
 }
 
+/** Calculates sum of second order space derivatives for all dimensions
+ *  of a quadratic function for given grid point and time.
+ *  @param x Coordinates for this grid point.
+ *  @param t Absolute time.
+ */
 template<typename TT, std::size_t DIM>
 TT quadFuncSumOfSpaceDerivatives2ndOrder(ScaFES::Ntuple<TT,DIM> const& /*x*/,
                                          TT const& t) {
     return DIM*2.0*t;
 }
 
+/** Calculates value of a quadratic function for given grid point and time.
+ *  @param x Coordinates for this grid point.
+ *  @param t Absolute time.
+ */
 template<typename TT, std::size_t DIM>
 TT quadFunc(ScaFES::Ntuple<TT,DIM> const& x, TT const& t) {
     return t*quadFuncArg<TT,DIM>(x);
 }
 
-/* Functions for cubic analytical solutions. */
+/** Calculates value of time derivative of a cubic function
+ *  for given grid point.
+ *  @param x Coordinates for this grid point.
+ */
 template<typename TT, std::size_t DIM>
 TT cubicFuncArg(ScaFES::Ntuple<TT,DIM> const& x) {
     TT argument = 1.0;
@@ -136,11 +205,21 @@ TT cubicFuncArg(ScaFES::Ntuple<TT,DIM> const& x) {
     return argument;
 }
 
+/** Calculates value of time derivative of a cubic function
+ *  for given grid point.
+ *  @param x Coordinates for this grid point.
+ */
 template<typename TT, std::size_t DIM>
 TT cubicFuncTimeDerivative(ScaFES::Ntuple<TT,DIM> const& x) {
     return cubicFuncArg<TT,DIM>(x);
 }
 
+/** Calculates value of first order space derivative of a cubic function
+ *  for given grid point, time and orientation.
+ *  @param x Coordinates for this grid point.
+ *  @param t Absolute time.
+ *  @param currDIM Current dimension (orientation of points).
+ */
 template<typename TT, std::size_t DIM>
 TT cubicFuncSpaceDerivative1stOrder(ScaFES::Ntuple<TT,DIM> const& x,
                                     TT const& t, std::size_t currDIM) {
@@ -176,6 +255,11 @@ TT cubicFuncSpaceDerivative1stOrder(ScaFES::Ntuple<TT,DIM> const& x,
     return t*spaceDerivative;
 }
 
+/** Calculates sum of second order space derivatives for all dimensions
+ *  of a cubic function for given grid point and time.
+ *  @param x Coordinates for this grid point.
+ *  @param t Absolute time.
+ */
 template<typename TT, std::size_t DIM>
 TT cubicFuncSumOfSpaceDerivatives2ndOrder(ScaFES::Ntuple<TT,DIM> const& x,
                                           TT const& t) {
@@ -195,6 +279,10 @@ TT cubicFuncSumOfSpaceDerivatives2ndOrder(ScaFES::Ntuple<TT,DIM> const& x,
     return sumSpaceDerivative;
 }
 
+/** Calculates value of a cubic function for given grid point and time.
+ *  @param x Coordinates for this grid point.
+ *  @param t Absolute time.
+ */
 template<typename TT, std::size_t DIM>
 TT cubicFunc(ScaFES::Ntuple<TT,DIM> const& x, TT const& t) {
     return t*cubicFuncArg<TT,DIM>(x);
