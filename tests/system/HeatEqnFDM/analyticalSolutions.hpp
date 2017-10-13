@@ -26,8 +26,8 @@ TT consFuncArg(ScaFES::Ntuple<TT,DIM> const& /*x*/ ) {
  *  @param x Coordinates for this grid point.
  */
 template<typename TT, std::size_t DIM>
-TT consFuncTimeDerivative(ScaFES::Ntuple<TT,DIM> const& /*x*/) {
-    return consFuncArg<TT>();
+TT consFuncTimeDerivative(ScaFES::Ntuple<TT,DIM> const& x) {
+    return consFuncArg<TT,DIM>(x);
 }
 
 /** Calculates value of first order space derivative of a constant function
@@ -58,8 +58,8 @@ TT consFuncSumOfSpaceDerivatives2ndOrder(ScaFES::Ntuple<TT,DIM> const& /*x*/,
  *  @param t Absolute time.
  */
 template<typename TT, std::size_t DIM>
-TT consFunc(ScaFES::Ntuple<TT,DIM> const& /*x*/, TT const& t) {
-    return t*consFuncArg<TT>();
+TT consFunc(ScaFES::Ntuple<TT,DIM> const& x, TT const& t) {
+    return t*consFuncArg<TT,DIM>(x);
 }
 
 /** Calculates value of time derivative of a linear function
