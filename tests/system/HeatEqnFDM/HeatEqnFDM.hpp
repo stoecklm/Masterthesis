@@ -12,6 +12,7 @@
 
 #include "ScaFES.hpp"
 #include "analyticalSolutions.hpp"
+#include "boundaryConditions.hpp"
 
 /*******************************************************************************
  ******************************************************************************/
@@ -192,6 +193,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
             vNew[0](idxNode) = RHO * C * cubicFuncTimeDerivative<CT,DIM>(x);
             vNew[0](idxNode) -= LAMBDA * cubicFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
         } else {
+            std::cerr << "ERROR in evalInner: Degree of equation does not have a valid value." << std::endl;
             vNew[0](idxNode) = 0.0;
         }
 
@@ -210,6 +212,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
         } else if (eq == cubic) {
             vNew[2](idxNode) = cubicFunc<CT,DIM>(x, t);
         } else {
+            std::cerr << "ERROR in evalInner: Degree of equation does not have a valid value." << std::endl;
             vNew[2](idxNode) = 0.0;
         }
     }
@@ -242,6 +245,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
                 vNew[0](idxNode) = RHO * C * cubicFuncTimeDerivative<CT,DIM>(x);
                 vNew[0](idxNode) -= LAMBDA * cubicFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
             } else {
+                std::cerr << "ERROR in evalBorder: Degree of equation does not have a valid value." << std::endl;
                 vNew[0](idxNode) = 0.0;
             }
         } else if (bc == neumann) {
@@ -258,6 +262,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
                 /* to be implemented. */
                 vNew[0](idxNode) = 0.0;
             } else {
+                std::cerr << "ERROR in evalBorder: Degree of equation does not have a valid value." << std::endl;
                 vNew[0](idxNode) = 0.0;
             }
         } else if (bc == cauchy) {
@@ -274,9 +279,11 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
                 /* to be implemented. */
                 vNew[0](idxNode) = 0.0;
             } else {
+                std::cerr << "ERROR in evalBorder: Degree of equation does not have a valid value." << std::endl;
                 vNew[0](idxNode) = 0.0;
             }
         } else {
+            std::cerr << "ERROR in evalBorder: Type of boundary condition does not have a valid value." << std::endl;
             vNew[0](idxNode) = 0.0;
         }
 
@@ -291,6 +298,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
         } else if (eq == cubic) {
             vNew[1](idxNode) = cubicFunc<CT,DIM>(x, t);
         } else {
+            std::cerr << "ERROR in evalBorder: Degree of equation does not have a valid value." << std::endl;
             vNew[1](idxNode) = 0.0;
         }
 
@@ -305,6 +313,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
         } else if (eq == cubic) {
             vNew[2](idxNode) = cubicFunc<CT,DIM>(x, t);
         } else {
+            std::cerr << "ERROR in evalBorder: Degree of equation does not have a valid value." << std::endl;
             vNew[2](idxNode) = 0.0;
         }
     }
@@ -312,6 +321,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
     /** Initializes all unknown fields at one given global inner grid node.
      *  @param vNew Set of all unknown fields (return value).
      *  @param idxNode Index of given grid node.
+     *  @param timestep Given time step.
      */
     template<typename TT>
     void initInner(std::vector< ScaFES::DataField<TT, DIM> >& vNew,
@@ -333,6 +343,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
         } else if (eq == cubic) {
             vNew[0](idxNode) = cubicFunc<CT,DIM>(x, t_s);
         } else {
+            std::cerr << "ERROR in initInner: Degree of equation does not have a valid value." << std::endl;
             vNew[0](idxNode) = 0.0;
         }
     }
@@ -375,14 +386,39 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
 
     /** Updates all unknown fields at one given global border grid node.
      *  @param vNew Set of all unknown fields at new time step (return value).
+     *  @param vOld Set of all given fields.
      *  @param idxNode Index of given grid node.
+     *  @param timestep Given time step.
      */
     template<typename TT>
     void updateBorder(std::vector<ScaFES::DataField<TT,DIM>>& vNew,
-                      std::vector<ScaFES::DataField<TT,DIM>>const& /*vOld*/,
+                      std::vector<ScaFES::DataField<TT,DIM>>const& vOld,
                       ScaFES::Ntuple<int,DIM> const& idxNode,
                       int const& /*timestep*/) {
-        vNew[0](idxNode) = this->knownDf(1, idxNode);
+        int bc = this->boundaryCond;
+
+        /* Vector for U. */
+        if (bc == dirichlet) {
+            vNew[0](idxNode) = this->knownDf(1, idxNode);
+        } else if (bc == neumann || bc == cauchy) {
+            vNew[0](idxNode) = vOld[0](idxNode)
+                                + this->tau() * (1.0/(RHO*C))
+                                * this->knownDf(1, idxNode);
+            for (std::size_t pp = 0; pp < DIM; ++pp) {
+                TT lhsNeighbour = 0.0;
+                TT rhsNeighbour = 0.0;
+                this->template updateBorderHelper<TT>(lhsNeighbour, rhsNeighbour,
+                                                      vOld, idxNode, pp);
+                vNew[0](idxNode) += this->tau() * (LAMBDA/(RHO*C)) * (
+                                        lhsNeighbour
+                                        + rhsNeighbour
+                                        - 2.0 * vOld[0](idxNode) )
+                                        / (this->gridsize(pp) * this->gridsize(pp));
+            }
+        } else {
+            std::cerr << "ERROR: Type of boundary condition does not have a valid value." << std::endl;
+            vNew[0](idxNode) = 0.0;
+        }
     }
 
     /** Updates (2nd cycle) all unknown fields at one given global inner grid node.
@@ -403,4 +439,57 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
                        std::vector<ScaFES::DataField<TT,DIM>>const&,
                        ScaFES::Ntuple<int,DIM> const&,
                        int const&) { }
+
+    /** Updates all unknown fields at one given global border grid node
+     *  by using either Neumann or Cauchy boundary condition.
+     *  @param lhsNeighbour Value of lhs neighbour of current node in specified direction.
+     *  @param rhsNeighbour Value of rhs neighbour of current node in specified direction.
+     *  @param vOld Set of all given fields.
+     *  @param idxNode Index of given grid node.
+     *  @param pp Specified direction (current element of dimension).
+     */
+    template<typename TT>
+    void updateBorderHelper(TT& lhsNeighbour, TT& rhsNeighbour,
+                            std::vector<ScaFES::DataField<TT,DIM>>const& vOld,
+                            ScaFES::Ntuple<int,DIM> const& idxNode,
+                            std::size_t const& pp) {
+        ScaFES::Ntuple<int,DIM> const& lhsIdxNode = this->connect(idxNode, 2*pp);
+        ScaFES::Ntuple<int,DIM> const& rhsIdxNode = this->connect(idxNode, 2*pp+1);
+        int bc = this->boundaryCond;
+
+        if (this->insideGrid(lhsIdxNode) == true && this->insideGrid(rhsIdxNode) == true) {
+            lhsNeighbour = vOld[0](lhsIdxNode);
+            rhsNeighbour = vOld[0](rhsIdxNode);
+        } else if (this->insideGrid(rhsIdxNode) == false) {
+            lhsNeighbour = vOld[0](lhsIdxNode);
+            if (bc == neumann) {
+                rhsNeighbour = boundaryCondition2ndTypeIndexPlusOne(lhsNeighbour,
+                                   this->gridsize(pp), LAMBDA, Q_DOT);
+            } else { /*(bc == cauchy)*/
+                rhsNeighbour = boundaryCondition3rdTypeIndexPlusOne(lhsNeighbour, vOld[0](idxNode), T_INF,
+                                   this->gridsize(pp), ALPHA, LAMBDA);
+            }
+        } else { /*(this->insideGrid(lhsIdxNode) == false)*/
+            rhsNeighbour = vOld[0](rhsIdxNode);
+            if (bc == neumann) {
+                lhsNeighbour = boundaryCondition2ndTypeIndexMinusOne(rhsNeighbour,
+                                   this->gridsize(pp), LAMBDA, Q_DOT);
+            } else { /*(bc == cauchy)*/
+                lhsNeighbour = boundaryCondition3rdTypeIndexMinusOne(rhsNeighbour, vOld[0](idxNode), T_INF,
+                                   this->gridsize(pp), ALPHA, LAMBDA);
+            }
+        }
+    }
+
+    /** Checks if given node is inside grid.
+     *  @param idxNode Index of given grid node.
+     */
+    bool insideGrid(ScaFES::Ntuple<int,DIM> const& idxNode) {
+        for (std::size_t pp = 0; pp < DIM; pp++) {
+            if (idxNode.elem(pp) < 0) {
+                return false;
+            }
+        }
+        return true;
+    }
 };
