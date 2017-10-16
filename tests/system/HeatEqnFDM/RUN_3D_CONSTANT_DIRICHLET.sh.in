@@ -6,7 +6,7 @@
 # For details, see the files COPYING and LICENSE in the base directory
 # of the package.
 
-export SCAFESRUN_NAME_EXECUTABLE="$(basename $PWD)";
+export SCAFESRUN_NAME_EXECUTABLE="$(basename $PWD)3DConstantDirichlet";
 export SCAFESRUN_SPACE_DIM=3
 export SCAFESRUN_N_NODES="8x8x8"
 export SCAFESRUN_N_PARTITIONS="1x1x1"
