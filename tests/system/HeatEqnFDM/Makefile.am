@@ -122,6 +122,14 @@ HeatEqnFDM3DLinearCauchy_CPPFLAGS = $(CPPFLAGS_COMMON)
 HeatEqnFDM3DLinearCauchy_LDFLAGS = $(LDFLAGS_COMMON)
 HeatEqnFDM3DLinearCauchy_LDADD = $(LDADD_COMMON)
 HeatEqnFDM3DLinearCauchy_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+################################################################################
+noinst_PROGRAMS += testAnalyticalSolutions
+testAnalyticalSolutions_SOURCES = testAnalyticalSolutions.cpp \
+                                  analyticalSolutions.hpp
+testAnalyticalSolutions_CPPFLAGS = $(CPPFLAGS_COMMON)
+testAnalyticalSolutions_LDFLAGS = $(LDFLAGS_COMMON)
+testAnalyticalSolutions_LDADD = $(LDADD_COMMON)
+testAnalyticalSolutions_DEPENDENCIES = $(DEPENDENCIES_COMMON)
 
 #------------------------------------------------------------------------------#
 if !AMDISTRIBUTESOFTWARE
