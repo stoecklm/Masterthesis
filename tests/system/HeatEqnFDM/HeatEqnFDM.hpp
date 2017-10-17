@@ -403,7 +403,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
         } else if (bc == neumann || bc == cauchy) {
             vNew[0](idxNode) = vOld[0](idxNode)
                                 + this->tau() * (1.0/(RHO*C))
-                                * this->knownDf(1, idxNode);
+                                * this->knownDf(0, idxNode);
             for (std::size_t pp = 0; pp < DIM; ++pp) {
                 TT lhsNeighbour = 0.0;
                 TT rhsNeighbour = 0.0;
