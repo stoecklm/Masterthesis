@@ -301,19 +301,18 @@ class PennesBioheatEqnFDM : public ScaFES::Problem<PennesBioheatEqnFDM<CT,DIM>, 
                      std::vector<ScaFES::DataField<TT,DIM>> const& vOld,
                      ScaFES::Ntuple<int,DIM> const& idxNode,
                      int const& /*timestep*/) {
-        vNew[0](idxNode) = vOld[0](idxNode)
-                            + this->tau() * (1.0/(RHO*C))
-                            * this->knownDf(0, idxNode);
+        vNew[0](idxNode) = vOld[0](idxNode);
         for (std::size_t pp = 0; pp < DIM; ++pp) {
             vNew[0](idxNode) += this->tau() * (LAMBDA/(RHO*C)) * (
-                     vOld[0](this->connect(idxNode, 2*pp))
-                     + vOld[0](this->connect(idxNode, 2*pp+1))
-                     - 2.0 * vOld[0](idxNode) )
-                     / (this->gridsize(pp) * this->gridsize(pp));
+                                vOld[0](this->connect(idxNode, 2*pp))
+                                + vOld[0](this->connect(idxNode, 2*pp+1))
+                                - 2.0 * vOld[0](idxNode) )
+                                / (this->gridsize(pp) * this->gridsize(pp));
         }
-        vNew[0](idxNode) += this->tau() * (1.0/(RHO*C)) * Q_M_DOT;
         vNew[0](idxNode) += this->tau() * ((RHO_BLOOD*C_BLOOD)/(RHO*C))
-                            * W * (T_BLOOD - vOld[0](idxNode));
+                                        * W * (T_BLOOD - vOld[0](idxNode));
+        vNew[0](idxNode) += this->tau() * (1.0/(RHO*C)) * Q_M_DOT;
+        vNew[0](idxNode) += this->tau() * (1.0/(RHO*C)) * this->knownDf(0, idxNode);
     }
 
     /** Updates all unknown fields at one given global border grid node.
