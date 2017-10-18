@@ -491,6 +491,15 @@ AC_CONFIG_FILES([tests/system/HeatEqnFDM/RUN_3D_CONSTANT_CAUCHY.sh],
        [chmod +x tests/system/HeatEqnFDM/RUN_3D_CONSTANT_CAUCHY.sh])
 AC_CONFIG_FILES([tests/system/HeatEqnFDM/RUN_3D_LINEAR_CAUCHY.sh],
        [chmod +x tests/system/HeatEqnFDM/RUN_3D_LINEAR_CAUCHY.sh])
+AC_CONFIG_FILES(tests/system/PennesBioheatEqnFDM/Makefile)
+AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/RUN.sh],
+       [chmod +x tests/system/PennesBioheatEqnFDM/RUN.sh])
+AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/RUN_ALL_TESTS.sh],
+       [chmod +x tests/system/PennesBioheatEqnFDM/RUN_ALL_TESTS.sh])
+AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/RUN_3D_CONSTANT_DIRICHLET.sh],
+       [chmod +x tests/system/PennesBioheatEqnFDM/RUN_3D_CONSTANT_DIRICHLET.sh])
+AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/RUN_3D_LINEAR_DIRICHLET.sh],
+       [chmod +x tests/system/PennesBioheatEqnFDM/RUN_3D_LINEAR_DIRICHLET.sh])
 AC_CONFIG_FILES(examples/Makefile)
 AC_CONFIG_FILES(examples/HeatEqnFDM/Makefile)
 AC_CONFIG_FILES([examples/HeatEqnFDM/RUN.sh],
