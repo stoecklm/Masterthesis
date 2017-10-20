@@ -178,8 +178,10 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
         ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
         double t = this->time(timestep);
         int eq = this->eqnDegree;
+        int bc = this->boundaryCond;
 
         /* Vector for F. */
+        /* Volumetric source for inner nodes. */
         if (eq == constant) {
             vNew[0](idxNode) = RHO * C * consFuncTimeDerivative<CT,DIM>(x);
             vNew[0](idxNode) -= LAMBDA * consFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
@@ -194,12 +196,60 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
             vNew[0](idxNode) -= LAMBDA * cubicFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
         } else {
             std::cerr << "ERROR in evalInner: Degree of equation does not have a valid value." << std::endl;
-            vNew[0](idxNode) = 0.0;
+            vNew[0](idxNode) = -1.0;
         }
 
         /* Vector for G. */
-        /* Analytical solution for G. */
-        vNew[1](idxNode) = 0.0;
+        /* Volumetric source for inner nodes. */
+        if (bc == dirichlet) {
+            if (eq == constant) {
+                vNew[1](idxNode) = consFunc<CT,DIM>(x, t);
+            } else if (eq == linear) {
+                vNew[1](idxNode) = linFunc<CT,DIM>(x, t);
+            } else if (eq == quadratic) {
+                vNew[1](idxNode) = quadFunc<CT,DIM>(x, t);
+            } else if (eq == cubic) {
+                vNew[1](idxNode) = cubicFunc<CT,DIM>(x, t);
+            } else {
+                std::cerr << "ERROR in evalInner: Degree of equation does not have a valid value." << std::endl;
+                vNew[1](idxNode) = -1.0;
+            }
+        } else if (bc == neumann) {
+            if (eq == constant) {
+                vNew[1](idxNode) = -1.0 * LAMBDA * consFuncSpaceDerivative1stOrder<CT,DIM>(x, t, 0);
+            } else if (eq == linear) {
+                vNew[1](idxNode) = -1.0 * LAMBDA * linFuncSpaceDerivative1stOrder<CT,DIM>(x, t, 0);
+            } else if (eq == quadratic) {
+                /* to be implemented. */
+                vNew[1](idxNode) = -1.0;
+            } else if (eq == cubic) {
+                /* to be implemented. */
+                vNew[1](idxNode) = -1.0;
+            } else {
+                std::cerr << "ERROR in evalBorder: Degree of equation does not have a valid value." << std::endl;
+                vNew[1](idxNode) = -1.0;
+            }
+        } else if (bc == cauchy) {
+            if (eq == constant) {
+                vNew[1](idxNode) = LAMBDA * consFuncSpaceDerivative1stOrder<CT,DIM>(x, t, 0);
+                vNew[1](idxNode) += ALPHA * consFunc<CT,DIM>(x, t);
+            } else if (eq == linear) {
+                vNew[1](idxNode) = LAMBDA * linFuncSpaceDerivative1stOrder<CT,DIM>(x, t, 0);
+                vNew[1](idxNode) += ALPHA * linFunc<CT,DIM>(x, t);
+            } else if (eq == quadratic) {
+                /* to be implemented. */
+                vNew[1](idxNode) = -1.0;
+            } else if (eq == cubic) {
+                /* to be implemented. */
+                vNew[1](idxNode) = -1.0;
+            } else {
+                std::cerr << "ERROR in evalBorder: Degree of equation does not have a valid value." << std::endl;
+                vNew[1](idxNode) = -1.0;
+            }
+        } else {
+            std::cerr << "ERROR in evalBorder: Type of boundary condition does not have a valid value." << std::endl;
+            vNew[1](idxNode) = -1.0;
+        }
 
         /* Vector for U. */
         /* Analytical solution for U. */
@@ -213,7 +263,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
             vNew[2](idxNode) = cubicFunc<CT,DIM>(x, t);
         } else {
             std::cerr << "ERROR in evalInner: Degree of equation does not have a valid value." << std::endl;
-            vNew[2](idxNode) = 0.0;
+            vNew[2](idxNode) = -1.0;
         }
     }
 
@@ -225,97 +275,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
     void evalBorder(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
                     ScaFES::Ntuple<int,DIM> const& idxNode,
                     int const& timestep) {
-        ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
-        double t = this->time(timestep);
-        int eq = this->eqnDegree;
-        int bc = this->boundaryCond;
-
-        /* Vector for F. */
-        if (bc == dirichlet) {
-            if (eq == constant) {
-                vNew[0](idxNode) = RHO * C * consFuncTimeDerivative<CT,DIM>(x);
-                vNew[0](idxNode) -= LAMBDA * consFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
-            } else if (eq == linear) {
-                vNew[0](idxNode) = RHO * C * linFuncTimeDerivative<CT,DIM>(x);
-                vNew[0](idxNode) -= LAMBDA * linFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
-            } else if (eq == quadratic) {
-                vNew[0](idxNode) = RHO * C * quadFuncTimeDerivative<CT,DIM>(x);
-                vNew[0](idxNode) -= LAMBDA * quadFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
-            } else if (eq == cubic) {
-                vNew[0](idxNode) = RHO * C * cubicFuncTimeDerivative<CT,DIM>(x);
-                vNew[0](idxNode) -= LAMBDA * cubicFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
-            } else {
-                std::cerr << "ERROR in evalBorder: Degree of equation does not have a valid value." << std::endl;
-                vNew[0](idxNode) = 0.0;
-            }
-        } else if (bc == neumann) {
-            if (eq == constant) {
-                vNew[0](idxNode) = LAMBDA * consFuncSpaceDerivative1stOrder<CT,DIM>(x, t, 0);
-                vNew[0](idxNode) += Q_DOT;
-            } else if (eq == linear) {
-                vNew[0](idxNode) = LAMBDA * linFuncSpaceDerivative1stOrder<CT,DIM>(x, t, 0);
-                vNew[0](idxNode) += Q_DOT;
-            } else if (eq == quadratic) {
-                /* to be implemented. */
-                vNew[0](idxNode) = 0.0;
-            } else if (eq == cubic) {
-                /* to be implemented. */
-                vNew[0](idxNode) = 0.0;
-            } else {
-                std::cerr << "ERROR in evalBorder: Degree of equation does not have a valid value." << std::endl;
-                vNew[0](idxNode) = 0.0;
-            }
-        } else if (bc == cauchy) {
-            if (eq == constant) {
-                vNew[0](idxNode) = LAMBDA * consFuncSpaceDerivative1stOrder<CT,DIM>(x, t, 0);
-                vNew[0](idxNode) += ALPHA * (consFunc<CT,DIM>(x, t) - T_INF);
-            } else if (eq == linear) {
-                vNew[0](idxNode) = LAMBDA * linFuncSpaceDerivative1stOrder<CT,DIM>(x, t, 0);
-                vNew[0](idxNode) += ALPHA * (linFunc<CT,DIM>(x, t) - T_INF);
-            } else if (eq == quadratic) {
-                /* to be implemented. */
-                vNew[0](idxNode) = 0.0;
-            } else if (eq == cubic) {
-                /* to be implemented. */
-                vNew[0](idxNode) = 0.0;
-            } else {
-                std::cerr << "ERROR in evalBorder: Degree of equation does not have a valid value." << std::endl;
-                vNew[0](idxNode) = 0.0;
-            }
-        } else {
-            std::cerr << "ERROR in evalBorder: Type of boundary condition does not have a valid value." << std::endl;
-            vNew[0](idxNode) = 0.0;
-        }
-
-        /* Vector for G. */
-        /* Analytical solution for G. */
-        if (eq == constant) {
-            vNew[1](idxNode) = consFunc<CT,DIM>(x, t);
-        } else if (eq == linear) {
-            vNew[1](idxNode) = linFunc<CT,DIM>(x, t);
-        } else if (eq == quadratic) {
-            vNew[1](idxNode) = quadFunc<CT,DIM>(x, t);
-        } else if (eq == cubic) {
-            vNew[1](idxNode) = cubicFunc<CT,DIM>(x, t);
-        } else {
-            std::cerr << "ERROR in evalBorder: Degree of equation does not have a valid value." << std::endl;
-            vNew[1](idxNode) = 0.0;
-        }
-
-        /* Vector for U. */
-        /* Analytical solution for U. */
-        if (eq == constant) {
-            vNew[2](idxNode) = consFunc<CT,DIM>(x, t);
-        } else if (eq == linear) {
-            vNew[2](idxNode) = linFunc<CT,DIM>(x, t);
-        } else if (eq == quadratic) {
-            vNew[2](idxNode) = quadFunc<CT,DIM>(x, t);
-        } else if (eq == cubic) {
-            vNew[2](idxNode) = cubicFunc<CT,DIM>(x, t);
-        } else {
-            std::cerr << "ERROR in evalBorder: Degree of equation does not have a valid value." << std::endl;
-            vNew[2](idxNode) = 0.0;
-        }
+        this->evalInner(vNew, idxNode, timestep);
     }
 
     /** Initializes all unknown fields at one given global inner grid node.
@@ -344,7 +304,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
             vNew[0](idxNode) = cubicFunc<CT,DIM>(x, t_s);
         } else {
             std::cerr << "ERROR in initInner: Degree of equation does not have a valid value." << std::endl;
-            vNew[0](idxNode) = 0.0;
+            vNew[0](idxNode) = -1.0;
         }
     }
 
@@ -417,7 +377,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
             }
         } else {
             std::cerr << "ERROR: Type of boundary condition does not have a valid value." << std::endl;
-            vNew[0](idxNode) = 0.0;
+            vNew[0](idxNode) = -1.0;
         }
     }
 
@@ -457,6 +417,8 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
         ScaFES::Ntuple<int,DIM> const& rhsIdxNode = this->connect(idxNode, 2*pp+1);
         int bc = this->boundaryCond;
 
+        double f = this->knownDf(0, idxNode);
+
         if (this->insideGrid(lhsIdxNode) == true && this->insideGrid(rhsIdxNode) == true) {
             lhsNeighbour = vOld[0](lhsIdxNode);
             rhsNeighbour = vOld[0](rhsIdxNode);
@@ -464,19 +426,21 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
             lhsNeighbour = vOld[0](lhsIdxNode);
             if (bc == neumann) {
                 rhsNeighbour = boundaryCondition2ndTypeIndexPlusOne(lhsNeighbour,
-                                   this->gridsize(pp), LAMBDA, Q_DOT);
+                                   this->gridsize(pp), LAMBDA, f);
             } else { /*(bc == cauchy)*/
-                rhsNeighbour = boundaryCondition3rdTypeIndexPlusOne(lhsNeighbour, vOld[0](idxNode), T_INF,
-                                   this->gridsize(pp), ALPHA, LAMBDA);
+                rhsNeighbour = boundaryCondition3rdTypeIndexPlusOne(lhsNeighbour,
+                                vOld[0](idxNode), this->gridsize(pp), ALPHA,
+                                LAMBDA, f);
             }
         } else { /*(this->insideGrid(lhsIdxNode) == false)*/
             rhsNeighbour = vOld[0](rhsIdxNode);
             if (bc == neumann) {
                 lhsNeighbour = boundaryCondition2ndTypeIndexMinusOne(rhsNeighbour,
-                                   this->gridsize(pp), LAMBDA, Q_DOT);
+                                   this->gridsize(pp), LAMBDA, f);
             } else { /*(bc == cauchy)*/
-                lhsNeighbour = boundaryCondition3rdTypeIndexMinusOne(rhsNeighbour, vOld[0](idxNode), T_INF,
-                                   this->gridsize(pp), ALPHA, LAMBDA);
+                lhsNeighbour = boundaryCondition3rdTypeIndexMinusOne(rhsNeighbour,
+                                vOld[0](idxNode), this->gridsize(pp), ALPHA,
+                                LAMBDA, f);
             }
         }
     }

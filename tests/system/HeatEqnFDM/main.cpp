@@ -7,6 +7,12 @@
 #include "ScaFES.hpp"
 #include "HeatEqnFDM.hpp"
 
+/* Defines types of equation which can be used for validation. */
+enum typesOfEqn {constant = 0, linear = 1, quadratic = 2, cubic = 3};
+
+/* Defines types of boundary conditions. */
+enum typesOfBCs {dirichlet = 1, neumann = 2, cauchy = 3};
+
 /** Space dimension of problem. */
 const int DIM = 3;
 
@@ -43,7 +49,8 @@ int main(int argc, char *argv[]) {
 
     HeatEqnFDM<double, DIM> ppp(paramsCl, gg, false, nameDatafield, stencilWidth,
                                 isKnownDf, nLayers, defaultValue, writeToFile,
-                                computeError, geomparamsInit);
+                                computeError, geomparamsInit,
+                                constant, dirichlet);
 
     double sumHsquared = 0.0;
     for (std::size_t pp = 0; pp < DIM; ++pp) {
