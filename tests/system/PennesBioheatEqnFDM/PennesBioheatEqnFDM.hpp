@@ -130,23 +130,19 @@ class PennesBioheatEqnFDM : public ScaFES::Problem<PennesBioheatEqnFDM<CT,DIM>, 
         if (eq == constant) {
             vNew[0](idxNode) = RHO * C * consFuncTimeDerivative<CT,DIM>(x);
             vNew[0](idxNode) -= LAMBDA * consFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
-            vNew[0](idxNode) += RHO_BLOOD * C_BLOOD * W * (T_BLOOD - consFunc<CT,DIM>(x, t));
-            vNew[0](idxNode) += Q_M_DOT;
+            vNew[0](idxNode) += RHO_BLOOD * C_BLOOD * W * consFunc<CT,DIM>(x, t);
         } else if (eq == linear) {
             vNew[0](idxNode) = RHO * C * linFuncTimeDerivative<CT,DIM>(x);
             vNew[0](idxNode) -= LAMBDA * linFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
-            vNew[0](idxNode) += RHO_BLOOD * C_BLOOD * W * (T_BLOOD - linFunc<CT,DIM>(x, t));
-            vNew[0](idxNode) += Q_M_DOT;
+            vNew[0](idxNode) += RHO_BLOOD * C_BLOOD * W * linFunc<CT,DIM>(x, t);
         } else if (eq == quadratic) {
             vNew[0](idxNode) = RHO * C * quadFuncTimeDerivative<CT,DIM>(x);
             vNew[0](idxNode) -= LAMBDA * quadFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
-            vNew[0](idxNode) += RHO_BLOOD * C_BLOOD * W * (T_BLOOD - quadFunc<CT,DIM>(x, t));
-            vNew[0](idxNode) += Q_M_DOT;
+            vNew[0](idxNode) += RHO_BLOOD * C_BLOOD * W * quadFunc<CT,DIM>(x, t);
         } else if (eq == cubic) {
             vNew[0](idxNode) = RHO * C * cubicFuncTimeDerivative<CT,DIM>(x);
             vNew[0](idxNode) -= LAMBDA * cubicFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
-            vNew[0](idxNode) += RHO_BLOOD * C_BLOOD * W * (T_BLOOD - cubicFunc<CT,DIM>(x, t));
-            vNew[0](idxNode) += Q_M_DOT;
+            vNew[0](idxNode) += RHO_BLOOD * C_BLOOD * W * cubicFunc<CT,DIM>(x, t);
         } else {
             std::cerr << "ERROR in evalInner: Degree of equation does not have a valid value." << std::endl;
             vNew[0](idxNode) = -1.0;
@@ -187,30 +183,7 @@ class PennesBioheatEqnFDM : public ScaFES::Problem<PennesBioheatEqnFDM<CT,DIM>, 
 
         /* Vector for F. */
         if (bc == dirichlet) {
-            if (eq == constant) {
-                vNew[0](idxNode) = RHO * C * consFuncTimeDerivative<CT,DIM>(x);
-                vNew[0](idxNode) -= LAMBDA * consFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
-                vNew[0](idxNode) += RHO_BLOOD * C_BLOOD * W * (T_BLOOD - consFunc<CT,DIM>(x, t));
-                vNew[0](idxNode) += Q_M_DOT;
-            } else if (eq == linear) {
-                vNew[0](idxNode) = RHO * C * linFuncTimeDerivative<CT,DIM>(x);
-                vNew[0](idxNode) -= LAMBDA * linFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
-                vNew[0](idxNode) += RHO_BLOOD * C_BLOOD * W * (T_BLOOD - linFunc<CT,DIM>(x, t));
-                vNew[0](idxNode) += Q_M_DOT;
-            } else if (eq == quadratic) {
-                vNew[0](idxNode) = RHO * C * quadFuncTimeDerivative<CT,DIM>(x);
-                vNew[0](idxNode) -= LAMBDA * quadFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
-                vNew[0](idxNode) += RHO_BLOOD * C_BLOOD * W * (T_BLOOD - quadFunc<CT,DIM>(x, t));
-                vNew[0](idxNode) += Q_M_DOT;
-            } else if (eq == cubic) {
-                vNew[0](idxNode) = RHO * C * cubicFuncTimeDerivative<CT,DIM>(x);
-                vNew[0](idxNode) -= LAMBDA * cubicFuncSumOfSpaceDerivatives2ndOrder<CT,DIM>(x, t);
-                vNew[0](idxNode) += RHO_BLOOD * C_BLOOD * W * (T_BLOOD - cubicFunc<CT,DIM>(x, t));
-                vNew[0](idxNode) += Q_M_DOT;
-            } else {
-                std::cerr << "ERROR in evalBorder: Degree of equation does not have a valid value." << std::endl;
-                vNew[0](idxNode) = -1.0;
-            }
+            vNew[0](idxNode) = 0.0;
         } else {
             std::cerr << "ERROR in evalBorder: Type of boundary condition does not have a valid value." << std::endl;
             vNew[0](idxNode) = -1.0;
@@ -309,9 +282,8 @@ class PennesBioheatEqnFDM : public ScaFES::Problem<PennesBioheatEqnFDM<CT,DIM>, 
                                 - 2.0 * vOld[0](idxNode) )
                                 / (this->gridsize(pp) * this->gridsize(pp));
         }
-        vNew[0](idxNode) += this->tau() * ((RHO_BLOOD*C_BLOOD)/(RHO*C))
-                                        * W * (T_BLOOD - vOld[0](idxNode));
-        vNew[0](idxNode) += this->tau() * (1.0/(RHO*C)) * Q_M_DOT;
+        vNew[0](idxNode) -= this->tau() * ((RHO_BLOOD*C_BLOOD)/(RHO*C))
+                                        * W * vOld[0](idxNode);
         vNew[0](idxNode) += this->tau() * (1.0/(RHO*C)) * this->knownDf(0, idxNode);
     }
 
