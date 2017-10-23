@@ -52,15 +52,18 @@ int main(int argc, char *argv[]) {
                                          computeError, geomparamsInit,
                                          constant, dirichlet);
 
+    /* Stability condition: (1/(\sum_p 2/h_p^2) + 1) \ge \tau */
     double sumHsquared = 0.0;
     for (std::size_t pp = 0; pp < DIM; ++pp) {
-        sumHsquared += 1.0/(ppp.gridsize(pp) * ppp.gridsize(pp));
+        sumHsquared += 2.0/(ppp.gridsize(pp) * ppp.gridsize(pp));
     }
-    /* Stability condition: 1/(\sum_p 1/h_p^2) \ge 2 \tau */
-    /* nTimesteps >= 2 * dim * (nNodes - 1)^2 */
-    if ((1.0/sumHsquared) < 2.0 * ppp.tau()) {
+    sumHsquared += 1.0;
+    if ((1.0/sumHsquared) < ppp.tau()) {
         std::cerr << "\nERROR: Stability condition is not fulfilled."
-                   << std::endl;
+                  << std::endl;
+        std::cerr << "Timesteps must be greater than "
+                  << sumHsquared << "."
+                  << std::endl;
     }
 
     ppp.iterateOverTime();
