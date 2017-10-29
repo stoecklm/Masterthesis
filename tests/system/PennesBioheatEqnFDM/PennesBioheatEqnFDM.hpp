@@ -31,13 +31,16 @@ class PennesBioheatEqnFDM : public ScaFES::Problem<PennesBioheatEqnFDM<CT,DIM>, 
 
     /** constant rho. Material parameter (density) for brain. */
     const double RHO = 1.0; /* kg/m^3 */
+    //const double RHO = 1040.0; /* kg/m^3 */
 
     /** constant c. Material parameter (specific heat capacity) for brain. */
     const double C = 1.0; /* J/(kg K) */
+    //const double C = 3650.0; /* J/(kg K) */
 
     /** constant lambda. Material parameter (thermal conductivity)
      * for brain. */
     const double LAMBDA = 1.0; /* W/(m K) */
+    //const double LAMBDA = 0.5; /* W/(m K) */
 
     /** constant alpha. Material parameter (heat transfer coefficient)
      * for brain. */
@@ -53,13 +56,16 @@ class PennesBioheatEqnFDM : public ScaFES::Problem<PennesBioheatEqnFDM<CT,DIM>, 
 
     /** constant rho_blood. Material parameter (density) for blood. */
     const double RHO_BLOOD = 1.0; /* kg/m^3 */
+    //const double RHO_BLOOD = 1057.0; /* kg/m^3 */
 
     /** constant c_blood. Material parameter (specific heat capacity)
      * for blood. */
     const double C_BLOOD = 1.0; /* J/(kg K) */
+    //const double C_BLOOD = 3600.0; /* J/(kg K) */
 
     /** constant w. Material parameter (perfusion) for the brain. */
     const double W = 1.0; /* */
+    //const double W = 0.04; /* */
 
     /** constant T_blood. Parameter (temperature) for blood. */
     const double T_BLOOD = 1.0; /* K */
@@ -282,9 +288,8 @@ class PennesBioheatEqnFDM : public ScaFES::Problem<PennesBioheatEqnFDM<CT,DIM>, 
                                 - 2.0 * vOld[0](idxNode) )
                                 / (this->gridsize(pp) * this->gridsize(pp));
         }
-        vNew[0](idxNode) -= this->tau() * ((RHO_BLOOD*C_BLOOD)/(RHO*C))
-                                        * W * vOld[0](idxNode);
         vNew[0](idxNode) += this->tau() * (1.0/(RHO*C)) * this->knownDf(0, idxNode);
+        vNew[0](idxNode) /= (1.0 + this->tau() * ((RHO_BLOOD*C_BLOOD)/(RHO*C)) * W);
     }
 
     /** Updates all unknown fields at one given global border grid node.
