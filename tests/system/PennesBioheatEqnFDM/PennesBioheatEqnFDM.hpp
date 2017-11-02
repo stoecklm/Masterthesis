@@ -25,8 +25,26 @@ template<typename CT, std::size_t DIM, typename Class>
 class PennesBioheatEqnFDM : public ScaFES::Problem<PennesBioheatEqnFDM<CT,DIM, Class>, CT, DIM> {
 
    public:
+    /** Coefficient lambda. */
+    const double LAMBDA = 1.0;
+
+    /** Coefficient rho. */
+    const double RHO = 1.0;
+
     /** Coefficient c. */
-    const double COEFF_A = 1.0;
+    const double C = 1.0;
+
+    /** Coefficient rho_blood. */
+    const double RHO_BLOOD = 1.0;
+
+    /** Coefficient c_blood. */
+    const double C_BLOOD = 1.0;
+
+    /** Coefficient w. */
+    const double W = 1.0;
+
+    /** Coefficient a. */
+    const double COEFF_A = LAMBDA/(RHO * C);
 
    public:
     /** All fields which are related to the underlying problem
@@ -130,8 +148,8 @@ class PennesBioheatEqnFDM : public ScaFES::Problem<PennesBioheatEqnFDM<CT,DIM, C
                      - 2.0 * vOld[0](idxNode) )
                      / (this->gridsize(pp) * this->gridsize(pp));
         }
-        vNew[0](idxNode) += this->tau() * this->knownDf(0, idxNode);
-        vNew[0](idxNode) /= 1.0 + this->tau();
+        vNew[0](idxNode) += this->tau() * (1.0/(RHO*C)) * this->knownDf(0, idxNode);
+        vNew[0](idxNode) /= 1.0 + this->tau() * ((RHO_BLOOD*C_BLOOD)/(RHO*C)) * W;
     }
 
     /** Updates all unknown fields at one given global border grid node.
