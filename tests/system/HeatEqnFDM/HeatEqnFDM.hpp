@@ -207,7 +207,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM, Class>, CT, DIM> {
                      - 2.0 * vOld[0](idxNode) )
                      / (this->gridsize(pp) * this->gridsize(pp));
         }
-        vNew[0](idxNode) = this->tau() * (1.0/(RHO*C)) * this->knownDf(0, idxNode);
+        vNew[0](idxNode) += this->tau() * (1.0/(RHO*C)) * this->knownDf(0, idxNode);
     }
 
     /** Updates all unknown fields at one given global border grid node.

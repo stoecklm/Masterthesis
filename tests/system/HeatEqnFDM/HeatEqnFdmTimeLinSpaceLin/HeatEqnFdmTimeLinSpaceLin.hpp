@@ -76,8 +76,8 @@ class HeatEqnFdmTimeLinSpaceLin : public HeatEqnFDM<CT,DIM, HeatEqnFdmTimeLinSpa
         double t = this->time(timestep);
 
         /* Vector for f. */
-        vNew[0](idxNode) = RHO * C * timeLinSpaceLindTime<CT,DIM>(x);
-        vNew[0](idxNode) -= LAMBDA * timeLinSpaceLinSumOfdSpace2ndOrder<CT,DIM>(x, t);
+        vNew[0](idxNode) = this->RHO * this->C * timeLinSpaceLindTime<CT,DIM>(x);
+        vNew[0](idxNode) -= this->LAMBDA * timeLinSpaceLinSumOfdSpace2ndOrder<CT,DIM>(x, t);
         /* Vector for g. */
         vNew[1](idxNode) = timeLinSpaceLinFunc<CT,DIM>(x, t);
         /* Vector for y. */
