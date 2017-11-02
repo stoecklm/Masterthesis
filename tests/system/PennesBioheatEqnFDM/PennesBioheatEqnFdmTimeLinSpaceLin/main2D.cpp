@@ -6,23 +6,13 @@
 
 #include "ScaFES.hpp"
 #include "PennesBioheatEqnFDM.hpp"
-
-/* Defines types of equation which can be used for validation. */
-enum typesOfEqn {constant = 0, linear = 1, quadratic = 2, cubic = 3};
-
-/* Defines types of boundary conditions. */
-enum typesOfBCs {dirichlet = 1, neumann = 2, cauchy = 3};
+#include "PennesBioheatEqnFdmTimeLinSpaceLin.hpp"
 
 /** Space dimension of problem. */
-const int DIM = 3;
+const int DIM = 2;
 
 /** Main program for PennesBioheatEqnFDM. */
 int main(int argc, char *argv[]) {
-    std::cout << "Testing PennesBioheatEqnFDM with constant analytical solution"
-              << std::endl
-              << "and Dirichlet boundary conditions."
-              << std::endl << std::endl;
-
     ScaFES::Parameters paramsCl(argc, argv);
     ScaFES::GridGlobal<DIM> gg(paramsCl);
     std::vector<std::string> nameDatafield(3);
@@ -52,12 +42,11 @@ int main(int argc, char *argv[]) {
     computeError[2] = true;
     std::vector<double> geomparamsInit;
 
-    PennesBioheatEqnFDM<double, DIM> ppp(paramsCl, gg, false, nameDatafield, stencilWidth,
-                                         isKnownDf, nLayers, defaultValue, writeToFile,
-                                         computeError, geomparamsInit,
-                                         constant, dirichlet);
+    PennesBioheatEqnFdmTimeLinSpaceLin<double, DIM> ppp(paramsCl, gg, false, nameDatafield, stencilWidth,
+                                isKnownDf, nLayers, defaultValue, writeToFile,
+                                computeError, geomparamsInit);
 
-    /* Stability condition: (1/(\sum_p 2/h_p^2) + 1) \ge \tau */
+    /* Stability condition: 1/((\sum_p 2/h_p^2) + 1) \ge \tau */
     double sumHsquared = 0.0;
     for (std::size_t pp = 0; pp < DIM; ++pp) {
         sumHsquared += 2.0/(ppp.gridsize(pp) * ppp.gridsize(pp));
@@ -65,9 +54,6 @@ int main(int argc, char *argv[]) {
     sumHsquared += 1.0;
     if ((1.0/sumHsquared) < ppp.tau()) {
         std::cerr << "\nERROR: Stability condition is not fulfilled."
-                  << std::endl;
-        std::cerr << "Timesteps must be greater than "
-                  << sumHsquared << "."
                   << std::endl;
     }
 

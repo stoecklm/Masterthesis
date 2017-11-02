@@ -495,14 +495,24 @@ AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLin/TESTMATRIX_RU
        [chmod +x tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLin/TESTMATRIX_RUN_3D.sh])
 
 AC_CONFIG_FILES(tests/system/PennesBioheatEqnFDM/Makefile)
-AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/RUN.sh],
-       [chmod +x tests/system/PennesBioheatEqnFDM/RUN.sh])
-AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/RUN_ALL_TESTS.sh],
-       [chmod +x tests/system/PennesBioheatEqnFDM/RUN_ALL_TESTS.sh])
-AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/RUN_3D_CONSTANT_DIRICHLET.sh],
-       [chmod +x tests/system/PennesBioheatEqnFDM/RUN_3D_CONSTANT_DIRICHLET.sh])
-AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/RUN_3D_LINEAR_DIRICHLET.sh],
-       [chmod +x tests/system/PennesBioheatEqnFDM/RUN_3D_LINEAR_DIRICHLET.sh])
+AC_CONFIG_FILES(tests/system/PennesBioheatEqnFDM/PennesBioheatEqnFdmTimeLinSpaceLin/Makefile)
+AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/PennesBioheatEqnFdmTimeLinSpaceLin/RUN.sh],
+       [chmod +x tests/system/PennesBioheatEqnFDM/PennesBioheatEqnFdmTimeLinSpaceLin/RUN.sh])
+AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/PennesBioheatEqnFdmTimeLinSpaceLin/RUN_1D.sh],
+       [chmod +x tests/system/PennesBioheatEqnFDM/PennesBioheatEqnFdmTimeLinSpaceLin/RUN_1D.sh])
+AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/PennesBioheatEqnFdmTimeLinSpaceLin/RUN_2D.sh],
+       [chmod +x tests/system/PennesBioheatEqnFDM/PennesBioheatEqnFdmTimeLinSpaceLin/RUN_2D.sh])
+AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/PennesBioheatEqnFdmTimeLinSpaceLin/RUN_3D.sh],
+       [chmod +x tests/system/PennesBioheatEqnFDM/PennesBioheatEqnFdmTimeLinSpaceLin/RUN_3D.sh])
+AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/PennesBioheatEqnFdmTimeLinSpaceLin/TESTMATRIX_RUN.sh],
+       [chmod +x tests/system/PennesBioheatEqnFDM/PennesBioheatEqnFdmTimeLinSpaceLin/TESTMATRIX_RUN.sh])
+AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/PennesBioheatEqnFdmTimeLinSpaceLin/TESTMATRIX_RUN_1D.sh],
+       [chmod +x tests/system/PennesBioheatEqnFDM/PennesBioheatEqnFdmTimeLinSpaceLin/TESTMATRIX_RUN_1D.sh])
+AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/PennesBioheatEqnFdmTimeLinSpaceLin/TESTMATRIX_RUN_2D.sh],
+       [chmod +x tests/system/PennesBioheatEqnFDM/PennesBioheatEqnFdmTimeLinSpaceLin/TESTMATRIX_RUN_2D.sh])
+AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/PennesBioheatEqnFdmTimeLinSpaceLin/TESTMATRIX_RUN_3D.sh],
+       [chmod +x tests/system/PennesBioheatEqnFDM/PennesBioheatEqnFdmTimeLinSpaceLin/TESTMATRIX_RUN_3D.sh])
+
 AC_CONFIG_FILES(examples/Makefile)
 AC_CONFIG_FILES(examples/HeatEqnFDM/Makefile)
 AC_CONFIG_FILES([examples/HeatEqnFDM/RUN.sh],

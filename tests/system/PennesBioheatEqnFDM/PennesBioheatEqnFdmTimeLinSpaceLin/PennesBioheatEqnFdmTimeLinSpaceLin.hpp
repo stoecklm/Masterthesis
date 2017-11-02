@@ -5,30 +5,30 @@
  */
 
 /**
- *  @file PennesBioheatEqnFDM.hpp
+ *  @file PennesBioheatEqnFdmTimeLinSpaceLin.hpp
  *
- *  @brief Implementation of n-dimensional heat equation problem on unit hybercube.
+ *  @brief Implementation of n-dimensional Pennes bioheat equation problem on unit hybercube.
+ *
+ * <ul>
+ * Given solution: \f[y: \bar{\Omega} \times [t_S; t_E] \to {R}\f]
+ * \f[ y(x,t) := (1 + t) \cdot  (1 + \sum_p x_p), \f] </li>
+ * <li> given source \f[f: \bar{\Omega} \times (t_S;t_E] \to R,\f],
+ * \f[ f(x,t) := 1 + \sum_p x_p, \f] </li>
+ * \f[ \widetilde{y}(x,t) := (1 + t) \cdot  (1 + \sum_p x_p). \f] </li>
+ * <li> given boundary condition \f[g: \partial\Omega \times (t_S;t_E] \to R,\f]
+ * \f[ g(x,t) := (1 + t) \cdot (1 + \sum_p x_p), \f] </li>
+ * <li> given initial condition \f[\widetilde{y}: \bar{\Omega} \to R,\f]
+ * \f[ \widetilde{y}(x,t) := (1 + t) \cdot  (1 + \sum_p x_p). \f] </li>
+ * </ul>
  */
 
-#ifndef PENNESBIOHEATEQNFDM_HPP_
-#define PENNESBIOHEATEQNFDM_HPP_
-
 #include "ScaFES.hpp"
+#include "PennesBioheatEqnFDM.hpp"
 
-/*******************************************************************************
- ******************************************************************************/
-/**
- * \class PennesBioheatEqnFDM
- *  @brief Class for discretized Pennes bioheat equation problem.
-*/
-template<typename CT, std::size_t DIM, typename Class>
-class PennesBioheatEqnFDM : public ScaFES::Problem<PennesBioheatEqnFDM<CT,DIM, Class>, CT, DIM> {
+template<typename CT, std::size_t DIM>
+class PennesBioheatEqnFdmTimeLinSpaceLin : public PennesBioheatEqnFDM<CT,DIM, PennesBioheatEqnFdmTimeLinSpaceLin<CT,DIM> > {
 
-   public:
-    /** Coefficient c. */
-    const double COEFF_A = 1.0;
-
-   public:
+  public:
     /** All fields which are related to the underlying problem
      * are added in terms of an entry of the parameters of
      * type \c std::vector.
@@ -45,7 +45,7 @@ class PennesBioheatEqnFDM : public ScaFES::Problem<PennesBioheatEqnFDM<CT,DIM, C
      *                     and exact solution be computed?
      * @param geomparamsInit Initial guess of geometrical parameters.
      */
-    PennesBioheatEqnFDM(ScaFES::Parameters const& params,
+    PennesBioheatEqnFdmTimeLinSpaceLin(ScaFES::Parameters const& params,
                ScaFES::GridGlobal<DIM> const& gg,
                bool useLeapfrog,
                std::vector<std::string> const& nameDatafield,
@@ -57,7 +57,7 @@ class PennesBioheatEqnFDM : public ScaFES::Problem<PennesBioheatEqnFDM<CT,DIM, C
                  = std::vector<ScaFES::WriteHowOften>(),
                std::vector<bool> const& computeError = std::vector<bool>(),
                std::vector<CT> const& geomparamsInit = std::vector<CT>() )
-        : ScaFES::Problem<PennesBioheatEqnFDM<CT, DIM, Class>, CT, DIM>(params, gg, useLeapfrog,
+        : PennesBioheatEqnFDM<CT, DIM, PennesBioheatEqnFdmTimeLinSpaceLin<CT,DIM> >(params, gg, useLeapfrog,
                                                         nameDatafield, stencilWidth,
                                                         isKnownDf, nLayers,
                                                         defaultValue, writeToFile,
@@ -67,13 +67,32 @@ class PennesBioheatEqnFDM : public ScaFES::Problem<PennesBioheatEqnFDM<CT,DIM, C
     /** Evaluates all fields at one given global inner grid node.
      *  @param vNew Set of all fields.
      *  @param idxNode Index of given grid node.
-     *
      */
     void evalInner(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
                    ScaFES::Ntuple<int,DIM> const& idxNode,
                    int const& timestep) {
-         static_cast<Class*>(this)->evalInner(vNew, idxNode, timestep);
-   }
+        ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
+        double t = this->time(timestep);
+
+        /* Vector for f. */
+        vNew[0](idxNode) = 0.0;
+        double dTdt = 1.0;
+        for (std::size_t pp = 0; pp < DIM; ++pp) {
+            dTdt += x[pp];
+        }
+        vNew[0](idxNode) = dTdt; // - 0
+
+        /* Vector for y. */
+        vNew[2](idxNode) = 1.0;
+        for (std::size_t pp = 0; pp < DIM; ++pp) {
+            vNew[2](idxNode) += x[pp];
+        }
+        vNew[2](idxNode) *= (1.0 + t);
+        /* Vector for g. */
+        vNew[1](idxNode) = vNew[2](idxNode);
+
+        vNew[0](idxNode) += vNew[2](idxNode);
+    }
 
     /** Evaluates all fields at one given global border grid node.
      *  @param vNew Set of all fields.
@@ -83,7 +102,7 @@ class PennesBioheatEqnFDM : public ScaFES::Problem<PennesBioheatEqnFDM<CT,DIM, C
     void evalBorder(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
                     ScaFES::Ntuple<int,DIM> const& idxNode,
                     int const& timestep) {
-         static_cast<Class*>(this)->evalBorder(vNew, idxNode, timestep);
+        this->evalInner(vNew, idxNode, timestep);
     }
 
     /** Initializes all unknown fields at one given global inner grid node.
@@ -92,10 +111,17 @@ class PennesBioheatEqnFDM : public ScaFES::Problem<PennesBioheatEqnFDM<CT,DIM, C
      */
     template<typename TT>
     void initInner(std::vector< ScaFES::DataField<TT, DIM> >& vNew,
-                   std::vector<TT> const& vOld,
+                   std::vector<TT> const& /*vOld*/,
                    ScaFES::Ntuple<int,DIM> const& idxNode,
                    int const& timestep) {
-        static_cast<Class*>(this)->initInner(vNew, vOld, idxNode, timestep);
+        ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
+        double t_s = this->time(timestep);
+
+        vNew[0](idxNode) = 1.0;
+        for (std::size_t pp = 0; pp < DIM; ++pp) {
+                vNew[0](idxNode) += x[pp];
+        }
+        vNew[0](idxNode) *= (1.0 + t_s);
     }
 
     /** Initializes all unknown fields at one given global border grid node.
@@ -109,60 +135,6 @@ class PennesBioheatEqnFDM : public ScaFES::Problem<PennesBioheatEqnFDM<CT,DIM, C
                     std::vector<TT> const& vOld,
                     ScaFES::Ntuple<int,DIM> const& idxNode,
                     int const& timestep) {
-        static_cast<Class*>(this)->initBorder(vNew, vOld, idxNode, timestep);
+        this->template initInner<TT>(vNew, vOld, idxNode, timestep);
     }
-
-    /** Updates all unknown fields at one given global inner grid node.
-     *  @param vNew Set of all unknown fields at new time step (return value).
-     *  @param vOld Set of all unknown fields at old time step.
-     *  @param idxNode Index of given grid node.
-     */
-    template<typename TT>
-    void updateInner(std::vector<ScaFES::DataField<TT,DIM>>& vNew,
-                     std::vector<ScaFES::DataField<TT,DIM>> const& vOld,
-                     ScaFES::Ntuple<int,DIM> const& idxNode,
-                     int const& /*timestep*/) {
-        vNew[0](idxNode) = vOld[0](idxNode);
-        for (std::size_t pp = 0; pp < DIM; ++pp) {
-            vNew[0](idxNode) += this->tau() * COEFF_A * (
-                     vOld[0](this->connect(idxNode, 2*pp))
-                     + vOld[0](this->connect(idxNode, 2*pp+1))
-                     - 2.0 * vOld[0](idxNode) )
-                     / (this->gridsize(pp) * this->gridsize(pp));
-        }
-        vNew[0](idxNode) += this->tau() * this->knownDf(0, idxNode);
-        vNew[0](idxNode) /= 1.0 + this->tau();
-    }
-
-    /** Updates all unknown fields at one given global border grid node.
-     *  @param vNew Set of all unknown fields at new time step (return value).
-     *  @param idxNode Index of given grid node.
-     */
-    template<typename TT>
-    void updateBorder(std::vector<ScaFES::DataField<TT,DIM>>& vNew,
-                      std::vector<ScaFES::DataField<TT,DIM>>const& /*vOld*/,
-                      ScaFES::Ntuple<int,DIM> const& idxNode,
-                      int const& /*timestep*/) {
-        vNew[0](idxNode) = this->knownDf(1, idxNode);
-    }
-
-    /** Updates (2nd cycle) all unknown fields at one given global inner grid node.
-     *  \remarks Only important if leap frog scheme is used.
-     */
-    template<typename TT>
-    void updateInner2(std::vector<ScaFES::DataField<TT,DIM>>&,
-                      std::vector<ScaFES::DataField<TT,DIM>> const&,
-                      ScaFES::Ntuple<int,DIM> const&,
-                      int const&) { }
-
-    /** Updates (2nd cycle) all unknown fields at one given global border
-     *  grid node.
-     *  \remarks Only important if leap frog scheme is used.
-     */
-    template<typename TT>
-    void updateBorder2(std::vector<ScaFES::DataField<TT,DIM>>&,
-                       std::vector<ScaFES::DataField<TT,DIM>>const&,
-                       ScaFES::Ntuple<int,DIM> const&,
-                       int const&) { }
 };
-#endif
