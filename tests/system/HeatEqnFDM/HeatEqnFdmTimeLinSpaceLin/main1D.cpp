@@ -6,23 +6,13 @@
 
 #include "ScaFES.hpp"
 #include "HeatEqnFDM.hpp"
-
-/* Defines types of equation which can be used for validation. */
-enum typesOfEqn {constant = 0, linear = 1, quadratic = 2, cubic = 3};
-
-/* Defines types of boundary conditions. */
-enum typesOfBCs {dirichlet = 1, neumann = 2, cauchy = 3};
+#include "HeatEqnFdmTimeLinSpaceLin.hpp"
 
 /** Space dimension of problem. */
-const int DIM = 3;
+const int DIM = 1;
 
 /** Main program for HeatEqnFDM. */
 int main(int argc, char *argv[]) {
-    std::cout << "Testing HeatEqnFDM with constant analytical solution"
-              << std::endl
-              << "and Neumann boundary conditions."
-              << std::endl << std::endl;
-
     ScaFES::Parameters paramsCl(argc, argv);
     ScaFES::GridGlobal<DIM> gg(paramsCl);
     std::vector<std::string> nameDatafield(3);
@@ -52,10 +42,9 @@ int main(int argc, char *argv[]) {
     computeError[2] = true;
     std::vector<double> geomparamsInit;
 
-    HeatEqnFDM<double, DIM> ppp(paramsCl, gg, false, nameDatafield, stencilWidth,
+    HeatEqnFdmTimeLinSpaceLin<double, DIM> ppp(paramsCl, gg, false, nameDatafield, stencilWidth,
                                 isKnownDf, nLayers, defaultValue, writeToFile,
-                                computeError, geomparamsInit,
-                                constant, neumann);
+                                computeError, geomparamsInit);
 
     double sumHsquared = 0.0;
     for (std::size_t pp = 0; pp < DIM; ++pp) {
@@ -65,7 +54,7 @@ int main(int argc, char *argv[]) {
     /* nTimesteps >= 2 * dim * (nNodes - 1)^2 */
     if ((1.0/sumHsquared) < 2.0 * ppp.tau()) {
         std::cerr << "\nERROR: Stability condition is not fulfilled."
-                  << std::endl;
+                   << std::endl;
     }
 
     ppp.iterateOverTime();

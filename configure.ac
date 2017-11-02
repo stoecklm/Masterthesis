@@ -474,23 +474,20 @@ AC_CONFIG_FILES([tests/system/PropagationFromLeftLowerCorner/TESTMATRIX_RUN_2D.s
        [chmod +x tests/system/PropagationFromLeftLowerCorner/TESTMATRIX_RUN_2D.sh])
 AC_CONFIG_FILES([tests/system/PropagationFromLeftLowerCorner/TESTMATRIX_RUN_3D.sh],
        [chmod +x tests/system/PropagationFromLeftLowerCorner/TESTMATRIX_RUN_3D.sh])
+
 AC_CONFIG_FILES(tests/system/HeatEqnFDM/Makefile)
-AC_CONFIG_FILES([tests/system/HeatEqnFDM/RUN.sh],
-       [chmod +x tests/system/HeatEqnFDM/RUN.sh])
-AC_CONFIG_FILES([tests/system/HeatEqnFDM/RUN_ALL_TESTS.sh],
-       [chmod +x tests/system/HeatEqnFDM/RUN_ALL_TESTS.sh])
-AC_CONFIG_FILES([tests/system/HeatEqnFDM/RUN_3D_CONSTANT_DIRICHLET.sh],
-       [chmod +x tests/system/HeatEqnFDM/RUN_3D_CONSTANT_DIRICHLET.sh])
-AC_CONFIG_FILES([tests/system/HeatEqnFDM/RUN_3D_LINEAR_DIRICHLET.sh],
-       [chmod +x tests/system/HeatEqnFDM/RUN_3D_LINEAR_DIRICHLET.sh])
-AC_CONFIG_FILES([tests/system/HeatEqnFDM/RUN_3D_CONSTANT_NEUMANN.sh],
-       [chmod +x tests/system/HeatEqnFDM/RUN_3D_CONSTANT_NEUMANN.sh])
-AC_CONFIG_FILES([tests/system/HeatEqnFDM/RUN_3D_LINEAR_NEUMANN.sh],
-       [chmod +x tests/system/HeatEqnFDM/RUN_3D_LINEAR_NEUMANN.sh])
-AC_CONFIG_FILES([tests/system/HeatEqnFDM/RUN_3D_CONSTANT_CAUCHY.sh],
-       [chmod +x tests/system/HeatEqnFDM/RUN_3D_CONSTANT_CAUCHY.sh])
-AC_CONFIG_FILES([tests/system/HeatEqnFDM/RUN_3D_LINEAR_CAUCHY.sh],
-       [chmod +x tests/system/HeatEqnFDM/RUN_3D_LINEAR_CAUCHY.sh])
+AC_CONFIG_FILES(tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLin/Makefile)
+AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLin/RUN.sh],
+       [chmod +x tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLin/RUN.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLin/TESTMATRIX_RUN.sh],
+       [chmod +x tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLin/TESTMATRIX_RUN.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLin/TESTMATRIX_RUN_1D.sh],
+       [chmod +x tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLin/TESTMATRIX_RUN_1D.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLin/TESTMATRIX_RUN_2D.sh],
+       [chmod +x tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLin/TESTMATRIX_RUN_2D.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLin/TESTMATRIX_RUN_3D.sh],
+       [chmod +x tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLin/TESTMATRIX_RUN_3D.sh])
+
 AC_CONFIG_FILES(tests/system/PennesBioheatEqnFDM/Makefile)
 AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/RUN.sh],
        [chmod +x tests/system/PennesBioheatEqnFDM/RUN.sh])
