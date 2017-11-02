@@ -93,8 +93,17 @@ template<typename CT, std::size_t DIM, typename Class>
 class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM, Class>, CT, DIM> {
 
    public:
+    /** Coefficient lambda. */
+    const double LAMBDA = 1.0;
+
+    /** Coefficient rho. */
+    const double RHO = 1.0;
+
     /** Coefficient c. */
-    const double COEFF_A = 1.0;
+    const double C = 1.0;
+
+    /** Coefficient a. */
+    const double COEFF_A = LAMBDA/(RHO * C);
 
    public:
     /** All fields which are related to the underlying problem
@@ -190,8 +199,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM, Class>, CT, DIM> {
                      std::vector<ScaFES::DataField<TT,DIM>> const& vOld,
                      ScaFES::Ntuple<int,DIM> const& idxNode,
                      int const& /*timestep*/) {
-        vNew[0](idxNode) = vOld[0](idxNode)
-                            + this->tau() * this->knownDf(0, idxNode);
+        vNew[0](idxNode) = vOld[0](idxNode);
         for (std::size_t pp = 0; pp < DIM; ++pp) {
             vNew[0](idxNode) += this->tau() * COEFF_A * (
                      vOld[0](this->connect(idxNode, 2*pp))
@@ -199,6 +207,7 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM, Class>, CT, DIM> {
                      - 2.0 * vOld[0](idxNode) )
                      / (this->gridsize(pp) * this->gridsize(pp));
         }
+        vNew[0](idxNode) = this->tau() * (1.0/(RHO*C)) * this->knownDf(0, idxNode);
     }
 
     /** Updates all unknown fields at one given global border grid node.

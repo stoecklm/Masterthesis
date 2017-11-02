@@ -24,6 +24,7 @@
 
 #include "ScaFES.hpp"
 #include "HeatEqnFDM.hpp"
+#include "analyticalFunctions.hpp"
 
 template<typename CT, std::size_t DIM>
 class HeatEqnFdmTimeLinSpaceLin : public HeatEqnFDM<CT,DIM, HeatEqnFdmTimeLinSpaceLin<CT,DIM> > {
@@ -75,21 +76,12 @@ class HeatEqnFdmTimeLinSpaceLin : public HeatEqnFDM<CT,DIM, HeatEqnFdmTimeLinSpa
         double t = this->time(timestep);
 
         /* Vector for f. */
-        vNew[0](idxNode) = 0.0;
-        double dTdt = 1.0;
-        for (std::size_t pp = 0; pp < DIM; ++pp) {
-            dTdt += x[pp];
-        }
-        vNew[0](idxNode) = dTdt; // - 0
-
-        /* Vector for y. */
-        vNew[2](idxNode) = 1.0;
-        for (std::size_t pp = 0; pp < DIM; ++pp) {
-            vNew[2](idxNode) += x[pp];
-        }
-        vNew[2](idxNode) *= (1.0 + t);
+        vNew[0](idxNode) = RHO * C * timeLinSpaceLindTime<CT,DIM>(x);
+        vNew[0](idxNode) -= LAMBDA * timeLinSpaceLinSumOfdSpace2ndOrder<CT,DIM>(x, t);
         /* Vector for g. */
-        vNew[1](idxNode) = vNew[2](idxNode);
+        vNew[1](idxNode) = timeLinSpaceLinFunc<CT,DIM>(x, t);
+        /* Vector for y. */
+        vNew[2](idxNode) = timeLinSpaceLinFunc<CT,DIM>(x, t);
     }
 
     /** Evaluates all fields at one given global border grid node.
@@ -115,11 +107,7 @@ class HeatEqnFdmTimeLinSpaceLin : public HeatEqnFDM<CT,DIM, HeatEqnFdmTimeLinSpa
         ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
         double t_s = this->time(timestep);
 
-        vNew[0](idxNode) = 1.0;
-        for (std::size_t pp = 0; pp < DIM; ++pp) {
-                vNew[0](idxNode) += x[pp];
-        }
-        vNew[0](idxNode) *= (1.0 + t_s);
+        vNew[0](idxNode) = timeLinSpaceLinFunc<CT,DIM>(x, t_s);
     }
 
     /** Initializes all unknown fields at one given global border grid node.
