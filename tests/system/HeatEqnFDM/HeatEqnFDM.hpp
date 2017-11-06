@@ -212,14 +212,16 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM, Class>, CT, DIM> {
 
     /** Updates all unknown fields at one given global border grid node.
      *  @param vNew Set of all unknown fields at new time step (return value).
+     *  @param vOld Set of all unknown fields at old time step.
      *  @param idxNode Index of given grid node.
+     *  @param timestep Given time step.
      */
     template<typename TT>
     void updateBorder(std::vector<ScaFES::DataField<TT,DIM>>& vNew,
-                      std::vector<ScaFES::DataField<TT,DIM>>const& /*vOld*/,
+                      std::vector<ScaFES::DataField<TT,DIM>>const& vOld,
                       ScaFES::Ntuple<int,DIM> const& idxNode,
-                      int const& /*timestep*/) {
-        vNew[0](idxNode) = this->knownDf(1, idxNode);
+                      int const& timestep) {
+        static_cast<Class*>(this)->updateBorder(vNew, vOld, idxNode, timestep);
     }
 
     /** Updates (2nd cycle) all unknown fields at one given global inner grid node.

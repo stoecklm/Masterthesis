@@ -123,4 +123,16 @@ class HeatEqnFdmTimeLinSpaceLin : public HeatEqnFDM<CT,DIM, HeatEqnFdmTimeLinSpa
                     int const& timestep) {
         this->template initInner<TT>(vNew, vOld, idxNode, timestep);
     }
+
+    /** Updates all unknown fields at one given global border grid node.
+     *  @param vNew Set of all unknown fields at new time step (return value).
+     *  @param idxNode Index of given grid node.
+     */
+    template<typename TT>
+    void updateBorder(std::vector<ScaFES::DataField<TT,DIM>>& vNew,
+                      std::vector<ScaFES::DataField<TT,DIM>>const& /*vOld*/,
+                      ScaFES::Ntuple<int,DIM> const& idxNode,
+                      int const& /*timestep*/) {
+        vNew[0](idxNode) = this->knownDf(1, idxNode);
+    }
 };
