@@ -102,6 +102,9 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM, Class>, CT, DIM> {
     /** Coefficient c. */
     const double C = 1.0;
 
+    /** Coefficient alpha. */
+    const double ALPHA = 1.0;
+
     /** Coefficient a. */
     const double COEFF_A = LAMBDA/(RHO * C);
 
