@@ -548,6 +548,24 @@ AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceConstNeumann/TEST
 AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceConstNeumann/TESTMATRIX_RUN_3D.sh],
        [chmod +x tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceConstNeumann/TESTMATRIX_RUN_3D.sh])
 
+AC_CONFIG_FILES(tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceConstCauchy/Makefile)
+AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceConstCauchy/RUN.sh],
+       [chmod +x tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceConstCauchy/RUN.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceConstCauchy/RUN_1D.sh],
+       [chmod +x tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceConstCauchy/RUN_1D.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceConstCauchy/RUN_2D.sh],
+       [chmod +x tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceConstCauchy/RUN_2D.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceConstCauchy/RUN_3D.sh],
+       [chmod +x tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceConstCauchy/RUN_3D.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceConstCauchy/TESTMATRIX_RUN.sh],
+       [chmod +x tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceConstCauchy/TESTMATRIX_RUN.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceConstCauchy/TESTMATRIX_RUN_1D.sh],
+       [chmod +x tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceConstCauchy/TESTMATRIX_RUN_1D.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceConstCauchy/TESTMATRIX_RUN_2D.sh],
+       [chmod +x tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceConstCauchy/TESTMATRIX_RUN_2D.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceConstCauchy/TESTMATRIX_RUN_3D.sh],
+       [chmod +x tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceConstCauchy/TESTMATRIX_RUN_3D.sh])
+
 AC_CONFIG_FILES(tests/system/PennesBioheatEqnFDM/Makefile)
 AC_CONFIG_FILES(tests/system/PennesBioheatEqnFDM/PennesBioheatEqnFdmTimeLinSpaceLin/Makefile)
 AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/PennesBioheatEqnFdmTimeLinSpaceLin/RUN.sh],
