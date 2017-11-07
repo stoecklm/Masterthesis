@@ -1,7 +1,8 @@
 SUBDIRS = \
           HeatEqnFdmTimeLinSpaceLin \
           HeatEqnFdmTimeLinSpaceLinNeumann \
-          HeatEqnFdmTimeLinSpaceLinCauchy
+          HeatEqnFdmTimeLinSpaceLinCauchy \
+          HeatEqnFdmTimeLinSpaceConstNeumann
 
 ################################################################################
 include_HEADERS= HeatEqnFDM.hpp
