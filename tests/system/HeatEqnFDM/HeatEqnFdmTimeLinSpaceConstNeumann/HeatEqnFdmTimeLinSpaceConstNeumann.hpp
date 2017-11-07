@@ -5,7 +5,7 @@
  */
 
 /**
- *  @file HeatEqnFdmTimeLinSpaceConst.hpp
+ *  @file HeatEqnFdmTimeLinSpaceConstNeumann.hpp
  *
  *  @brief Implementation of n-dimensional heat equation problem on unit hybercube.
  *
@@ -177,11 +177,11 @@ class HeatEqnFdmTimeLinSpaceConstNeumann : public HeatEqnFDM<CT,DIM, HeatEqnFdmT
                                         vOld[0](this->connect(idxNode, 2*pp))
                                         /* vOld[0](this->connect(idxNode, 2*pp+1) */
                                         + vOld[0](this->connect(idxNode, 2*pp))
-                                        - ((2.0*this->gridsize(0)/this->LAMBDA)
+                                        - ((2.0*this->gridsize(pp)/this->LAMBDA)
                                            * this->knownDf(1, idxNode))
-                                        /**/
+                                        /******************************************/
                                         - 2.0 * vOld[0](idxNode) )
-                                        / (this->gridsize(0) * this->gridsize(0));
+                                        / (this->gridsize(pp) * this->gridsize(pp));
                 }
                 /* Usual central differencing scheme for this direction. */
                 else {
