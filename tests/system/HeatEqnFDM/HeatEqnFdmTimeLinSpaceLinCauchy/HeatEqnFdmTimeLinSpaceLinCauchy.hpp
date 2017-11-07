@@ -94,17 +94,23 @@ class HeatEqnFdmTimeLinSpaceLinCauchy : public HeatEqnFDM<CT,DIM, HeatEqnFdmTime
                     int const& timestep) {
         ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
         double t = this->time(timestep);
+        bool useCauchy = true;
 
         /* Vector for f. */
         vNew[0](idxNode) = this->RHO * this->C * timeLinSpaceLindTime<CT,DIM>(x);
         vNew[0](idxNode) -= this->LAMBDA * timeLinSpaceLinSumOfdSpace2ndOrder<CT,DIM>(x, t);
         /* Vector for g. */
-        if (idxNode.elem(0) == 0) {
-            vNew[1](idxNode) = timeLinSpaceLinFunc<CT,DIM>(x, t);
+        /* Use Dirichlet boundary condition if one element in grid node is zero. */
+        for (std::size_t pp = 0; pp < DIM; ++pp) {
+            if (idxNode.elem(pp) == 0) {
+                vNew[1](idxNode) = timeLinSpaceLinFunc<CT,DIM>(x, t);
+                useCauchy = false;
+                break;
+            }
         }
-        if (idxNode.elem(0) == (this->nNodes(0)-1)) {
-            vNew[1](idxNode) = 1.0 * this->LAMBDA
-                               * timeLinSpaceLindSpace1stOrder<CT,DIM>(x, t, 0);
+        /* Otherwise use Cauchy boundary condition. */
+        if (useCauchy == true) {
+            vNew[1](idxNode) = this->LAMBDA * timeLinSpaceLindSpace1stOrder<CT,DIM>(x, t, 0);
             vNew[1](idxNode) += this->ALPHA * timeLinSpaceLinFunc<CT,DIM>(x, t);
         }
         /* Vector for y. */
@@ -114,6 +120,7 @@ class HeatEqnFdmTimeLinSpaceLinCauchy : public HeatEqnFDM<CT,DIM, HeatEqnFdmTime
     /** Initializes all unknown fields at one given global inner grid node.
      *  @param vNew Set of all unknown fields (return value).
      *  @param idxNode Index of given grid node.
+     *  @param timestep Given time step.
      */
     template<typename TT>
     void initInner(std::vector< ScaFES::DataField<TT, DIM> >& vNew,
@@ -142,33 +149,51 @@ class HeatEqnFdmTimeLinSpaceLinCauchy : public HeatEqnFDM<CT,DIM, HeatEqnFdmTime
 
     /** Updates all unknown fields at one given global border grid node.
      *  @param vNew Set of all unknown fields at new time step (return value).
+     *  @param vOld Set of all given fields.
      *  @param idxNode Index of given grid node.
      */
     template<typename TT>
     void updateBorder(std::vector<ScaFES::DataField<TT,DIM>>& vNew,
                       std::vector<ScaFES::DataField<TT,DIM>>const& vOld,
                       ScaFES::Ntuple<int,DIM> const& idxNode,
-                      int const& timestep) {
-        double t = this->time(timestep);
-        ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
+                      int const& /*timestep*/) {
+        bool useCauchy = true;
 
-
-        if (idxNode.elem(0) == 0) {
-            vNew[0](idxNode) = this->knownDf(1, idxNode);
+        /* Use Dirichlet boundary condition if one element in grid node is zero. */
+        for (std::size_t pp = 0; pp < DIM; ++pp) {
+            if (idxNode.elem(pp) == 0) {
+                useCauchy = false;
+                vNew[0](idxNode) = this->knownDf(1, idxNode);
+                break;
+            }
         }
-        if (idxNode.elem(0) == (this->nNodes(0)-1)) {
+        /* Otherwise use Cauchy boundary condition. */
+        if (useCauchy == true) {
             vNew[0](idxNode) = vOld[0](idxNode);
-            vNew[0](idxNode) += this->tau() * this->COEFF_A * (
-                                vOld[0](this->connect(idxNode, 2*0))
-
-                                + vOld[0](this->connect(idxNode, 2*0))
-                                - ((2.0*this->gridsize(0)/this->LAMBDA)*this->ALPHA
-                                   * vOld[0](idxNode))
-                                + ((2.0*this->gridsize(0)/this->LAMBDA)
-                                   * this->knownDf(1, idxNode))
-
-                                - 2.0 * vOld[0](idxNode) )
-                                / (this->gridsize(0) * this->gridsize(0));
+            for (std::size_t pp = 0; pp < DIM; ++pp) {
+                /* Cauchy boundary condition has to be used in this direction. */
+                if (idxNode.elem(pp) == (this->nNodes(pp)-1)) {
+                    vNew[0](idxNode) += this->tau() * this->COEFF_A * (
+                                        vOld[0](this->connect(idxNode, 2*pp))
+                                        /* vOld[0](this->connect(idxNode, 2*pp+1) */
+                                        + vOld[0](this->connect(idxNode, 2*pp))
+                                        - ((2.0*this->gridsize(pp)/this->LAMBDA)*this->ALPHA
+                                           * vOld[0](idxNode))
+                                        + ((2.0*this->gridsize(pp)/this->LAMBDA)
+                                           * this->knownDf(1, idxNode))
+                                        /******************************************/
+                                        - 2.0 * vOld[0](idxNode) )
+                                        / (this->gridsize(pp) * this->gridsize(pp));
+                }
+                /* Usual central differencing scheme for this direction. */
+                else {
+                    vNew[0](idxNode) += this->tau() * this->COEFF_A * (
+                                        vOld[0](this->connect(idxNode, 2*pp))
+                                        + vOld[0](this->connect(idxNode, 2*pp+1))
+                                        - 2.0 * vOld[0](idxNode) )
+                                        / (this->gridsize(pp) * this->gridsize(pp));
+                }
+            }
             vNew[0](idxNode) += this->tau() * (1.0/(this->RHO*this->C)) * this->knownDf(0, idxNode);
         }
     }
