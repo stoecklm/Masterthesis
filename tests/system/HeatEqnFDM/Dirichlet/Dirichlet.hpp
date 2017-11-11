@@ -5,7 +5,7 @@
  */
 
 /**
- *  @file HeatEqnFdmTimeLinSpaceLin.hpp
+ *  @file Dirichlet.hpp
  *
  *  @brief Implementation of n-dimensional heat equation problem on unit hybercube.
  *
@@ -22,12 +22,14 @@
  * </ul>
  */
 
+#ifndef HEATEQNFDM_DIRICHLET_HPP_
+#define HEATEQNFDM_DIRICHLET_HPP_
+
 #include "ScaFES.hpp"
 #include "HeatEqnFDM.hpp"
-#include "analyticalFunctions.hpp"
 
-template<typename CT, std::size_t DIM>
-class HeatEqnFdmTimeLinSpaceLin : public HeatEqnFDM<CT,DIM, HeatEqnFdmTimeLinSpaceLin<CT,DIM> > {
+template<typename CT, std::size_t DIM, typename Class>
+class Dirichlet : public HeatEqnFDM<CT,DIM, Dirichlet<CT,DIM, Class> > {
 
   public:
     /** All fields which are related to the underlying problem
@@ -46,19 +48,19 @@ class HeatEqnFdmTimeLinSpaceLin : public HeatEqnFDM<CT,DIM, HeatEqnFdmTimeLinSpa
      *                     and exact solution be computed?
      * @param geomparamsInit Initial guess of geometrical parameters.
      */
-    HeatEqnFdmTimeLinSpaceLin(ScaFES::Parameters const& params,
-               ScaFES::GridGlobal<DIM> const& gg,
-               bool useLeapfrog,
-               std::vector<std::string> const& nameDatafield,
-               std::vector<int> const& stencilWidth,
-               std::vector<bool> const& isKnownDf,
-               std::vector<int> const& nLayers = std::vector<int>(),
-               std::vector<CT> const& defaultValue = std::vector<CT>(),
-               std::vector<ScaFES::WriteHowOften> const& writeToFile
-                 = std::vector<ScaFES::WriteHowOften>(),
-               std::vector<bool> const& computeError = std::vector<bool>(),
-               std::vector<CT> const& geomparamsInit = std::vector<CT>() )
-        : HeatEqnFDM<CT, DIM, HeatEqnFdmTimeLinSpaceLin<CT,DIM> >(params, gg, useLeapfrog,
+    Dirichlet(ScaFES::Parameters const& params,
+              ScaFES::GridGlobal<DIM> const& gg,
+              bool useLeapfrog,
+              std::vector<std::string> const& nameDatafield,
+              std::vector<int> const& stencilWidth,
+              std::vector<bool> const& isKnownDf,
+              std::vector<int> const& nLayers = std::vector<int>(),
+              std::vector<CT> const& defaultValue = std::vector<CT>(),
+              std::vector<ScaFES::WriteHowOften> const& writeToFile
+                = std::vector<ScaFES::WriteHowOften>(),
+              std::vector<bool> const& computeError = std::vector<bool>(),
+              std::vector<CT> const& geomparamsInit = std::vector<CT>() )
+        : HeatEqnFDM<CT, DIM, Dirichlet<CT,DIM,Class> >(params, gg, useLeapfrog,
                                                         nameDatafield, stencilWidth,
                                                         isKnownDf, nLayers,
                                                         defaultValue, writeToFile,
@@ -68,20 +70,12 @@ class HeatEqnFdmTimeLinSpaceLin : public HeatEqnFDM<CT,DIM, HeatEqnFdmTimeLinSpa
     /** Evaluates all fields at one given global inner grid node.
      *  @param vNew Set of all fields.
      *  @param idxNode Index of given grid node.
+     *  @param timestep Given time step.
      */
     void evalInner(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
                    ScaFES::Ntuple<int,DIM> const& idxNode,
                    int const& timestep) {
-        ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
-        double t = this->time(timestep);
-
-        /* Vector for f. */
-        vNew[0](idxNode) = this->RHO * this->C * timeLinSpaceLindTime<CT,DIM>(x);
-        vNew[0](idxNode) -= this->LAMBDA * timeLinSpaceLinSumOfdSpace2ndOrder<CT,DIM>(x, t);
-        /* Vector for g. */
-        vNew[1](idxNode) = timeLinSpaceLinFunc<CT,DIM>(x, t);
-        /* Vector for y. */
-        vNew[2](idxNode) = timeLinSpaceLinFunc<CT,DIM>(x, t);
+        static_cast<Class*>(this)->evalInner(vNew, idxNode, timestep);
     }
 
     /** Evaluates all fields at one given global border grid node.
@@ -92,22 +86,21 @@ class HeatEqnFdmTimeLinSpaceLin : public HeatEqnFDM<CT,DIM, HeatEqnFdmTimeLinSpa
     void evalBorder(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
                     ScaFES::Ntuple<int,DIM> const& idxNode,
                     int const& timestep) {
-        this->evalInner(vNew, idxNode, timestep);
+        static_cast<Class*>(this)->evalBorder(vNew, idxNode, timestep);
     }
 
     /** Initializes all unknown fields at one given global inner grid node.
      *  @param vNew Set of all unknown fields (return value).
+     *  @param vOld Set of all given fields.
      *  @param idxNode Index of given grid node.
+     *  @param timestep Given time step.
      */
     template<typename TT>
     void initInner(std::vector< ScaFES::DataField<TT, DIM> >& vNew,
-                   std::vector<TT> const& /*vOld*/,
+                   std::vector<TT> const& vOld,
                    ScaFES::Ntuple<int,DIM> const& idxNode,
                    int const& timestep) {
-        ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
-        double t_s = this->time(timestep);
-
-        vNew[0](idxNode) = timeLinSpaceLinFunc<CT,DIM>(x, t_s);
+        static_cast<Class*>(this)->initInner(vNew, vOld, idxNode, timestep);
     }
 
     /** Initializes all unknown fields at one given global border grid node.
@@ -121,7 +114,7 @@ class HeatEqnFdmTimeLinSpaceLin : public HeatEqnFDM<CT,DIM, HeatEqnFdmTimeLinSpa
                     std::vector<TT> const& vOld,
                     ScaFES::Ntuple<int,DIM> const& idxNode,
                     int const& timestep) {
-        this->template initInner<TT>(vNew, vOld, idxNode, timestep);
+        static_cast<Class*>(this)->initBorder(vNew, vOld, idxNode, timestep);
     }
 
     /** Updates all unknown fields at one given global border grid node.
@@ -136,3 +129,4 @@ class HeatEqnFdmTimeLinSpaceLin : public HeatEqnFDM<CT,DIM, HeatEqnFdmTimeLinSpa
         vNew[0](idxNode) = this->knownDf(1, idxNode);
     }
 };
+#endif

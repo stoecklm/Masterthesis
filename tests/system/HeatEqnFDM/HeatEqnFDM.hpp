@@ -147,12 +147,13 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM, Class>, CT, DIM> {
     /** Evaluates all fields at one given global inner grid node.
      *  @param vNew Set of all fields.
      *  @param idxNode Index of given grid node.
+     *  @param timestep Given time step.
      *
      */
     void evalInner(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
                    ScaFES::Ntuple<int,DIM> const& idxNode,
                    int const& timestep) {
-         static_cast<Class*>(this)->evalInner(vNew, idxNode, timestep);
+        static_cast<Class*>(this)->evalInner(vNew, idxNode, timestep);
    }
 
     /** Evaluates all fields at one given global border grid node.
@@ -163,12 +164,14 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM, Class>, CT, DIM> {
     void evalBorder(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
                     ScaFES::Ntuple<int,DIM> const& idxNode,
                     int const& timestep) {
-         static_cast<Class*>(this)->evalBorder(vNew, idxNode, timestep);
+        static_cast<Class*>(this)->evalBorder(vNew, idxNode, timestep);
     }
 
     /** Initializes all unknown fields at one given global inner grid node.
      *  @param vNew Set of all unknown fields (return value).
+     *  @param vOld Set of all given fields.
      *  @param idxNode Index of given grid node.
+     *  @param timestep Given time step.
      */
     template<typename TT>
     void initInner(std::vector< ScaFES::DataField<TT, DIM> >& vNew,
