@@ -5,13 +5,12 @@
  */
 
 #include "ScaFES.hpp"
-#include "HeatEqnFDM.hpp"
-#include "HeatEqnFdmTimeLinSpaceConstNeumann.hpp"
+#include "TimeLinSpaceConst.hpp"
 
 /** Space dimension of problem. */
 const int DIM = 2;
 
-/** Main program for HeatEqnFDM. */
+/** Main program for HeatEqnFDMNeumannTimeLinSpaceConst2D. */
 int main(int argc, char *argv[]) {
     ScaFES::Parameters paramsCl(argc, argv);
     ScaFES::GridGlobal<DIM> gg(paramsCl);
@@ -42,9 +41,9 @@ int main(int argc, char *argv[]) {
     computeError[2] = true;
     std::vector<double> geomparamsInit;
 
-    HeatEqnFdmTimeLinSpaceConstNeumann<double, DIM> ppp(paramsCl, gg, false, nameDatafield, stencilWidth,
-                                isKnownDf, nLayers, defaultValue, writeToFile,
-                                computeError, geomparamsInit);
+    TimeLinSpaceConst<double, DIM> ppp(paramsCl, gg, false, nameDatafield, stencilWidth,
+                                       isKnownDf, nLayers, defaultValue, writeToFile,
+                                       computeError, geomparamsInit);
 
     double sumHsquared = 0.0;
     for (std::size_t pp = 0; pp < DIM; ++pp) {

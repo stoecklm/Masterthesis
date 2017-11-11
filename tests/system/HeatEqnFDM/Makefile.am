@@ -1,8 +1,8 @@
 SUBDIRS = \
           Dirichlet \
+          Neumann \
           HeatEqnFdmTimeLinSpaceLinNeumann \
           HeatEqnFdmTimeLinSpaceLinCauchy \
-          HeatEqnFdmTimeLinSpaceConstNeumann \
           HeatEqnFdmTimeLinSpaceConstCauchy
 
 ################################################################################
