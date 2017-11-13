@@ -20,6 +20,7 @@ SCAFES_TESTS_DIR=$(top_srcdir)/examples
 
 CPPFLAGS_COMMON= \
         -I$(top_srcdir)/tests/system/HeatEqnFDM \
+        -I$(top_srcdir)/tests/system/HeatEqnFDM/Neumann \
         -I$(top_srcdir)/src \
         -I$(top_builddir)/src \
         @NETCDF_CPPFLAGS@ \
@@ -57,29 +58,29 @@ EXTRA_DIST=
 
 ################################################################################
 noinst_HEADERS +=
-check_PROGRAMS += HeatEqnFdmTimeLinSpaceLinNeumann1D
-HeatEqnFdmTimeLinSpaceLinNeumann1D_SOURCES = main1D.cpp \
-                     HeatEqnFdmTimeLinSpaceLinNeumann.hpp
-HeatEqnFdmTimeLinSpaceLinNeumann1D_CPPFLAGS = $(CPPFLAGS_COMMON)
-HeatEqnFdmTimeLinSpaceLinNeumann1D_LDFLAGS = $(LDFLAGS_COMMON)
-HeatEqnFdmTimeLinSpaceLinNeumann1D_LDADD = $(LDADD_COMMON)
-HeatEqnFdmTimeLinSpaceLinNeumann1D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+check_PROGRAMS += HeatEqnFdmNeumannTimeLinSpaceLin1D
+HeatEqnFdmNeumannTimeLinSpaceLin1D_SOURCES = main1D.cpp \
+                     TimeLinSpaceLin.hpp
+HeatEqnFdmNeumannTimeLinSpaceLin1D_CPPFLAGS = $(CPPFLAGS_COMMON)
+HeatEqnFdmNeumannTimeLinSpaceLin1D_LDFLAGS = $(LDFLAGS_COMMON)
+HeatEqnFdmNeumannTimeLinSpaceLin1D_LDADD = $(LDADD_COMMON)
+HeatEqnFdmNeumannTimeLinSpaceLin1D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
 #------------------------------------------------------------------------------#
-check_PROGRAMS += HeatEqnFdmTimeLinSpaceLinNeumann2D
-HeatEqnFdmTimeLinSpaceLinNeumann2D_SOURCES = main2D.cpp \
-                     HeatEqnFdmTimeLinSpaceLinNeumann.hpp
-HeatEqnFdmTimeLinSpaceLinNeumann2D_CPPFLAGS = $(CPPFLAGS_COMMON)
-HeatEqnFdmTimeLinSpaceLinNeumann2D_LDFLAGS = $(LDFLAGS_COMMON)
-HeatEqnFdmTimeLinSpaceLinNeumann2D_LDADD = $(LDADD_COMMON)
-HeatEqnFdmTimeLinSpaceLinNeumann2D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+check_PROGRAMS += HeatEqnFdmNeumannTimeLinSpaceLin2D
+HeatEqnFdmNeumannTimeLinSpaceLin2D_SOURCES = main2D.cpp \
+                     TimeLinSpaceLin.hpp
+HeatEqnFdmNeumannTimeLinSpaceLin2D_CPPFLAGS = $(CPPFLAGS_COMMON)
+HeatEqnFdmNeumannTimeLinSpaceLin2D_LDFLAGS = $(LDFLAGS_COMMON)
+HeatEqnFdmNeumannTimeLinSpaceLin2D_LDADD = $(LDADD_COMMON)
+HeatEqnFdmNeumannTimeLinSpaceLin2D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
 #------------------------------------------------------------------------------#
-check_PROGRAMS += HeatEqnFdmTimeLinSpaceLinNeumann3D
-HeatEqnFdmTimeLinSpaceLinNeumann3D_SOURCES = main3D.cpp \
-                     HeatEqnFdmTimeLinSpaceLinNeumann.hpp
-HeatEqnFdmTimeLinSpaceLinNeumann3D_CPPFLAGS = $(CPPFLAGS_COMMON)
-HeatEqnFdmTimeLinSpaceLinNeumann3D_LDFLAGS = $(LDFLAGS_COMMON)
-HeatEqnFdmTimeLinSpaceLinNeumann3D_LDADD = $(LDADD_COMMON)
-HeatEqnFdmTimeLinSpaceLinNeumann3D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+check_PROGRAMS += HeatEqnFdmNeumannTimeLinSpaceLin3D
+HeatEqnFdmNeumannTimeLinSpaceLin3D_SOURCES = main3D.cpp \
+                     TimeLinSpaceLin.hpp
+HeatEqnFdmNeumannTimeLinSpaceLin3D_CPPFLAGS = $(CPPFLAGS_COMMON)
+HeatEqnFdmNeumannTimeLinSpaceLin3D_LDFLAGS = $(LDFLAGS_COMMON)
+HeatEqnFdmNeumannTimeLinSpaceLin3D_LDADD = $(LDADD_COMMON)
+HeatEqnFdmNeumannTimeLinSpaceLin3D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
 
 #------------------------------------------------------------------------------#
 if !AMDISTRIBUTESOFTWARE

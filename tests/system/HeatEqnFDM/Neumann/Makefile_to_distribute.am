@@ -1,4 +1,5 @@
-SUBDIRS = TimeLinSpaceConst
+SUBDIRS = TimeLinSpaceConst \
+          TimeLinSpaceLin
 
 ################################################################################
 include_HEADERS= Neumann.hpp

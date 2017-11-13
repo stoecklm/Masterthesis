@@ -514,23 +514,23 @@ AC_CONFIG_FILES([tests/system/HeatEqnFDM/Neumann/TimeLinSpaceConst/TESTMATRIX_RU
 AC_CONFIG_FILES([tests/system/HeatEqnFDM/Neumann/TimeLinSpaceConst/TESTMATRIX_RUN_3D.sh],
        [chmod +x tests/system/HeatEqnFDM/Neumann/TimeLinSpaceConst/TESTMATRIX_RUN_3D.sh])
 
-AC_CONFIG_FILES(tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLinNeumann/Makefile)
-AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLinNeumann/RUN.sh],
-       [chmod +x tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLinNeumann/RUN.sh])
-AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLinNeumann/RUN_1D.sh],
-       [chmod +x tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLinNeumann/RUN_1D.sh])
-AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLinNeumann/RUN_2D.sh],
-       [chmod +x tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLinNeumann/RUN_2D.sh])
-AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLinNeumann/RUN_3D.sh],
-       [chmod +x tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLinNeumann/RUN_3D.sh])
-AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLinNeumann/TESTMATRIX_RUN.sh],
-       [chmod +x tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLinNeumann/TESTMATRIX_RUN.sh])
-AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLinNeumann/TESTMATRIX_RUN_1D.sh],
-       [chmod +x tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLinNeumann/TESTMATRIX_RUN_1D.sh])
-AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLinNeumann/TESTMATRIX_RUN_2D.sh],
-       [chmod +x tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLinNeumann/TESTMATRIX_RUN_2D.sh])
-AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLinNeumann/TESTMATRIX_RUN_3D.sh],
-       [chmod +x tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLinNeumann/TESTMATRIX_RUN_3D.sh])
+AC_CONFIG_FILES(tests/system/HeatEqnFDM/Neumann/TimeLinSpaceLin/Makefile)
+AC_CONFIG_FILES([tests/system/HeatEqnFDM/Neumann/TimeLinSpaceLin/RUN.sh],
+       [chmod +x tests/system/HeatEqnFDM/Neumann/TimeLinSpaceLin/RUN.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFDM/Neumann/TimeLinSpaceLin/RUN_1D.sh],
+       [chmod +x tests/system/HeatEqnFDM/Neumann/TimeLinSpaceLin/RUN_1D.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFDM/Neumann/TimeLinSpaceLin/RUN_2D.sh],
+       [chmod +x tests/system/HeatEqnFDM/Neumann/TimeLinSpaceLin/RUN_2D.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFDM/Neumann/TimeLinSpaceLin/RUN_3D.sh],
+       [chmod +x tests/system/HeatEqnFDM/Neumann/TimeLinSpaceLin/RUN_3D.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFDM/Neumann/TimeLinSpaceLin/TESTMATRIX_RUN.sh],
+       [chmod +x tests/system/HeatEqnFDM/Neumann/TimeLinSpaceLin/TESTMATRIX_RUN.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFDM/Neumann/TimeLinSpaceLin/TESTMATRIX_RUN_1D.sh],
+       [chmod +x tests/system/HeatEqnFDM/Neumann/TimeLinSpaceLin/TESTMATRIX_RUN_1D.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFDM/Neumann/TimeLinSpaceLin/TESTMATRIX_RUN_2D.sh],
+       [chmod +x tests/system/HeatEqnFDM/Neumann/TimeLinSpaceLin/TESTMATRIX_RUN_2D.sh])
+AC_CONFIG_FILES([tests/system/HeatEqnFDM/Neumann/TimeLinSpaceLin/TESTMATRIX_RUN_3D.sh],
+       [chmod +x tests/system/HeatEqnFDM/Neumann/TimeLinSpaceLin/TESTMATRIX_RUN_3D.sh])
 
 AC_CONFIG_FILES(tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLinCauchy/Makefile)
 AC_CONFIG_FILES([tests/system/HeatEqnFDM/HeatEqnFdmTimeLinSpaceLinCauchy/RUN.sh],
