@@ -8,7 +8,7 @@
 
 errCode=0
 
-export SCAFESRUN_NAME_EXECUTABLE="HeatEqnFDMCauchyTimeLinSpaceConst3D";
+export SCAFESRUN_NAME_EXECUTABLE="HeatEqnFdmCauchyTimeLinSpaceConst3D";
 export SCAFESRUN_SPACE_DIM=3
 export SCAFESRUN_N_NODES="8x8x8"
 export SCAFESRUN_PARTITION_GRID="1x1x1"
