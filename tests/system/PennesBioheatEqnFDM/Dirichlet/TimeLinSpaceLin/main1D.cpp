@@ -5,13 +5,12 @@
  */
 
 #include "ScaFES.hpp"
-#include "PennesBioheatEqnFDM.hpp"
-#include "PennesBioheatEqnFdmTimeLinSpaceLin.hpp"
+#include "TimeLinSpaceLin.hpp"
 
 /** Space dimension of problem. */
-const int DIM = 3;
+const int DIM = 1;
 
-/** Main program for PennesBioheatEqnFDM. */
+/** Main program for PennesBioheatEqnFdmDirichletTimeLinSpaceLin1D. */
 int main(int argc, char *argv[]) {
     ScaFES::Parameters paramsCl(argc, argv);
     ScaFES::GridGlobal<DIM> gg(paramsCl);
@@ -42,19 +41,19 @@ int main(int argc, char *argv[]) {
     computeError[2] = true;
     std::vector<double> geomparamsInit;
 
-    PennesBioheatEqnFdmTimeLinSpaceLin<double, DIM> ppp(paramsCl, gg, false, nameDatafield, stencilWidth,
-                                isKnownDf, nLayers, defaultValue, writeToFile,
-                                computeError, geomparamsInit);
+    TimeLinSpaceLin<double, DIM> ppp(paramsCl, gg, false, nameDatafield, stencilWidth,
+                                     isKnownDf, nLayers, defaultValue, writeToFile,
+                                     computeError, geomparamsInit);
 
-    /* Stability condition: 1/((\sum_p 2/h_p^2) + 1) \ge \tau */
     double sumHsquared = 0.0;
     for (std::size_t pp = 0; pp < DIM; ++pp) {
-        sumHsquared += 2.0/(ppp.gridsize(pp) * ppp.gridsize(pp));
+        sumHsquared += 1.0/(ppp.gridsize(pp) * ppp.gridsize(pp));
     }
-    sumHsquared += 1.0;
-    if ((1.0/sumHsquared) < ppp.tau()) {
+    /* Stability condition: 1/(\sum_p 1/h_p^2) \ge 2 \tau */
+    /* nTimesteps >= 2 * dim * (nNodes - 1)^2 */
+    if ((1.0/sumHsquared) < 2.0 * ppp.tau()) {
         std::cerr << "\nERROR: Stability condition is not fulfilled."
-                  << std::endl;
+                   << std::endl;
     }
 
     ppp.iterateOverTime();

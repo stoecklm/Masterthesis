@@ -20,6 +20,7 @@ SCAFES_TESTS_DIR=$(top_srcdir)/examples
 
 CPPFLAGS_COMMON= \
         -I$(top_srcdir)/tests/system/PennesBioheatEqnFDM \
+        -I$(top_srcdir)/tests/system/PennesBioheatEqnFDM/Dirichlet \
         -I$(top_srcdir)/src \
         -I$(top_builddir)/src \
         @NETCDF_CPPFLAGS@ \
@@ -57,29 +58,29 @@ EXTRA_DIST=
 
 ################################################################################
 noinst_HEADERS +=
-check_PROGRAMS += PennesBioheatEqnFdmTimeLinSpaceLin1D
-PennesBioheatEqnFdmTimeLinSpaceLin1D_SOURCES = main1D.cpp \
-                     PennesBioheatEqnFdmTimeLinSpaceLin.hpp
-PennesBioheatEqnFdmTimeLinSpaceLin1D_CPPFLAGS = $(CPPFLAGS_COMMON)
-PennesBioheatEqnFdmTimeLinSpaceLin1D_LDFLAGS = $(LDFLAGS_COMMON)
-PennesBioheatEqnFdmTimeLinSpaceLin1D_LDADD = $(LDADD_COMMON)
-PennesBioheatEqnFdmTimeLinSpaceLin1D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+check_PROGRAMS += PennesBioheatEqnFdmDirichletTimeLinSpaceLin1D
+PennesBioheatEqnFdmDirichletTimeLinSpaceLin1D_SOURCES = main1D.cpp \
+                     TimeLinSpaceLin.hpp
+PennesBioheatEqnFdmDirichletTimeLinSpaceLin1D_CPPFLAGS = $(CPPFLAGS_COMMON)
+PennesBioheatEqnFdmDirichletTimeLinSpaceLin1D_LDFLAGS = $(LDFLAGS_COMMON)
+PennesBioheatEqnFdmDirichletTimeLinSpaceLin1D_LDADD = $(LDADD_COMMON)
+PennesBioheatEqnFdmDirichletTimeLinSpaceLin1D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
 #------------------------------------------------------------------------------#
-check_PROGRAMS += PennesBioheatEqnFdmTimeLinSpaceLin2D
-PennesBioheatEqnFdmTimeLinSpaceLin2D_SOURCES = main2D.cpp \
-                     PennesBioheatEqnFdmTimeLinSpaceLin.hpp
-PennesBioheatEqnFdmTimeLinSpaceLin2D_CPPFLAGS = $(CPPFLAGS_COMMON)
-PennesBioheatEqnFdmTimeLinSpaceLin2D_LDFLAGS = $(LDFLAGS_COMMON)
-PennesBioheatEqnFdmTimeLinSpaceLin2D_LDADD = $(LDADD_COMMON)
-PennesBioheatEqnFdmTimeLinSpaceLin2D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+check_PROGRAMS += PennesBioheatEqnFdmDirichletTimeLinSpaceLin2D
+PennesBioheatEqnFdmDirichletTimeLinSpaceLin2D_SOURCES = main2D.cpp \
+                     TimeLinSpaceLin.hpp
+PennesBioheatEqnFdmDirichletTimeLinSpaceLin2D_CPPFLAGS = $(CPPFLAGS_COMMON)
+PennesBioheatEqnFdmDirichletTimeLinSpaceLin2D_LDFLAGS = $(LDFLAGS_COMMON)
+PennesBioheatEqnFdmDirichletTimeLinSpaceLin2D_LDADD = $(LDADD_COMMON)
+PennesBioheatEqnFdmDirichletTimeLinSpaceLin2D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
 #------------------------------------------------------------------------------#
-check_PROGRAMS += PennesBioheatEqnFdmTimeLinSpaceLin3D
-PennesBioheatEqnFdmTimeLinSpaceLin3D_SOURCES = main3D.cpp \
-                     PennesBioheatEqnFdmTimeLinSpaceLin.hpp
-PennesBioheatEqnFdmTimeLinSpaceLin3D_CPPFLAGS = $(CPPFLAGS_COMMON)
-PennesBioheatEqnFdmTimeLinSpaceLin3D_LDFLAGS = $(LDFLAGS_COMMON)
-PennesBioheatEqnFdmTimeLinSpaceLin3D_LDADD = $(LDADD_COMMON)
-PennesBioheatEqnFdmTimeLinSpaceLin3D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+check_PROGRAMS += PennesBioheatEqnFdmDirichletTimeLinSpaceLin3D
+PennesBioheatEqnFdmDirichletTimeLinSpaceLin3D_SOURCES = main3D.cpp \
+                     TimeLinSpaceLin.hpp
+PennesBioheatEqnFdmDirichletTimeLinSpaceLin3D_CPPFLAGS = $(CPPFLAGS_COMMON)
+PennesBioheatEqnFdmDirichletTimeLinSpaceLin3D_LDFLAGS = $(LDFLAGS_COMMON)
+PennesBioheatEqnFdmDirichletTimeLinSpaceLin3D_LDADD = $(LDADD_COMMON)
+PennesBioheatEqnFdmDirichletTimeLinSpaceLin3D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
 
 #------------------------------------------------------------------------------#
 if !AMDISTRIBUTESOFTWARE

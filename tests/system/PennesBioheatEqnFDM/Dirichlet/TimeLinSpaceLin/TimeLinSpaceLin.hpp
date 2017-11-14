@@ -5,9 +5,9 @@
  */
 
 /**
- *  @file PennesBioheatEqnFdmTimeLinSpaceLin.hpp
+ *  @file TimeLinSpaceLin.hpp
  *
- *  @brief Implementation of n-dimensional Pennes bioheat equation problem on unit hybercube.
+ *  @brief Implementation of n-dimensional heat equation problem on unit hybercube.
  *
  * <ul>
  * Given solution: \f[y: \bar{\Omega} \times [t_S; t_E] \to {R}\f]
@@ -22,12 +22,14 @@
  * </ul>
  */
 
+#ifndef PENNESBIOHEATEQNFDM_DIRICHLET_TIMELINSPACELIN_HPP
+#define PENNESBIOHEATEQNFDM_DIRICHLET_TIMELINSPACELIN_HPP
+
 #include "ScaFES.hpp"
-#include "PennesBioheatEqnFDM.hpp"
-#include "analyticalFunctions.hpp"
+#include "Dirichlet.hpp"
 
 template<typename CT, std::size_t DIM>
-class PennesBioheatEqnFdmTimeLinSpaceLin : public PennesBioheatEqnFDM<CT,DIM, PennesBioheatEqnFdmTimeLinSpaceLin<CT,DIM> > {
+class TimeLinSpaceLin : public Dirichlet<CT,DIM, TimeLinSpaceLin<CT,DIM> > {
 
   public:
     /** All fields which are related to the underlying problem
@@ -46,28 +48,29 @@ class PennesBioheatEqnFdmTimeLinSpaceLin : public PennesBioheatEqnFDM<CT,DIM, Pe
      *                     and exact solution be computed?
      * @param geomparamsInit Initial guess of geometrical parameters.
      */
-    PennesBioheatEqnFdmTimeLinSpaceLin(ScaFES::Parameters const& params,
-               ScaFES::GridGlobal<DIM> const& gg,
-               bool useLeapfrog,
-               std::vector<std::string> const& nameDatafield,
-               std::vector<int> const& stencilWidth,
-               std::vector<bool> const& isKnownDf,
-               std::vector<int> const& nLayers = std::vector<int>(),
-               std::vector<CT> const& defaultValue = std::vector<CT>(),
-               std::vector<ScaFES::WriteHowOften> const& writeToFile
-                 = std::vector<ScaFES::WriteHowOften>(),
-               std::vector<bool> const& computeError = std::vector<bool>(),
-               std::vector<CT> const& geomparamsInit = std::vector<CT>() )
-        : PennesBioheatEqnFDM<CT, DIM, PennesBioheatEqnFdmTimeLinSpaceLin<CT,DIM> >(params, gg, useLeapfrog,
-                                                        nameDatafield, stencilWidth,
-                                                        isKnownDf, nLayers,
-                                                        defaultValue, writeToFile,
-                                                        computeError, geomparamsInit)
+    TimeLinSpaceLin(ScaFES::Parameters const& params,
+                    ScaFES::GridGlobal<DIM> const& gg,
+                    bool useLeapfrog,
+                    std::vector<std::string> const& nameDatafield,
+                    std::vector<int> const& stencilWidth,
+                    std::vector<bool> const& isKnownDf,
+                    std::vector<int> const& nLayers = std::vector<int>(),
+                    std::vector<CT> const& defaultValue = std::vector<CT>(),
+                    std::vector<ScaFES::WriteHowOften> const& writeToFile
+                      = std::vector<ScaFES::WriteHowOften>(),
+                    std::vector<bool> const& computeError = std::vector<bool>(),
+                    std::vector<CT> const& geomparamsInit = std::vector<CT>() )
+        : Dirichlet<CT, DIM, TimeLinSpaceLin<CT,DIM> >(params, gg, useLeapfrog,
+                                                       nameDatafield, stencilWidth,
+                                                       isKnownDf, nLayers,
+                                                       defaultValue, writeToFile,
+                                                       computeError, geomparamsInit)
         { }
 
     /** Evaluates all fields at one given global inner grid node.
      *  @param vNew Set of all fields.
      *  @param idxNode Index of given grid node.
+     *  @param timestep Given time step.
      */
     void evalInner(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
                    ScaFES::Ntuple<int,DIM> const& idxNode,
@@ -75,14 +78,21 @@ class PennesBioheatEqnFdmTimeLinSpaceLin : public PennesBioheatEqnFDM<CT,DIM, Pe
         ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
         double t = this->time(timestep);
 
-        /* Vector for f. */
-        vNew[0](idxNode) = this->RHO * this->C * timeLinSpaceLindTime<CT,DIM>(x);
-        vNew[0](idxNode) -= this->LAMBDA * timeLinSpaceLinSumOfdSpace2ndOrder<CT,DIM>(x, t);
-        vNew[0](idxNode) += this->RHO_BLOOD * this->C_BLOOD * this->W * timeLinSpaceLinFunc<CT,DIM>(x, t);
         /* Vector for g. */
-        vNew[1](idxNode) = timeLinSpaceLinFunc<CT,DIM>(x, t);
+        vNew[1](idxNode) = 0.0;
         /* Vector for y. */
-        vNew[2](idxNode) = timeLinSpaceLinFunc<CT,DIM>(x, t);
+        vNew[2](idxNode) = 1.0;
+        for (std::size_t pp = 0; pp < DIM; ++pp) {
+            vNew[2](idxNode) += x[pp];
+        }
+        vNew[2](idxNode) *= (1.0 + t);
+        /* Vector for f. */
+        vNew[0](idxNode) = 1.0;
+        for (std::size_t pp = 0; pp < DIM; ++pp) {
+            vNew[0](idxNode) += x[pp];
+        }
+        vNew[0](idxNode) *= this->RHO * this->C; // - LAMBDA * 0
+        vNew[0](idxNode) += this->RHO_BLOOD * this->C_BLOOD * this->W * vNew[2](idxNode);
     }
 
     /** Evaluates all fields at one given global border grid node.
@@ -93,12 +103,25 @@ class PennesBioheatEqnFdmTimeLinSpaceLin : public PennesBioheatEqnFDM<CT,DIM, Pe
     void evalBorder(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
                     ScaFES::Ntuple<int,DIM> const& idxNode,
                     int const& timestep) {
-        this->evalInner(vNew, idxNode, timestep);
+        ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
+        double t = this->time(timestep);
+
+        /* Vector for f. */
+        vNew[0](idxNode) = 0.0;
+        /* Vector for g. */
+        vNew[1](idxNode) = 1.0;
+        for (std::size_t pp = 0; pp < DIM; ++pp) {
+            vNew[1](idxNode) += x[pp];
+        }
+        vNew[1](idxNode) *= (1.0 + t);
+        /* Vector for y. */
+        vNew[2](idxNode) = vNew[1](idxNode);
     }
 
     /** Initializes all unknown fields at one given global inner grid node.
      *  @param vNew Set of all unknown fields (return value).
      *  @param idxNode Index of given grid node.
+     *  @param timestep Given time step.
      */
     template<typename TT>
     void initInner(std::vector< ScaFES::DataField<TT, DIM> >& vNew,
@@ -108,7 +131,11 @@ class PennesBioheatEqnFdmTimeLinSpaceLin : public PennesBioheatEqnFDM<CT,DIM, Pe
         ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
         double t_s = this->time(timestep);
 
-        vNew[0](idxNode) = timeLinSpaceLinFunc<CT,DIM>(x, t_s);
+        vNew[0](idxNode) = 1.0;
+        for (std::size_t pp = 0; pp < DIM; ++pp) {
+            vNew[0](idxNode) += x[pp];
+        }
+        vNew[0](idxNode) *= (1.0 + t_s);
     }
 
     /** Initializes all unknown fields at one given global border grid node.
@@ -125,3 +152,4 @@ class PennesBioheatEqnFdmTimeLinSpaceLin : public PennesBioheatEqnFDM<CT,DIM, Pe
         this->template initInner<TT>(vNew, vOld, idxNode, timestep);
     }
 };
+#endif
