@@ -20,6 +20,7 @@ SCAFES_TESTS_DIR=$(top_srcdir)/examples
 
 CPPFLAGS_COMMON= \
         -I$(top_srcdir)/tests/system/HeatEqnFDM \
+        -I$(top_srcdir)/tests/system/HeatEqnFDM/Cauchy \
         -I$(top_srcdir)/src \
         -I$(top_builddir)/src \
         @NETCDF_CPPFLAGS@ \
@@ -57,29 +58,29 @@ EXTRA_DIST=
 
 ################################################################################
 noinst_HEADERS +=
-check_PROGRAMS += HeatEqnFdmTimeLinSpaceLinCauchy1D
-HeatEqnFdmTimeLinSpaceLinCauchy1D_SOURCES = main1D.cpp \
-                     HeatEqnFdmTimeLinSpaceLinCauchy.hpp
-HeatEqnFdmTimeLinSpaceLinCauchy1D_CPPFLAGS = $(CPPFLAGS_COMMON)
-HeatEqnFdmTimeLinSpaceLinCauchy1D_LDFLAGS = $(LDFLAGS_COMMON)
-HeatEqnFdmTimeLinSpaceLinCauchy1D_LDADD = $(LDADD_COMMON)
-HeatEqnFdmTimeLinSpaceLinCauchy1D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+check_PROGRAMS += HeatEqnFdmCauchyTimeLinSpaceLin1D
+HeatEqnFdmCauchyTimeLinSpaceLin1D_SOURCES = main1D.cpp \
+                     TimeLinSpaceLin.hpp
+HeatEqnFdmCauchyTimeLinSpaceLin1D_CPPFLAGS = $(CPPFLAGS_COMMON)
+HeatEqnFdmCauchyTimeLinSpaceLin1D_LDFLAGS = $(LDFLAGS_COMMON)
+HeatEqnFdmCauchyTimeLinSpaceLin1D_LDADD = $(LDADD_COMMON)
+HeatEqnFdmCauchyTimeLinSpaceLin1D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
 #------------------------------------------------------------------------------#
-check_PROGRAMS += HeatEqnFdmTimeLinSpaceLinCauchy2D
-HeatEqnFdmTimeLinSpaceLinCauchy2D_SOURCES = main2D.cpp \
-                     HeatEqnFdmTimeLinSpaceLinCauchy.hpp
-HeatEqnFdmTimeLinSpaceLinCauchy2D_CPPFLAGS = $(CPPFLAGS_COMMON)
-HeatEqnFdmTimeLinSpaceLinCauchy2D_LDFLAGS = $(LDFLAGS_COMMON)
-HeatEqnFdmTimeLinSpaceLinCauchy2D_LDADD = $(LDADD_COMMON)
-HeatEqnFdmTimeLinSpaceLinCauchy2D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+check_PROGRAMS += HeatEqnFdmCauchyTimeLinSpaceLin2D
+HeatEqnFdmCauchyTimeLinSpaceLin2D_SOURCES = main2D.cpp \
+                     TimeLinSpaceLin.hpp
+HeatEqnFdmCauchyTimeLinSpaceLin2D_CPPFLAGS = $(CPPFLAGS_COMMON)
+HeatEqnFdmCauchyTimeLinSpaceLin2D_LDFLAGS = $(LDFLAGS_COMMON)
+HeatEqnFdmCauchyTimeLinSpaceLin2D_LDADD = $(LDADD_COMMON)
+HeatEqnFdmCauchyTimeLinSpaceLin2D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
 #------------------------------------------------------------------------------#
-check_PROGRAMS += HeatEqnFdmTimeLinSpaceLinCauchy3D
-HeatEqnFdmTimeLinSpaceLinCauchy3D_SOURCES = main3D.cpp \
-                     HeatEqnFdmTimeLinSpaceLinCauchy.hpp
-HeatEqnFdmTimeLinSpaceLinCauchy3D_CPPFLAGS = $(CPPFLAGS_COMMON)
-HeatEqnFdmTimeLinSpaceLinCauchy3D_LDFLAGS = $(LDFLAGS_COMMON)
-HeatEqnFdmTimeLinSpaceLinCauchy3D_LDADD = $(LDADD_COMMON)
-HeatEqnFdmTimeLinSpaceLinCauchy3D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+check_PROGRAMS += HeatEqnFdmCauchyTimeLinSpaceLin3D
+HeatEqnFdmCauchyTimeLinSpaceLin3D_SOURCES = main3D.cpp \
+                     TimeLinSpaceLin.hpp
+HeatEqnFdmCauchyTimeLinSpaceLin3D_CPPFLAGS = $(CPPFLAGS_COMMON)
+HeatEqnFdmCauchyTimeLinSpaceLin3D_LDFLAGS = $(LDFLAGS_COMMON)
+HeatEqnFdmCauchyTimeLinSpaceLin3D_LDADD = $(LDADD_COMMON)
+HeatEqnFdmCauchyTimeLinSpaceLin3D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
 
 #------------------------------------------------------------------------------#
 if !AMDISTRIBUTESOFTWARE

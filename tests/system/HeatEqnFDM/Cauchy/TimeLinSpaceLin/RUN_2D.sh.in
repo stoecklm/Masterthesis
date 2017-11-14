@@ -6,7 +6,7 @@
 # For details, see the files COPYING and LICENSE in the base directory
 # of the package.
 
-export SCAFESRUN_NAME_EXECUTABLE="$(basename $PWD)2D";
+export SCAFESRUN_NAME_EXECUTABLE="HeatEqnFdmCauchyTimeLinSpaceLin2D";
 export SCAFESRUN_SPACE_DIM=2
 export SCAFESRUN_N_NODES="8x8"
 export SCAFESRUN_N_PARTITIONS="1x1"
