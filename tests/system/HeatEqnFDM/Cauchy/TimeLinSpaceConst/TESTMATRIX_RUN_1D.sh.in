@@ -8,7 +8,7 @@
 
 errCode=0
 
-export SCAFESRUN_NAME_EXECUTABLE="$(basename $PWD)1D";
+export SCAFESRUN_NAME_EXECUTABLE="HeatEqnFDMCauchyTimeLinSpaceConst1D";
 export SCAFESRUN_SPACE_DIM=1
 export SCAFESRUN_N_NODES="64"
 export SCAFESRUN_PARTITION_GRID="1"

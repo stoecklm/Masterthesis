@@ -2,19 +2,19 @@
 #
 # Script for configuring the underlying application.
 #
-# Copyright (c) 2011-2015, ZIH, TU Dresden, Federal Republic of Germany.
+# Copyright (c) 2011-2017, ZIH, TU Dresden, Federal Republic of Germany.
 # For details, see the files COPYING and LICENSE in the base directory
 # of the package.
 
 errCode=0
 
-export SCAFESRUN_NAME_EXECUTABLE="$(basename $PWD)";
-export SCAFESRUN_SPACE_DIM=3
-export SCAFESRUN_N_NODES="8x8x8"
-export SCAFESRUN_PARTITION_GRID="1x1x1"
-export SCAFESRUN_COORD_NODE_FIRST="0x0x0"
-export SCAFESRUN_COORD_NODE_LAST="1x1x1"
-export SCAFESRUN_N_TIMESTEPS=1000
+export SCAFESRUN_NAME_EXECUTABLE="HeatEqnFDMCauchyTimeLinSpaceConst2D";
+export SCAFESRUN_SPACE_DIM=2
+export SCAFESRUN_N_NODES="8x8"
+export SCAFESRUN_PARTITION_GRID="1x1"
+export SCAFESRUN_COORD_NODE_FIRST="0x0"
+export SCAFESRUN_COORD_NODE_LAST="1x1"
+export SCAFESRUN_N_TIMESTEPS=8000
 export SCAFESRUN_N_SNAPSHOTS=1
 export SCAFESRUN_START_TIME=0
 export SCAFESRUN_END_TIME=1
