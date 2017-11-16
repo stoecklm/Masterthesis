@@ -183,6 +183,12 @@ public:
     /** Returns the name of the config file. */
     const std::string& nameConfigFile() const;
 
+    /** Returns the name of the config file. */
+    const std::string& nameInitFile() const;
+
+    /** Returns the decision if an init file should be read. */
+    const bool& readInitFile() const;
+
     /** Returns if ADOL-C is enabled. */
     const bool& enabledAdolc() const;
 
@@ -347,6 +353,12 @@ private:
     /** Name of the configuration file. */
     std::string mNameOfConfigFile;
 
+    /** Name of the initialization file. */
+    std::string mNameOfInitFile;
+
+    /** Read init file? */
+    bool mReadInitFile;
+
     /** Is ADOL-C enabled? */
     bool mEnabledAdolc;
 
@@ -406,6 +418,8 @@ inline Parameters::Parameters(int argc, char* argv[])
 , mWriteDataFile(false)
 , mNameOfDataFile("EMPTYDATAFILE")
 , mNameOfConfigFile("EMPTYCONFIGFILE")
+, mNameOfInitFile("EMPTYINITFILE")
+, mReadInitFile(false)
 , mEnabledAdolc(false)
 , mAsynchronMode(true)
 , mUseBoostMpiSkeletonConcept(true)
@@ -463,6 +477,8 @@ inline Parameters::Parameters(int argc, char* argv[])
             "Sets the name of the output data file.")(
             "configfile", po::value<std::string>(),
             "Sets the name of the config file.")(
+            "initfile", po::value<std::string>(),
+            "Sets the name of the init file.")(
             "enabledAdolc", po::value<int>(),
             "Sets if ADOL-C should be enabled, 1=yes, 0=no (default=0).")(
             "asynchronMode", po::value<int>(), "Sets if asynchronous MPI "
@@ -822,6 +838,16 @@ inline Parameters::Parameters(int argc, char* argv[])
             std::cerr << "\nREMARK: Use --configfile=<name>.\n\n";
         }
         /*--------------------------------------------------------------------*/
+        if (vm.count("initfile"))
+        {
+            this->mNameOfInitFile = vm["initfile"].as<std::string>();
+            this->mReadInitFile = true;
+        }
+        else
+        {
+            std::cerr << "\nREMARK: Use --initfile=<name>.\n\n";
+        }
+        /*--------------------------------------------------------------------*/
         if (vm.count("enabledAdolc"))
         {
             int tmpEnabledAdolc = vm["enabledAdolc"].as<int>();
@@ -1008,6 +1034,8 @@ inline Parameters::Parameters(const Parameters& rhs)
 , mWriteDataFile(rhs.writeDataFile())
 , mNameOfDataFile(rhs.nameDataFile())
 , mNameOfConfigFile(rhs.nameConfigFile())
+, mNameOfInitFile(rhs.nameInitFile())
+, mReadInitFile(rhs.readInitFile())
 , mEnabledAdolc(rhs.enabledAdolc())
 , mAsynchronMode(rhs.asynchronMode())
 , mUseBoostMpiSkeletonConcept(rhs.useBoostMpiSkeletonConcept())
@@ -1044,6 +1072,8 @@ inline Parameters::Parameters(const Parameters& rhs)
 , mWriteDataFile(rhs.writeDataFile())
 , mNameOfDataFile(rhs.nameDataFile())
 , mNameOfConfigFile(rhs.nameConfigFile())
+, mNameOfInitFile(rhs.nameInitFile())
+, mReadInitFile(rhs.readInitFile())
 , mEnabledAdolc(rhs.enabledAdolc())
 , mAsynchronMode(rhs.asynchronMode())
 , mUseBoostMpiSkeletonConcept(rhs.useBoostMpiSkeletonConcept())
@@ -1184,6 +1214,16 @@ inline const std::string& Parameters::nameDataFile() const
 inline const std::string& Parameters::nameConfigFile() const
 {
     return this->mNameOfConfigFile;
+}
+/*----------------------------------------------------------------------------*/
+inline const std::string& Parameters::nameInitFile() const
+{
+    return this->mNameOfInitFile;
+}
+/*----------------------------------------------------------------------------*/
+inline const bool& Parameters::readInitFile() const
+{
+    return this->mReadInitFile;
 }
 /*----------------------------------------------------------------------------*/
 inline const bool& Parameters::enabledAdolc() const
@@ -1339,6 +1379,14 @@ inline bool Parameters::operator==(const Parameters& rhs) const
         isEqual = false;
     }
     if (this->nameConfigFile() != rhs.nameConfigFile())
+    {
+        isEqual = false;
+    }
+    if (this->nameInitFile() != rhs.nameInitFile())
+    {
+        isEqual = false;
+    }
+    if (this->readInitFile() != rhs.readInitFile())
     {
         isEqual = false;
     }
@@ -1561,6 +1609,8 @@ void Parameters::serialize(Archive& ar, const unsigned int version)
         ar&(this->mWriteDataFile);
         ar&(this->mNameOfDataFile);
         ar&(this->mNameOfConfigFile);
+        ar&(this->mNameOfInitFile);
+        ar&(this->mReadInitFile);
         ar&(this->mEnabledAdolc);
         ar&(this->mAsynchronMode);
         ar&(this->mUseBoostMpiSkeletonConcept);
@@ -1601,6 +1651,8 @@ inline void swap(Parameters& first, Parameters& second)
     std::swap(first.mWriteDataFile, second.mWriteDataFile);
     std::swap(first.mNameOfDataFile, second.mNameOfDataFile);
     std::swap(first.mNameOfConfigFile, second.mNameOfConfigFile);
+    std::swap(first.mNameOfInitFile, second.mNameOfInitFile);
+    std::swap(first.mReadInitFile, second.mReadInitFile);
     std::swap(first.mEnabledAdolc, second.mEnabledAdolc);
     std::swap(first.mAsynchronMode, second.mAsynchronMode);
     std::swap(first.mUseBoostMpiSkeletonConcept, second.mUseBoostMpiSkeletonConcept);

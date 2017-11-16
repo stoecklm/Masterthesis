@@ -119,6 +119,9 @@
 # * Maximal run time in hh:mm:ss. <string>
 #   SCAFESRUN_MACHINE_TIME="";
 #
+#   Name of the init file (netCDF file) <string>
+#   SCAFESRUN_NAME_INITFILE="";
+#
 # ScaFES
 # Copyright (c) 2011-2015, ZIH, TU Dresden, Federal Republic of Germany.
 # For details, see the files COPYING and LICENSE in the base directory
@@ -198,6 +201,12 @@ fi
 if [ "x$SCAFESRUN_END_TIME" == "x" ] ; then
     SCAFESRUN_END_TIME="1";
     echo "* WARNING: Use default value SCAFESRUN_END_TIME=$SCAFESRUN_END_TIME"
+fi
+
+#------------------------------------------------------------------------------#
+if [ "x$SCAFESRUN_NAME_INITFILE" == "x" ] ; then
+    SCAFESRUN_NAME_INITFILE=""
+    echo "* WARNING: Use default value SCAFESRUN_NAME_INITFILE=$SCAFESRUN_NAME_INITFILE"
 fi
 
 #------------------------------------------------------------------------------#
@@ -444,6 +453,7 @@ declare    -r local nameProject=${SCAFESRUN_MACHINE_NAME_PROJECT};
 declare    -r local nameReservation=${SCAFESRUN_MACHINE_NAME_RESERVATION};
 declare    -r local memoryPerCore=${SCAFESRUN_MACHINE_MEMORY_PER_CORE};
 declare    local jobexestring="";
+declare    -r local nameInitfile=${SCAFESRUN_NAME_INITFILE};
 #------------------------------------------------------------------------------#
 # Compute value of dependent variable.
 declare -i local nCoresTotalMAX=${nNodesMachineMAX};
@@ -466,6 +476,12 @@ if [ "x$nameConfigfile" == "x" ] ; then
     optionConfigfile="";
 else
     optionConfigfile="--configfile=$nameConfigfile";
+fi
+#------------------------------------------------------------------------------#
+if [ "x$nameInitfile" == "x" ] ; then
+    optionInitfile="";
+else
+    optionInitfile="--initfile=$nameInitfile";
 fi
 #------------------------------------------------------------------------------#
 boolEnabledAdolc=0;
@@ -641,6 +657,7 @@ for idxTestMpi in `seq 0 $endTestMpi`; do
                     ${optionKindfile} \
                     --writeKindFile=$boolWriteKindfile \
                     ${optionConfigfile} \
+                    ${optionInitfile} \
                     --enabledAdolc=$boolEnabledAdolc \
                     --asynchronMode=$boolAsynchronMode \
                     --useBoostMpiSkeletonConcept=$boolUseSkeletonConcept \
