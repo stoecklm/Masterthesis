@@ -546,10 +546,11 @@ AC_CONFIG_FILES([examples/ZhangExampleFDM/RUN.sh],
 AC_CONFIG_FILES([examples/ZhangExampleFDM/TESTMATRIX_RUN.sh],
        [chmod +x examples/ZhangExampleFDM/TESTMATRIX_RUN.sh])
 
-AC_CONFIG_FILES(examples/HeatEqnFDMConfigFile/Makefile)
-AC_CONFIG_FILES([examples/HeatEqnFDMConfigFile/RUN.sh],
-       [chmod +x examples/HeatEqnFDMConfigFile/RUN.sh])
-AC_CONFIG_FILES(examples/HeatEqnFDMConfigFile/parameters.ini)
+AC_CONFIG_FILES(examples/HeatEqnFDMInitFile/Makefile)
+AC_CONFIG_FILES([examples/HeatEqnFDMInitFile/RUN.sh],
+       [chmod +x examples/HeatEqnFDMInitFile/RUN.sh])
+AC_CONFIG_FILES(examples/HeatEqnFDMInitFile/parameters.ini)
+
 ##if test "$distributeSoftware" = "no"; then
 ##    AC_CONFIG_FILES(examples/MaxwellEqnsFDTD/Makefile)
 ##fi

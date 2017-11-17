@@ -1,4 +1,19 @@
-#AUTOMAKE_OPTIONS= subdir-objects
+#------------------------------------------------------------------------------#
+if !AMDISTRIBUTESOFTWARE
+if AMHAVEVT
+VTxxxCPPFLAGS = @VT_CPPFLAGS@
+endif
+endif
+
+#------------------------------------------------------------------------------#
+if !AMDISTRIBUTESOFTWARE
+if AMHAVEVT
+if AMHAVEOMP
+VTOPARIxxxCPPFLAGS = @VT_CPPFLAGS@ \
+-vt:opari "-rcfile $(top_builddir)/src/scafes.opari.rc -table $(top_builddir)/src/scafes.opari.tab.c"
+endif
+endif
+endif
 
 #------------------------------------------------------------------------------#
 SCAFES_TESTS_DIR=$(top_srcdir)/examples
@@ -28,23 +43,34 @@ LDADD_COMMON = \
         @OPENMP_CXXFLAGS@ \
         @NETCDF_LDFLAGS@ \
         @ADOLC_LDFLAGS@
+
 DEPENDENCIES_COMMON= $(top_builddir)/src/libscafes.la
 
 
 ################################################################################
-include_HEADERS=
-noinst_PROGRAMS=
-EXTRA_DIST=
+exampledir = $(exec_prefix)/examples/HeatEqnFDMInitFile
+example_PROGRAMS = HeatEqnFDMInitFile
+example_SCRIPTS = RUN.sh
+bin_PROGRAMS =
+include_HEADERS =
+noinst_PROGRAMS =
+
 
 ################################################################################
-include_HEADERS +=
-noinst_PROGRAMS += HeatEqnFDMConfigFile
-HeatEqnFDMConfigFile_SOURCES = main.cpp \
+noinst_PROGRAMS += HeatEqnFDMInitFile
+HeatEqnFDMInitFile_SOURCES = main.cpp \
                      HeatEqnFDM.hpp \
                      analyticalFunctions.hpp
-HeatEqnFDMConfigFile_CPPFLAGS = $(CPPFLAGS_COMMON)
-HeatEqnFDMConfigFile_LDFLAGS = $(LDFLAGS_COMMON)
-HeatEqnFDMConfigFile_LDADD = $(LDADD_COMMON)
-HeatEqnFDMConfigFile_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+HeatEqnFDMInitFile_CPPFLAGS = $(CPPFLAGS_COMMON)
+HeatEqnFDMInitFile_LDFLAGS = $(LDFLAGS_COMMON)
+HeatEqnFDMInitFile_LDADD = $(LDADD_COMMON)
+HeatEqnFDMInitFile_DEPENDENCIES = $(DEPENDENCIES_COMMON)
 EXTRA_DIST = RUN.sh
 EXTRA_DIST += parameters.ini
+
+
+#------------------------------------------------------------------------------#
+if !AMDISTRIBUTESOFTWARE
+clean-local:
+	-rm -f *.gcno *.opari.inc *.pomp.cpp *.core
+endif

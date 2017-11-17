@@ -48,8 +48,8 @@ DEPENDENCIES_COMMON= $(top_builddir)/src/libscafes.la
 
 
 ################################################################################
-exampledir = $(exec_prefix)/examples/HeatEqnFDMConfigFile
-example_PROGRAMS = HeatEqnFDMConfigFile
+exampledir = $(exec_prefix)/examples/HeatEqnFDMInitFile
+example_PROGRAMS = HeatEqnFDMInitFile
 example_SCRIPTS = RUN.sh
 bin_PROGRAMS =
 include_HEADERS =
@@ -57,17 +57,16 @@ noinst_PROGRAMS =
 
 
 ################################################################################
-noinst_PROGRAMS += HeatEqnFDMConfigFile
-HeatEqnFDMConfigFile_SOURCES = main.cpp \
+noinst_PROGRAMS += HeatEqnFDMInitFile
+HeatEqnFDMInitFile_SOURCES = main.cpp \
                      HeatEqnFDM.hpp \
                      analyticalFunctions.hpp
-HeatEqnFDMConfigFile_CPPFLAGS = $(CPPFLAGS_COMMON)
-HeatEqnFDMConfigFile_LDFLAGS = $(LDFLAGS_COMMON)
-HeatEqnFDMConfigFile_LDADD = $(LDADD_COMMON)
-HeatEqnFDMConfigFile_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+HeatEqnFDMInitFile_CPPFLAGS = $(CPPFLAGS_COMMON)
+HeatEqnFDMInitFile_LDFLAGS = $(LDFLAGS_COMMON)
+HeatEqnFDMInitFile_LDADD = $(LDADD_COMMON)
+HeatEqnFDMInitFile_DEPENDENCIES = $(DEPENDENCIES_COMMON)
 EXTRA_DIST = RUN.sh
 EXTRA_DIST += parameters.ini
-
 
 #------------------------------------------------------------------------------#
 if !AMDISTRIBUTESOFTWARE
