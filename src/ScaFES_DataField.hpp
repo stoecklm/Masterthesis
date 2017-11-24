@@ -1386,7 +1386,7 @@ void DataField<CT, DIM>::setValuesAtMemAll(const ScaFES::DataField<CT, DIM>& df)
     {
         std::cout << mParams->getPrefix()
                   << " * Set values of " << df.name() << " to " << this->name()
-                  << " at memAll... " << std::endl;
+                  << " at memAll..." << std::endl;
     }
     this->mParams->decreaseLevel();
 
@@ -1438,7 +1438,7 @@ double DataField<CT, DIM>::compErrLinf(const ScaFES::DataField<CT, DIM>& df)
     {
         std::cout << mParams->getPrefix()
                   << " * Compute Linf error(" << name() << ", " << df.name()
-                  << ")... " << std::endl;
+                  << ")..." << std::endl;
     }
     this->mParams->decreaseLevel();
     ScaFES_IntNtuple idxNode;
