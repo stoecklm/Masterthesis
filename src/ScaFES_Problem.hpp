@@ -2456,25 +2456,32 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalInitPbPhase()
 
     int timeIter = 0;
 
-    if (this->useAsynchronMode())
+    if (mParams.readInitFile() == false)
     {
-        this->evalTypeOneAsynchronously(
-            whichPhase, this->mVectUnknownDfsDomNew,
-            this->mVectGradUnknownDfsDomNew, this->vectParamsCurr(),
-            this->mVectGradParamsCurr, timeIter,
-            this->tapeIdInitPartitionInner(), this->tapeIdInitPartitionBorder(),
-            &OWNPRBLM::template initInner<CT>,
-            &OWNPRBLM::template initBorder<CT>);
+        if (this->useAsynchronMode())
+        {
+            this->evalTypeOneAsynchronously(
+                whichPhase, this->mVectUnknownDfsDomNew,
+                this->mVectGradUnknownDfsDomNew, this->vectParamsCurr(),
+                this->mVectGradParamsCurr, timeIter,
+                this->tapeIdInitPartitionInner(), this->tapeIdInitPartitionBorder(),
+                &OWNPRBLM::template initInner<CT>,
+                &OWNPRBLM::template initBorder<CT>);
+        }
+        else
+        {
+            this->evalTypeOneSynchronously(
+                whichPhase, this->mVectUnknownDfsDomNew,
+                this->mVectGradUnknownDfsDomNew, this->mVectUnknownDfsBdryNew,
+                this->mVectGradUnknownDfsBdryNew, this->vectParamsCurr(),
+                this->mVectGradParamsCurr, timeIter, this->tapeIdInitPartitionAll(),
+                &OWNPRBLM::template initInner<CT>,
+                &OWNPRBLM::template initBorder<CT>);
+        }
     }
     else
     {
-        this->evalTypeOneSynchronously(
-            whichPhase, this->mVectUnknownDfsDomNew,
-            this->mVectGradUnknownDfsDomNew, this->mVectUnknownDfsBdryNew,
-            this->mVectGradUnknownDfsBdryNew, this->vectParamsCurr(),
-            this->mVectGradParamsCurr, timeIter, this->tapeIdInitPartitionAll(),
-            &OWNPRBLM::template initInner<CT>,
-            &OWNPRBLM::template initBorder<CT>);
+        /* Code for reading init file. */
     }
 
     for (std::size_t ii = 0; ii < this->mVectUnknownDfsDomNew.size(); ++ii)
