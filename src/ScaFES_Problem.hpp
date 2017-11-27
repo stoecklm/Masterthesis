@@ -658,6 +658,10 @@ protected:
     void writeDfsToFile(const int& timeIter);
 
     /*------------------------------------------------------------------------*/
+    /* Init all unknown data fields from one NetCDF. */
+    void initDfsFromFile();
+
+    /*------------------------------------------------------------------------*/
     /*------------------------------------------------------------------------*/
     /** Evaluates phase type 1 using asynchronous MPI communication. */
     void evalTypeOneAsynchronously(
@@ -1895,7 +1899,6 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
         /* Normal grid memory. */
         std::vector<ScaFES::GridSub<DIM>> initMemNormal;
         initMemNormal.reserve(nDataFieldsToInit);
-        idxKnownDf = 0;
         idxUnknownDf = 0;
         for (std::size_t ii = 0; ii < this->isKnownDf().size(); ++ii)
         {
@@ -1909,7 +1912,6 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
                 }
             }
         }
-        idxKnownDf = 0;
         idxUnknownDf = 0;
         for (std::size_t ii = 0; ii < this->isKnownDf().size(); ++ii)
         {
@@ -2551,6 +2553,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalInitPbPhase()
     else
     {
         /* Code for reading init file. */
+        this->initDfsFromFile();
     }
 
     for (std::size_t ii = 0; ii < this->mVectUnknownDfsDomNew.size(); ++ii)
@@ -3776,6 +3779,75 @@ inline void Problem<OWNPRBLM, CT, DIM>::writeDfsToFile(const int& timeIter)
     {
         std::cout << this->mParams.getPrefix()
                   << "   Written."
+                  << std::endl;
+    }
+}
+/*----------------------------------------------------------------------------*/
+template <class OWNPRBLM, typename CT, std::size_t DIM>
+inline void Problem<OWNPRBLM, CT, DIM>::initDfsFromFile()
+{
+    if (this->params().rankOutput() == this->myRank() &&
+        (0 < this->params().indentDepth()))
+    {
+        std::cout << this->mParams.getPrefix()
+                  << " * Init data fields from file "
+                  << mInitFile.nameDataFile() << " ..." << std::endl;
+    }
+    this->mParams.decreaseLevel();
+
+    int nDataFieldsToInit = 0;
+    for (std::size_t ii = 0; ii < this->isKnownDf().size(); ++ii)
+    {
+        if (this->isKnownDf().at(ii) == false)
+        {
+            ++nDataFieldsToInit;
+        }
+    }
+
+    if (0 < nDataFieldsToInit)
+    {
+        std::vector<CT*> tmpElemData;
+        tmpElemData.reserve(nDataFieldsToInit);
+        int idxUnknownDf = 0;
+        for (std::size_t ii = 0; ii < this->isKnownDf().size(); ++ii)
+        {
+            if (0 == this->nLayers().at(ii))
+            {
+                if (this->isKnownDf().at(ii) == false)
+                {
+                    tmpElemData.push_back(
+                        this->vectUnknownDfsDomNew()[idxUnknownDf].elemData());
+                    ++idxUnknownDf;
+                }
+            }
+        }
+        idxUnknownDf = 0;
+        for (std::size_t ii = 0; ii < this->isKnownDf().size(); ++ii)
+        {
+            if (0 < this->nLayers().at(ii))
+            {
+                if (this->isKnownDf().at(ii))
+                {
+                    if (ScaFES::WriteHowOften::NEVER != this->mWriteToFile[ii])
+                    {
+                        tmpElemData.push_back(
+                            this->vectUnknownDfsBdryNew()[idxUnknownDf]
+                                .elemData());
+                    }
+                    ++idxUnknownDf;
+                }
+            }
+        }
+
+        this->mInitFile.init(tmpElemData);
+    }
+
+    this->mParams.increaseLevel();
+    if (this->params().rankOutput() == this->myRank() &&
+        (0 < this->params().indentDepth()))
+    {
+        std::cout << this->mParams.getPrefix()
+                  << "   Initialized."
                   << std::endl;
     }
 }

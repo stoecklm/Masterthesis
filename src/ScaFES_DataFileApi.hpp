@@ -165,6 +165,10 @@ public:
      *  from the file at the given time step. */
     void read(std::vector<TT*>& elemData, int const& timestep);
 
+    /** Inits the elements in the memory to which the pointer points to
+     *  from the file. */
+    void init(std::vector<TT*>& elemData);
+
 private:
     /*----------------------------------------------------------------------
     | TYPE DEFINITIONS.
@@ -634,6 +638,128 @@ void DataFile<TT, DIM>::read(std::vector<TT*>& elemData, int const& /*timestep*/
 
     status = nc_inq_dimlen(mIdFile, mIdDims[0], &(nElems[nDimensions - 1]));
 
+    wrapNCCall(status, __FILE__, __LINE__);
+
+    /*------------------------------------------------------------------------*/
+    /* Read data. */
+    double* ptrToMem = 0;
+    double value = 0.0;
+    // Get real number and store it in mNcMemory.
+    double tmpVal = 0.0;
+
+    for (std::size_t ii = 0; ii < this->nameVariables().size(); ++ii)
+    {
+        // mIdVariable[0] means real_part!
+        status = nc_get_var_double(this->mIdFile, this->mIdVariable[ii][0],
+                                   this->mNcMemory.data());
+        wrapNCCall(status, __FILE__, __LINE__);
+
+        ptrToMem = this->mNcMemory.data();
+        //#pragma omp parallel for
+        for (typename GridSub<DIM>::iterator
+                 it = this->memNormal().at(ii).begin(),
+                 et = this->memNormal().at(ii).end();
+             it < et; ++it)
+        {
+            tmpVal = *ptrToMem;
+            value = tmpVal;
+            // Will be written to elemData.
+            this->mElemData[ii][it.idxScalarNode()] = static_cast<TT>(value);
+            ++ptrToMem;
+        }
+    }
+}
+/*----------------------------------------------------------------------------*/
+template <typename TT, std::size_t DIM>
+void DataFile<TT, DIM>::init(std::vector<TT*>& elemData)
+{
+    int idVersion;
+    int version = 0;
+    int status; // Return value of netCDF methods.
+
+    const int nDimensions = 1 + DIM;
+    std::size_t nElems[nDimensions];
+
+    for (std::size_t ii = 0; ii < elemData.size(); ++ii)
+    {
+        this->mElemData[ii] = elemData[ii];
+    }
+
+#ifdef VTRACE
+    VT_TRACER("DataFile::init()");
+#endif
+
+    /*------------------------------------------------------------------------*/
+    // Open the file with read-only access if it was not done before.
+    if (!(this->mIsOpen))
+    {
+        status = nc_open(mNameDataFile.c_str(), NC_NOWRITE, &mIdFile);
+        wrapNCCall(status, __FILE__, __LINE__);
+        mIsOpen = true;
+    }
+
+    /*------------------------------------------------------------------------*/
+    // Read in version number.
+    status = nc_get_att_int(mIdFile, NC_GLOBAL, "version", &version);
+    if (status != NC_NOERR)
+    {
+        status = nc_inq_varid(mIdFile, "version", &idVersion);
+        if (status != NC_NOERR)
+        {
+            version = 0;
+        }
+        else
+        {
+            nc_get_var_int(mIdFile, idVersion, &version);
+        }
+    }
+
+    /*------------------------------------------------------------------------*/
+    // Initialise memory at all nodes in order to be sure that
+    // there is no dump in the memory.
+    mNelemsNcMem = memNormal().at(0).nNodesTotal();
+
+    if (0 < mNelemsNcMem)
+    {
+        mNcMemory = std::vector<double>(mNelemsNcMem, 0.0);
+    }
+
+    /*------------------------------------------------------------------------*/
+    // Get the varid of the data variable, based on its name.
+    for (std::size_t ii = 0; ii < elemData.size(); ++ii)
+    {
+        mIdVariable[ii].reserve(1);
+        status = nc_inq_varid(mIdFile, mNameVariables[ii].c_str(),
+                              &(mIdVariable[ii][0]));
+        wrapNCCall(status, __FILE__, __LINE__);
+    }
+
+    /*------------------------------------------------------------------------*/
+    // Get the var id and the lengths of the grid and time dimensions.
+    std::string tmpName = "nNodes";
+    for (std::size_t ii = 0; ii < DIM; ++ii)
+    {
+        std::ostringstream oss;
+        oss << tmpName << "_" << ii;
+        std::string nameOfDim(oss.str());
+        status = nc_inq_dimid(mIdFile, nameOfDim.c_str(), &mIdDims[DIM - ii]);
+
+        wrapNCCall(status, __FILE__, __LINE__);
+        status = nc_inq_dimlen(mIdFile, mIdDims[DIM - ii], &(nElems[ii]));
+
+        wrapNCCall(status, __FILE__, __LINE__);
+
+        if (memNormal().at(0).nNodes().elem(ii) != static_cast<int>(nElems[ii]))
+        {
+            std::cerr << " Grid dimensions does not fit to given grid. "
+                      << std::endl;
+            break;
+        }
+    }
+    status = nc_inq_dimid(mIdFile, "time", &mIdDims[0]);
+    wrapNCCall(status, __FILE__, __LINE__);
+
+    status = nc_inq_dimlen(mIdFile, mIdDims[0], &(nElems[nDimensions - 1]));
     wrapNCCall(status, __FILE__, __LINE__);
 
     /*------------------------------------------------------------------------*/
