@@ -8,7 +8,7 @@
 #include "HeatEqnFDMInitFile.hpp"
 
 /** Space dimension of problem. */
-const int DIM = 3;
+const int DIM = 1;
 
 /** Main program for HeatEqnFDMInitFile. */
 int main(int argc, char *argv[]) {

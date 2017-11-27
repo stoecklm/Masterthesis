@@ -5,7 +5,7 @@
  */
 
 /**
- *  @file HeatEqnFDM.hpp
+ *  @file HeatEqnFDMInitFile.hpp
  *
  *  @brief Implementation of n-dimensional heat equation problem on unit hybercube.
  */

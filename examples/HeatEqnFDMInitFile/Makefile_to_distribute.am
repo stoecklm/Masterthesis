@@ -37,14 +37,34 @@ noinst_PROGRAMS=
 EXTRA_DIST=
 
 ################################################################################
-include_HEADERS +=
-noinst_PROGRAMS += HeatEqnFDMInitFile
-HeatEqnFDMInitFile_SOURCES = main.cpp \
-                     HeatEqnFDM.hpp \
+noinst_PROGRAMS += HeatEqnFDMInitFile1D
+HeatEqnFDMInitFile1D_SOURCES = main1D.cpp \
+                     HeatEqnFDMInitFile.hpp \
                      analyticalFunctions.hpp
-HeatEqnFDMInitFile_CPPFLAGS = $(CPPFLAGS_COMMON)
-HeatEqnFDMInitFile_LDFLAGS = $(LDFLAGS_COMMON)
-HeatEqnFDMInitFile_LDADD = $(LDADD_COMMON)
-HeatEqnFDMInitFile_DEPENDENCIES = $(DEPENDENCIES_COMMON)
-EXTRA_DIST = RUN.sh
+HeatEqnFDMInitFile1D_CPPFLAGS = $(CPPFLAGS_COMMON)
+HeatEqnFDMInitFile1D_LDFLAGS = $(LDFLAGS_COMMON)
+HeatEqnFDMInitFile1D_LDADD = $(LDADD_COMMON)
+HeatEqnFDMInitFile1D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+EXTRA_DIST = RUN_1D.sh
+################################################################################
+noinst_PROGRAMS += HeatEqnFDMInitFile2D
+HeatEqnFDMInitFile2D_SOURCES = main2D.cpp \
+                     HeatEqnFDMInitFile.hpp \
+                     analyticalFunctions.hpp
+HeatEqnFDMInitFile2D_CPPFLAGS = $(CPPFLAGS_COMMON)
+HeatEqnFDMInitFile2D_LDFLAGS = $(LDFLAGS_COMMON)
+HeatEqnFDMInitFile2D_LDADD = $(LDADD_COMMON)
+HeatEqnFDMInitFile2D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+EXTRA_DIST += RUN_2D.sh
+################################################################################
+noinst_PROGRAMS += HeatEqnFDMInitFile3D
+HeatEqnFDMInitFile3D_SOURCES = main3D.cpp \
+                     HeatEqnFDMInitFile.hpp \
+                     analyticalFunctions.hpp
+HeatEqnFDMInitFile3D_CPPFLAGS = $(CPPFLAGS_COMMON)
+HeatEqnFDMInitFile3D_LDFLAGS = $(LDFLAGS_COMMON)
+HeatEqnFDMInitFile3D_LDADD = $(LDADD_COMMON)
+HeatEqnFDMInitFile3D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+EXTRA_DIST += RUN_3D.sh
+EXTRA_DIST += RUN.sh
 EXTRA_DIST += parameters.ini
