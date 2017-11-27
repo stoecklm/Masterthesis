@@ -1076,6 +1076,9 @@ protected:
     /** Global output file. */
     ScaFES::DataFile<CT, DIM> mCommonFile;
 
+    /** Global input file for initialization. */
+    ScaFES::DataFile<CT, DIM> mInitFile;
+
     /** Type of each grid node. */
     ScaFES::DataField<short int, DIM> mKind;
 
@@ -1248,7 +1251,8 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
   mTapeIdUpdate2PartitionAll(20922 + params.myWorld().rank()),
   mIsTracedUpdatePhase(false), mIsTracedUpdate2Phase(false),
   mNnodesTotalPartition(0), mNelemsKnownDfs(0), mNelemsUnknownDfs(0),
-  mNunknownBdryDfs(0), mWallClockTimes(), mCommonFile(), mKind(&mParams), mMemoryKind(),
+  mNunknownBdryDfs(0), mWallClockTimes(), mCommonFile(), mInitFile(),
+  mKind(&mParams), mMemoryKind(),
   mNodesLocInnerGlobInner(), mNodesLocInnerGlobBorder(),
   mNodesLocBorderGlobInner(), mNodesLocBorderGlobBorder(),
   mNodesLocInner(), mNodesLocBorder(), mNodes(),
@@ -1860,6 +1864,71 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
     this->mCommonFile = ScaFES::DataFile<CT, DIM>(
         tmpStringstream.str(), tmpNames, this->params().myWorld(),
         this->globalGrid().discreteDomain().nNodes(), tmpMemNormal);
+
+    /*------------------------------------------------------------------------*/
+    if (this->mParams.readInitFile() == true)
+    {
+        /* Create Variables for mInitFile. */
+        /* File name. */
+        std::ostringstream initStringstream;
+        initStringstream << this->params().nameInitFile();
+
+        /* Name of variables. */
+        int nDataFieldsToInit = 0;
+        for (std::size_t ii = 0; ii < this->isKnownDf().size(); ++ii)
+        {
+            if (this->isKnownDf().at(ii) == false)
+            {
+                ++nDataFieldsToInit;
+            }
+        }
+        std::vector<std::string> initNames;
+        initNames.reserve(nDataFieldsToInit);
+        for (std::size_t ii = 0; ii < this->isKnownDf().size(); ++ii)
+        {
+            if (this->isKnownDf().at(ii) == false)
+            {
+                initNames.push_back(this->mNameDataField[ii]);
+            }
+        }
+
+        /* Normal grid memory. */
+        std::vector<ScaFES::GridSub<DIM>> initMemNormal;
+        initMemNormal.reserve(nDataFieldsToInit);
+        idxKnownDf = 0;
+        idxUnknownDf = 0;
+        for (std::size_t ii = 0; ii < this->isKnownDf().size(); ++ii)
+        {
+            if (0 == nLayers.at(ii))
+            {
+                if (this->isKnownDf().at(ii) == false)
+                {
+                    initMemNormal.push_back(
+                        this->vectUnknownDfsDomNew()[idxUnknownDf].memNormal());
+                    ++idxUnknownDf;
+                }
+            }
+        }
+        idxKnownDf = 0;
+        idxUnknownDf = 0;
+        for (std::size_t ii = 0; ii < this->isKnownDf().size(); ++ii)
+        {
+            if (0 < nLayers.at(ii))
+            {
+                if (this->isKnownDf().at(ii) == false)
+                {
+                    initMemNormal.push_back(
+                            this->vectUnknownDfsBdryNew()[idxUnknownDf].memNormal());
+                    ++idxUnknownDf;
+                }
+            }
+        }
+
+        /* Init member varibale. */
+        this->mInitFile = ScaFES::DataFile<CT, DIM>(
+            initStringstream.str(), initNames, this->params().myWorld(),
+            this->globalGrid().discreteDomain().nNodes(), initMemNormal);
+    }
 
     /*------------------------------------------------------------------------*/
     // Read in partition file.
