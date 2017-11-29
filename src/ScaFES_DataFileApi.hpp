@@ -20,12 +20,9 @@
 #ifdef SCAFES_HAVE_MPI
     #ifdef SCAFES_HAVE_NETCDF_PAR
         #include <netcdf_par.h>
-    #else
-        #include <netcdf.h>
     #endif
-#else // Case MPI not available.
-    #include <netcdf.h>
 #endif
+#include <netcdf.h>
 
 #ifdef VTRACE
 #include "vt_user.h"
