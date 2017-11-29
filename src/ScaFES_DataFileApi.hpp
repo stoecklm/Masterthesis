@@ -487,6 +487,8 @@ void DataFile<TT, DIM>::write(std::vector<TT*> const& elemData,
     VT_TRACER("DataFile::write()");
 #endif
 
+    int status = 0;
+
     // Update pointers to memory of data fiels which should be written to file.
     // Remark: Pointers must be updated each time step because the old
     // and the new iterate are swapped in each time step.
@@ -499,6 +501,16 @@ void DataFile<TT, DIM>::write(std::vector<TT*> const& elemData,
     if (!(this->mIsOpen))
     {
         this->create();
+#ifdef SCAFES_HAVE_MPI
+    #ifdef SCAFES_HAVE_NETCDF_PAR
+        for (std::size_t ii = 0; ii < this->nameVariables().size(); ++ii)
+        {
+            status = nc_var_par_access(this->mIdFile, this->mIdVariable[ii][0],
+                                       NC_COLLECTIVE);
+            wrapNCCall(status, __FILE__, __LINE__);
+        }
+    #endif
+#endif
     }
 
     const int nDimensions = 1 + DIM;
@@ -522,7 +534,6 @@ void DataFile<TT, DIM>::write(std::vector<TT*> const& elemData,
         nElems[ii] = (unsigned long int)nNodes.elem(DIM - ii);
     }
 
-    int status;
     double* ptrToMem = 0;
     TT value = 0;
 
