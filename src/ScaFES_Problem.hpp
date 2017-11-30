@@ -2554,6 +2554,22 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalInitPbPhase()
     {
         /* Code for reading init file. */
         this->initDfsFromFile();
+        for (std::size_t ii = 0; ii < mVectUnknownDfsDomNew.size(); ++ii)
+        {
+            mVectUnknownDfsDomNew[ii].copyValuesFromMemCommToSendBuffer(timeIter);
+        }
+        for (std::size_t ii = 0; ii < mVectUnknownDfsDomNew.size(); ++ii)
+        {
+            mVectUnknownDfsDomNew[ii].exchangeValuesInBuffers(timeIter);
+        }
+        for (std::size_t ii = 0; ii < mVectUnknownDfsDomNew.size(); ++ii)
+        {
+            mVectUnknownDfsDomNew[ii].waitAll();
+        }
+        for (std::size_t ii = 0; ii < mVectUnknownDfsDomNew.size(); ++ii)
+        {
+            mVectUnknownDfsDomNew[ii].copyValuesFromReceiveBufferToMemGhost(timeIter);
+        }
     }
 
     for (std::size_t ii = 0; ii < this->mVectUnknownDfsDomNew.size(); ++ii)
@@ -3839,7 +3855,16 @@ inline void Problem<OWNPRBLM, CT, DIM>::initDfsFromFile()
             }
         }
 
-        this->mInitFile.init(tmpElemData);
+#ifdef SCAFES_HAVE_MPI
+    #ifdef SCAFES_HAVE_NETCDF_PAR
+        this->mInitFile.init_par(tmpElemData);
+    #else
+        std::cerr << "\nERROR: Cannot read file in parallel without PnetCDF."
+                  << std::endl;
+    #endif
+#else
+    this->mInitFile.init(tmpElemData);
+#endif
     }
 
     this->mParams.increaseLevel();
