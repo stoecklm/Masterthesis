@@ -835,6 +835,9 @@ void DataFile<TT, DIM>::init(std::vector<TT*>& elemData)
             ++ptrToMem;
         }
     }
+    status = nc_close(this->mIdFile);
+    wrapNCCall(status, __FILE__, __LINE__);
+    this->mIsOpen = false;
 }
 /*----------------------------------------------------------------------------*/
 template <typename TT, std::size_t DIM>
