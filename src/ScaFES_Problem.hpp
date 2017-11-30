@@ -3854,17 +3854,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::initDfsFromFile()
                 }
             }
         }
-
-#ifdef SCAFES_HAVE_MPI
-    #ifdef SCAFES_HAVE_NETCDF_PAR
-        this->mInitFile.init_par(tmpElemData);
-    #else
-        std::cerr << "\nERROR: Cannot read file in parallel without PnetCDF."
-                  << std::endl;
-    #endif
-#else
-    this->mInitFile.init(tmpElemData);
-#endif
+        this->mInitFile.init(tmpElemData);
     }
 
     this->mParams.increaseLevel();
