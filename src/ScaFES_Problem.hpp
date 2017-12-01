@@ -659,7 +659,7 @@ protected:
 
     /*------------------------------------------------------------------------*/
     /* Init all unknown data fields from one NetCDF. */
-    void initDfsFromFile();
+    void initDfsFromFile(const int& timeIter);
 
     /*------------------------------------------------------------------------*/
     /*------------------------------------------------------------------------*/
@@ -2552,24 +2552,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalInitPbPhase()
     }
     else
     {
-        /* Code for reading init file. */
-        this->initDfsFromFile();
-        for (std::size_t ii = 0; ii < mVectUnknownDfsDomNew.size(); ++ii)
-        {
-            mVectUnknownDfsDomNew[ii].copyValuesFromMemCommToSendBuffer(timeIter);
-        }
-        for (std::size_t ii = 0; ii < mVectUnknownDfsDomNew.size(); ++ii)
-        {
-            mVectUnknownDfsDomNew[ii].exchangeValuesInBuffers(timeIter);
-        }
-        for (std::size_t ii = 0; ii < mVectUnknownDfsDomNew.size(); ++ii)
-        {
-            mVectUnknownDfsDomNew[ii].waitAll();
-        }
-        for (std::size_t ii = 0; ii < mVectUnknownDfsDomNew.size(); ++ii)
-        {
-            mVectUnknownDfsDomNew[ii].copyValuesFromReceiveBufferToMemGhost(timeIter);
-        }
+        this->initDfsFromFile(timeIter);
     }
 
     for (std::size_t ii = 0; ii < this->mVectUnknownDfsDomNew.size(); ++ii)
@@ -3800,7 +3783,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::writeDfsToFile(const int& timeIter)
 }
 /*----------------------------------------------------------------------------*/
 template <class OWNPRBLM, typename CT, std::size_t DIM>
-inline void Problem<OWNPRBLM, CT, DIM>::initDfsFromFile()
+inline void Problem<OWNPRBLM, CT, DIM>::initDfsFromFile(const int& timeIter)
 {
     if (this->params().rankOutput() == this->myRank() &&
         (0 < this->params().indentDepth()))
@@ -3865,6 +3848,42 @@ inline void Problem<OWNPRBLM, CT, DIM>::initDfsFromFile()
                   << "   Initialized."
                   << std::endl;
     }
+
+    /*------------------------------------------------------------------------*/
+    for (std::size_t ii = 0; ii < mVectUnknownDfsDomNew.size(); ++ii)
+    {
+        mVectUnknownDfsDomNew[ii].copyValuesFromMemCommToSendBuffer(timeIter);
+    }
+    for (std::size_t ii = 0; ii < mVectGradUnknownDfsDomNew.size(); ++ii)
+    {
+        mVectGradUnknownDfsDomNew[ii].copyValuesFromMemCommToSendBuffer(timeIter);
+    }
+    for (std::size_t ii = 0; ii < mVectUnknownDfsDomNew.size(); ++ii)
+    {
+        mVectUnknownDfsDomNew[ii].exchangeValuesInBuffers(timeIter);
+    }
+    for (std::size_t ii = 0; ii < mVectGradUnknownDfsDomNew.size(); ++ii)
+    {
+        mVectGradUnknownDfsDomNew[ii].exchangeValuesInBuffers(timeIter);
+    }
+    /*------------------------------------------------------------------------*/
+    for (std::size_t ii = 0; ii < mVectUnknownDfsDomNew.size(); ++ii)
+    {
+        mVectUnknownDfsDomNew[ii].waitAll();
+    }
+    for (std::size_t ii = 0; ii < mVectGradUnknownDfsDomNew.size(); ++ii)
+    {
+        mVectGradUnknownDfsDomNew[ii].waitAll();
+    }
+    for (std::size_t ii = 0; ii < mVectUnknownDfsDomNew.size(); ++ii)
+    {
+        mVectUnknownDfsDomNew[ii].copyValuesFromReceiveBufferToMemGhost(timeIter);
+    }
+    for (std::size_t ii = 0; ii < mVectGradUnknownDfsDomNew.size(); ++ii)
+    {
+        mVectGradUnknownDfsDomNew[ii].copyValuesFromReceiveBufferToMemGhost(timeIter);
+    }
+    /*------------------------------------------------------------------------*/
 }
 
 /*----------------------------------------------------------------------------*/
