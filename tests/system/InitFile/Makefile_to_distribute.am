@@ -1,0 +1,70 @@
+#AUTOMAKE_OPTIONS= subdir-objects
+
+#------------------------------------------------------------------------------#
+SCAFES_TESTS_DIR=$(top_srcdir)/examples
+
+CPPFLAGS_COMMON= \
+        -I$(top_srcdir)/src \
+        -I$(top_builddir)/src \
+        @NETCDF_CPPFLAGS@ \
+        @BOOST_CPPFLAGS@ \
+        @MPI_CPPFLAGS@ \
+        @OPENMP_CXXFLAGS@ \
+        @ADOLC_CPPFLAGS@ \
+        $(VTxxxCPPFLAGS) \
+        $(VTOPARIxxxCPPFLAGS)
+
+LDFLAGS_COMMON = $(VTxxxCPPFLAGS) \
+                 $(VTOPARIxxxCPPFLAGS)
+
+LDADD_COMMON = \
+        $(top_builddir)/src/libscafes.la \
+        @BOOST_LDFLAGS@ \
+        @BOOST_PROGRAM_OPTIONS_LIB@ \
+        @BOOST_REGEX_LIB@ \
+        @BOOST_SERIALIZATION_LIB@ \
+        @MPI_LDFLAGS@ \
+        @BOOST_MPI_LIB@ \
+        @OPENMP_CXXFLAGS@ \
+        @NETCDF_LDFLAGS@ \
+        @ADOLC_LDFLAGS@
+DEPENDENCIES_COMMON= $(top_builddir)/src/libscafes.la
+
+
+################################################################################
+include_HEADERS=
+bin_PROGRAMS=
+noinst_HEADERS=
+check_HEADERS=
+check_PROGRAMS=
+EXTRA_DIST=
+
+################################################################################
+check_PROGRAMS += InitFile1D
+InitFile1D_SOURCES = main1D.cpp \
+                     InitFile.hpp
+InitFile1D_CPPFLAGS = $(CPPFLAGS_COMMON)
+InitFile1D_LDFLAGS = $(LDFLAGS_COMMON)
+InitFile1D_LDADD = $(LDADD_COMMON)
+InitFile1D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+EXTRA_DIST += RUN_1D.sh
+################################################################################
+check_PROGRAMS += InitFile2D
+InitFile2D_SOURCES = main2D.cpp \
+                     InitFile.hpp
+InitFile2D_CPPFLAGS = $(CPPFLAGS_COMMON)
+InitFile2D_LDFLAGS = $(LDFLAGS_COMMON)
+InitFile2D_LDADD = $(LDADD_COMMON)
+InitFile2D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+EXTRA_DIST += RUN_2D.sh
+################################################################################
+check_PROGRAMS += InitFile3D
+InitFile3D_SOURCES = main3D.cpp \
+                     InitFile.hpp
+InitFile3D_CPPFLAGS = $(CPPFLAGS_COMMON)
+InitFile3D_LDFLAGS = $(LDFLAGS_COMMON)
+InitFile3D_LDADD = $(LDADD_COMMON)
+InitFile3D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+EXTRA_DIST += RUN_3D.sh
+EXTRA_DIST += parameters.ini
+EXTRA_DIST += createInitFiles.py
