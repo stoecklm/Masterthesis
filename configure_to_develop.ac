@@ -596,6 +596,18 @@ AC_CONFIG_FILES([tests/system/InitFile/RUN_2D.sh],
        [chmod +x tests/system/InitFile/RUN_2D.sh])
 AC_CONFIG_FILES([tests/system/InitFile/RUN_3D.sh],
        [chmod +x tests/system/InitFile/RUN_3D.sh])
+AC_CONFIG_FILES([tests/system/InitFile/RUN_1D_FILE.sh],
+       [chmod +x tests/system/InitFile/RUN_1D_FILE.sh])
+AC_CONFIG_FILES([tests/system/InitFile/RUN_2D_FILE.sh],
+       [chmod +x tests/system/InitFile/RUN_2D_FILE.sh])
+AC_CONFIG_FILES([tests/system/InitFile/RUN_3D_FILE.sh],
+       [chmod +x tests/system/InitFile/RUN_3D_FILE.sh])
+AC_CONFIG_FILES([tests/system/InitFile/TESTMATRIX_RUN_1D_FILE.sh],
+       [chmod +x tests/system/InitFile/TESTMATRIX_RUN_1D_FILE.sh])
+AC_CONFIG_FILES([tests/system/InitFile/TESTMATRIX_RUN_2D_FILE.sh],
+       [chmod +x tests/system/InitFile/TESTMATRIX_RUN_2D_FILE.sh])
+AC_CONFIG_FILES([tests/system/InitFile/TESTMATRIX_RUN_3D_FILE.sh],
+       [chmod +x tests/system/InitFile/TESTMATRIX_RUN_3D_FILE.sh])
 AC_CONFIG_LINKS([tests/system/InitFile/parameters.ini:tests/system/InitFile/parameters.ini])
 AC_CONFIG_LINKS([tests/system/InitFile/createInitFiles.py:tests/system/InitFile/createInitFiles.py])
 
