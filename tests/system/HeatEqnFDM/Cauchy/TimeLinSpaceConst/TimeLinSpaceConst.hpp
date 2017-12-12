@@ -96,6 +96,7 @@ class TimeLinSpaceConst : public Cauchy<CT,DIM, TimeLinSpaceConst<CT,DIM> > {
                     int const& timestep) {
         ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
         double t = this->time(timestep);
+        double tPrevious = this->time((timestep-1));
         bool useCauchy = true;
 
         /* Vector for f. */
@@ -113,7 +114,7 @@ class TimeLinSpaceConst : public Cauchy<CT,DIM, TimeLinSpaceConst<CT,DIM> > {
         /* Otherwise use Cauchy boundary condition. */
         if (useCauchy == true) {
             vNew[1](idxNode) = this->LAMBDA * 0.0;
-            vNew[1](idxNode) += this->ALPHA * (1.0 + t);
+            vNew[1](idxNode) += this->ALPHA * (1.0 + tPrevious);
         }
         /* Vector for y. */
         vNew[2](idxNode) = (1.0 + t);
