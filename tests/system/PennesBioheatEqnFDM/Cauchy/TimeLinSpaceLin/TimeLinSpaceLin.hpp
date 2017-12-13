@@ -77,7 +77,6 @@ class TimeLinSpaceLin : public Cauchy<CT,DIM, TimeLinSpaceLin<CT,DIM> > {
                    int const& timestep) {
         ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
         double t = this->time(timestep);
-        double tPrevious = this->time((timestep-1));
 
         /* Vector for f. */
         vNew[0](idxNode) = 1.0;
@@ -89,7 +88,7 @@ class TimeLinSpaceLin : public Cauchy<CT,DIM, TimeLinSpaceLin<CT,DIM> > {
         for (std::size_t pp = 0; pp < DIM; ++pp) {
             tmp += x[pp];
         }
-        tmp *= (1.0 + tPrevious);
+        tmp *= (1.0 + t);
         vNew[0](idxNode) += this->RHO_BLOOD * this->C_BLOOD * this->W * tmp;
         /* Vector for g. */
         vNew[1](idxNode) = 0.0;
@@ -111,7 +110,6 @@ class TimeLinSpaceLin : public Cauchy<CT,DIM, TimeLinSpaceLin<CT,DIM> > {
                     int const& timestep) {
         ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
         double t = this->time(timestep);
-        double tPrevious = this->time((timestep-1));
         bool useCauchy = true;
 
         /* Vector for f. */
@@ -124,7 +122,7 @@ class TimeLinSpaceLin : public Cauchy<CT,DIM, TimeLinSpaceLin<CT,DIM> > {
         for (std::size_t pp = 0; pp < DIM; ++pp) {
             tmp += x[pp];
         }
-        tmp *= (1.0 + tPrevious);
+        tmp *= (1.0 + t);
         vNew[0](idxNode) += this->RHO_BLOOD * this->C_BLOOD * this->W * tmp;
         /* Vector for g. */
         /* Use Dirichlet boundary condition if at least one element in
@@ -146,8 +144,8 @@ class TimeLinSpaceLin : public Cauchy<CT,DIM, TimeLinSpaceLin<CT,DIM> > {
             for (std::size_t pp = 0; pp < DIM; ++pp) {
                 vNew[1](idxNode) += x[pp];
             }
-            vNew[1](idxNode) *= this->ALPHA * (1.0 + tPrevious);
-            vNew[1](idxNode) += this->LAMBDA * (1.0 + tPrevious);
+            vNew[1](idxNode) *= this->ALPHA * (1.0 + t);
+            vNew[1](idxNode) += this->LAMBDA * (1.0 + t);
         }
         /* Vector for y. */
         vNew[2](idxNode) = 1.0;

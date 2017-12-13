@@ -104,7 +104,6 @@ class TimeLinSpaceLin : public Neumann<CT,DIM, TimeLinSpaceLin<CT,DIM> > {
                     int const& timestep) {
         ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
         double t = this->time(timestep);
-        double tPrevious = this->time((timestep-1));
         bool useNeumann = true;
 
         /* Vector for f. */
@@ -129,7 +128,7 @@ class TimeLinSpaceLin : public Neumann<CT,DIM, TimeLinSpaceLin<CT,DIM> > {
         }
         /* Otherwise use Neumann boundary condition. */
         if (useNeumann == true) {
-            vNew[1](idxNode) = -1.0 * this->LAMBDA * (1.0 + tPrevious);
+            vNew[1](idxNode) = -1.0 * this->LAMBDA * (1.0 + t);
         }
         /* Vector for y. */
         vNew[2](idxNode) = 1.0;

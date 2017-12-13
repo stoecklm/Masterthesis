@@ -96,7 +96,6 @@ class TimeLinSpaceConst : public Neumann<CT,DIM, TimeLinSpaceConst<CT,DIM> > {
                     int const& timestep) {
         ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
         double t = this->time(timestep);
-        double tPrevious = this->time((timestep-1));
         bool useNeumann = true;
 
         /* Vector for f. */

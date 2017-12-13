@@ -153,7 +153,7 @@ class PennesBioheatEqnFDM : public ScaFES::Problem<PennesBioheatEqnFDM<CT,DIM, C
         }
         vNew[0](idxNode) -= this->tau() * ((RHO_BLOOD*C_BLOOD)/(RHO*C)) * W
                             * vOld[0](idxNode);
-        vNew[0](idxNode) += this->tau() * (1.0/(RHO*C)) * this->knownDf(0, idxNode);
+        vNew[0](idxNode) += this->tau() * (1.0/(RHO*C)) * this->knownDfOld(0, idxNode);
     }
 
     /** Updates all unknown fields at one given global border grid node.

@@ -149,7 +149,7 @@ class Neumann : public HeatEqnFDM<CT,DIM, Neumann<CT,DIM, Class> > {
                                         /* vOld[0](this->connect(idxNode, 2*pp+1) */
                                         + vOld[0](this->connect(idxNode, 2*pp))
                                         - ((2.0*this->gridsize(pp)/this->LAMBDA)
-                                           * this->knownDf(1, idxNode))
+                                           * this->knownDfOld(1, idxNode))
                                         /******************************************/
                                         - 2.0 * vOld[0](idxNode) )
                                         / (this->gridsize(pp) * this->gridsize(pp));
@@ -163,7 +163,7 @@ class Neumann : public HeatEqnFDM<CT,DIM, Neumann<CT,DIM, Class> > {
                                         / (this->gridsize(pp) * this->gridsize(pp));
                 }
             }
-            vNew[0](idxNode) += this->tau() * (1.0/(this->RHO*this->C)) * this->knownDf(0, idxNode);
+            vNew[0](idxNode) += this->tau() * (1.0/(this->RHO*this->C)) * this->knownDfOld(0, idxNode);
         }
     }
 };
