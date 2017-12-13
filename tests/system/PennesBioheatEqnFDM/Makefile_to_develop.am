@@ -1,5 +1,5 @@
-SUBDIRS = \
-          Dirichlet
+SUBDIRS = Dirichlet \
+          Neumann
 
 ################################################################################
 include_HEADERS= PennesBioheatEqnFDM.hpp
