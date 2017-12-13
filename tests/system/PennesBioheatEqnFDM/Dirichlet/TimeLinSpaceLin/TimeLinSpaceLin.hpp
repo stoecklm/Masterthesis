@@ -85,7 +85,6 @@ class TimeLinSpaceLin : public Dirichlet<CT,DIM, TimeLinSpaceLin<CT,DIM> > {
             vNew[0](idxNode) += x[pp];
         }
         vNew[0](idxNode) *= this->RHO * this->C; // - LAMBDA * 0
-        /* Vector for y. */
         double tmp = 1.0;
         for (std::size_t pp = 0; pp < DIM; ++pp) {
             tmp += x[pp];

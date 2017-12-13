@@ -159,10 +159,10 @@ class PennesBioheatEqnFDM : public ScaFES::Problem<PennesBioheatEqnFDM<CT,DIM, C
      */
     template<typename TT>
     void updateBorder(std::vector<ScaFES::DataField<TT,DIM>>& vNew,
-                      std::vector<ScaFES::DataField<TT,DIM>>const& /*vOld*/,
+                      std::vector<ScaFES::DataField<TT,DIM>>const& vOld,
                       ScaFES::Ntuple<int,DIM> const& idxNode,
-                      int const& /*timestep*/) {
-        vNew[0](idxNode) = this->knownDf(1, idxNode);
+                      int const& timestep) {
+        static_cast<Class*>(this)->updateBorder(vNew, vOld, idxNode, timestep);
     }
 
     /** Updates (2nd cycle) all unknown fields at one given global inner grid node.
