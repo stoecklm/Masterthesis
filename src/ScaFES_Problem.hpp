@@ -376,18 +376,29 @@ public:
     /** Returns the numerical solution of parameters. */
     const std::vector<CT>& vectParamsCurr() const;
 
-    /** Returns the analytical solution vector of all data fields. */
+    /** Returns the analytical solution vector of all data fields
+     *  at current time step. */
     const ScaFES_VectDf<CT>& vectSol() const;
 
     /** Returns the value of analytical solution data field given by \c idx
-     * at the grid node with node number \c idxNode.
+     * at the grid node with node number \c idxNode at current time step.
      */
     const CT& vectSol(const int& idx, const ScaFES_IntNtuple& idxNode) const;
 
     /** Returns the value of the known data field given by \c idx
-     * at the grid node with node number \c idxNode.
+     * at the grid node with node number \c idxNode at current time step.
      */
     const CT& knownDf(const int& idx, const ScaFES_IntNtuple& idxNode) const;
+
+    /** Returns the value of the known data field given by \c idx
+     * at the grid node with node number \c idxNode at current time step.
+     */
+    const CT& knownDfNew(const int& idx, const ScaFES_IntNtuple& idxNode) const;
+
+    /** Returns the value of the known data field given by \c idx
+     * at the grid node with node number \c idxNode at last time step.
+     */
+    const CT& knownDfOld(const int& idx, const ScaFES_IntNtuple& idxNode) const;
 
     /*--------------------------------------------------------------------------
     | WORK METHODS.
@@ -509,16 +520,28 @@ protected:
      *  defined at the boundary. */
     const int& nUnknownBdryDfs() const;
 
+    /** Returns the vector of all known data fields defined at domain. */
+    const ScaFES_VectDf<CT>& vectKnownDfsDomNew() const;
+
+    /** Returns the old vector of all known data fields defined at domain. */
+    const ScaFES_VectDf<CT>& vectKnownDfsDomOld() const;
+
+    /** Returns the new vector of all known data fields defined at boundary. */
+    const ScaFES_VectDf<CT>& vectKnownDfsBdryNew() const;
+
+    /** Returns the old vector of all known data fields defined at boundary. */
+    const ScaFES_VectDf<CT>& vectKnownDfsBdryOld() const;
+
     /** Returns the vector of all unknown data fields defined at domain. */
     const ScaFES_VectDf<CT>& vectUnknownDfsDomNew() const;
 
-    /** Returns the old vector of all data fields defined at domain. */
+    /** Returns the old vector of all unknown data fields defined at domain. */
     const ScaFES_VectDf<CT>& vectUnknownDfsDomOld() const;
 
-    /** Returns the new vector of all data fields defined at boundary. */
+    /** Returns the new vector of all unknown data fields defined at boundary. */
     const ScaFES_VectDf<CT>& vectUnknownDfsBdryNew() const;
 
-    /** Returns the old vector of all data fields defined at boundary. */
+    /** Returns the old vector of all unknown data fields defined at boundary. */
     const ScaFES_VectDf<CT>& vectUnknownDfsBdryOld() const;
 
     /** Returns the number of directions during tracing. */
@@ -540,6 +563,22 @@ protected:
     /*--------------------------------------------------------------------------
     | WORK METHODS.
     --------------------------------------------------------------------------*/
+    /** Creates new vector of known data fields.
+     * Splits up allocated memory and distributes it to all data fields. */
+    void createVectorOfKnownDataFields(
+        ScaFES_VectDf<CT>& dfInitDomain, ScaFES_VectDf<CT>& dfInitBdry,
+        const std::vector<CT>& memoryOfDfs,
+        const std::vector<std::string>& nameDatafield,
+        const std::string& nameSuffix, const std::vector<bool>& isKnownDf,
+        const std::vector<int>& nLayers, const std::vector<int>& stencilWidth,
+        const std::vector<ScaFES::Grid<DIM>>& memAll,
+        const std::vector<ScaFES::GridSub<DIM>>& memHolePart,
+        const std::vector<int>& nRowsDf,
+        const std::vector<ScaFES::WriteHowOften>& writeToFile,
+        const std::vector<CT>& defaultValue,
+        const std::vector<bool>& computeError,
+        const int& nColumns);
+
     /** Creates new vector of unknown data fields.
      * Splits up allocated memory and distributes it to all data fields. */
     void createVectorOfUnknownDataFields(
@@ -572,18 +611,34 @@ protected:
      *  (2nd cycle) using the leapfrog scheme. */
     void evalUpdate2Phase(const int& timeIter);
 
+    /** Reset values at all grid partition nodes of all known
+     * data fields to its default values given as constructor parameter. */
+    void resetValsAtNodesOfKnownDfs(const int& timeIter);
+
     /** Reset values at all grid partition nodes of all unknown
      * data fields to its default values given as constructor parameter. */
     void resetValsAtNodesOfUnknownDfs(const int& timeIter);
 
+    /** Reset times of all known data fields. */
+    void resetTimesOfKnownDfs();
+
     /** Reset times of all unknown data fields. */
     void resetTimesOfUnknownDfs();
+
+    /** Update times of all known data fields. */
+    void updateTimesOfKnownDfs();
 
     /** Update times of all unknown data fields. */
     void updateTimesOfUnknownDfs();
 
+    /** Swap pointers of all known data fields. */
+    void swapPointersOfKnownDfs();
+
     /** Swap pointers of all unknown data fields. */
     void swapPointersOfUnknownDfs();
+
+    /** Swap times of all known data fields. */
+    void swapTimesOfKnownDfs();
 
     /** Swap times of all unknown data fields. */
     void swapTimesOfUnknownDfs();
@@ -597,7 +652,8 @@ protected:
     /** Write data fields to file. */
     void writeAllDfs(const int& timeIter);
 
-    /** Determines which MPI communication mode will be used. */
+    /** Determines which MPI communication mode will be used:
+     * Synchroneous or asynchroneous mode. */
     void setCommunicationMode();
 
     /** Determines if gradients should be computed during
@@ -1116,14 +1172,27 @@ protected:
     /** List of all grid partition nodes. */
     std::vector<int> mNodes;
 
-    /** Vector of all known data fields defined at the whole domain. */
-    ScaFES_VectDf<CT> mVectKnownDfDom;
+    /** Vector of all known data fields at last time step
+     * defined at the whole domain. */
+    ScaFES_VectDf<CT> mVectKnownDfsDomOld;
 
-    /** Vector of all known data fields defined at the boundary, only. */
-    ScaFES_VectDf<CT> mVectKnownDfBdry;
+    /** Vector of all known data fields at last time step
+     * defined at the boundary, only. */
+    ScaFES_VectDf<CT> mVectKnownDfsBdryOld;
 
-    /** Continuous memory lump for all known data fields. */
-    std::vector<CT> mMemoryVectKnownDf;
+    /** Vector of all known data fields at current time step
+     * defined at the whole domain. */
+    ScaFES_VectDf<CT> mVectKnownDfsDomNew;
+
+    /** Vector of all known data fields at current time step
+     * defined at the boundary, only. */
+    ScaFES_VectDf<CT> mVectKnownDfsBdryNew;
+
+    /** Continuous memory lump #1 for all known data fields. */
+    std::vector<CT> mMemoryVectKnownDfsOne;
+
+    /** Continuous memory lump #2 for all known data fields. */
+    std::vector<CT> mMemoryVectKnownDfsTwo;
 
     /** Numerical solution at last time step defined at the domain. */
     ScaFES_VectDf<CT> mVectUnknownDfsDomOld;
@@ -1149,7 +1218,7 @@ protected:
 
     /** Continuous memory lump #3 for storing values of all unknown
      *  data fields at all grid partition nodes (incl. halos)
-     *  This memory lump will be allocated only if a temp. vector
+     *  \remark This memory lump will be allocated only if a temp. vector
      *  of data fields is needed (case: async. MPI comm. + ADOL-C). */
     std::vector<CT> mMemoryVectUnknownDfsThree;
 
@@ -1260,8 +1329,13 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
   mNodesLocInnerGlobInner(), mNodesLocInnerGlobBorder(),
   mNodesLocBorderGlobInner(), mNodesLocBorderGlobBorder(),
   mNodesLocInner(), mNodesLocBorder(), mNodes(),
-  mVectKnownDfDom(),
-  mVectKnownDfBdry(), mMemoryVectKnownDf(), mVectUnknownDfsDomOld(),
+  mVectKnownDfsDomOld(),
+  mVectKnownDfsBdryOld(),
+  mVectKnownDfsDomNew(),
+  mVectKnownDfsBdryNew(),
+  mMemoryVectKnownDfsOne(),
+  mMemoryVectKnownDfsTwo(),
+  mVectUnknownDfsDomOld(),
   mVectUnknownDfsBdryOld(), mVectUnknownDfsDomNew(), mVectUnknownDfsBdryNew(),
   mMemoryVectUnknownDfsOne(), mMemoryVectUnknownDfsTwo(),
   mMemoryVectUnknownDfsThree(), mVectGradUnknownDfsDomOld(),
@@ -1497,6 +1571,7 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
     }
 
     /*------------------------------------------------------------------------*/
+    /*------------------------------------------------------------------------*/
     // Create known data fields only if solution is known and some error
     // should be computed.
     // Process all KNOWN data fields (including exact solutions of known dfs).
@@ -1509,103 +1584,34 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
     }
     if (0 < nElemsAllDfs)
     {
-        this->mMemoryVectKnownDf.resize(N_COLUMNS_KNOWN_DF * nElemsAllDfs,
+        this->mMemoryVectKnownDfsOne.resize(N_COLUMNS_KNOWN_DF * nElemsAllDfs,
                                         static_cast<CT>(0));
-        this->mVectKnownDfDom.reserve(nDataFields);
-        this->mVectKnownDfBdry.reserve(nDataFields);
+        this->mVectKnownDfsDomNew.reserve(nDataFields);
+        this->mVectKnownDfsBdryNew.reserve(nDataFields);
     }
-    CT* elemDataKnownDfCurr = this->mMemoryVectKnownDf.data();
-    /*------------------------------------------------------------------------*/
-    // Firstly, all data fields which are defined at the whole domain.
-    // Secondly, all data fields which are defined at the boundary, only.
-    // This reordering of the data fields is important for the ADOL-C tracing
-    // and evaluation as the fields must be available as a continuous memory
-    // lump.
-    for (int ii = 0; ii < nDataFields; ++ii)
+    CT* elemDataKnownDfNewCurr = this->mMemoryVectKnownDfsOne.data();
+    if (0 < nElemsAllDfs)
     {
-        if (0 == nLayers.at(ii))
-        {
-            if (this->isKnownDf().at(ii))
-            {
-                this->mVectKnownDfDom.push_back(ScaFES::DataField<CT, DIM>(
-                    nameDatafield.at(ii), &(this->mParams), this->globalGrid(),
-                    memAll.at(ii), stencilWidth.at(ii), elemDataKnownDfCurr,
-                    N_COLUMNS_KNOWN_DF, memHolePart.at(ii), nLayers.at(ii),
-                    writeToFile.at(ii)));
-                elemDataKnownDfCurr += nRowsDf.at(ii);
-            }
-            else
-            {
-                // Create reference data fields regardless if error should be
-                // computed or not. This important for the correct order of
-                // the data fields.
-                // BUT: Memory for reference data fields will be created only
-                // if error should be computed.
-                std::string nameDf = nameDatafield.at(ii) + "SolDom";
-                this->mVectKnownDfDom.push_back(ScaFES::DataField<CT, DIM>(
-                    nameDf, &(this->mParams), this->globalGrid(), memAll.at(ii),
-                    0, elemDataKnownDfCurr, N_COLUMNS_KNOWN_DF,
-                    memHolePart.at(ii), nLayers.at(ii), writeToFile.at(ii)));
-                if (computeError.at(ii))
-                {
-                    elemDataKnownDfCurr += nRowsDf.at(ii);
-                }
-            }
-        }
+        this->mMemoryVectKnownDfsTwo.resize(N_COLUMNS_KNOWN_DF * nElemsAllDfs,
+                                        static_cast<CT>(0));
+        this->mVectKnownDfsDomOld.reserve(nDataFields);
+        this->mVectKnownDfsBdryOld.reserve(nDataFields);
     }
+    CT* elemDataKnownDfOldCurr = this->mMemoryVectKnownDfsTwo.data();
+   /*------------------------------------------------------------------------*/
+    std::string nameSuffixOldKnownDf = "Old";
+    this->createVectorOfKnownDataFields(
+        this->mVectKnownDfsDomOld, this->mVectKnownDfsBdryOld,
+        this->mMemoryVectKnownDfsOne, nameDatafield, nameSuffixOldKnownDf, isKnownDf,
+        nLayers, stencilWidth, memAll, memHolePart, nRowsDf, writeToFile,
+        defaultValue, computeError, N_COLUMNS_KNOWN_DF);
     /*------------------------------------------------------------------------*/
-    for (int ii = 0; ii < nDataFields; ++ii)
-    {
-        if (0 < nLayers.at(ii))
-        {
-            if (this->isKnownDf().at(ii))
-            {
-                this->mVectKnownDfBdry.push_back(ScaFES::DataField<CT, DIM>(
-                    nameDatafield.at(ii), &(this->mParams), this->globalGrid(),
-                    memAll.at(ii), stencilWidth.at(ii), elemDataKnownDfCurr,
-                    N_COLUMNS_KNOWN_DF, memHolePart.at(ii), nLayers.at(ii),
-                    writeToFile.at(ii)));
-                elemDataKnownDfCurr += nRowsDf.at(ii);
-            }
-            else
-            {
-                // Create reference data field regardless if error should be
-                // computed or not. This important for the correct order of
-                // the data fields.
-                // BUT: Memory for reference data field will be created only in
-                // case OF COMPUTING THE ERROR.
-                std::string nameDf = nameDatafield.at(ii) + "SolBdry";
-                this->mVectKnownDfBdry.push_back(ScaFES::DataField<CT, DIM>(
-                    nameDf, &(this->mParams), this->globalGrid(), memAll.at(ii),
-                    0, elemDataKnownDfCurr, N_COLUMNS_KNOWN_DF,
-                    memHolePart.at(ii), nLayers.at(ii), writeToFile.at(ii)));
-                if (computeError.at(ii))
-                {
-                    elemDataKnownDfCurr += nRowsDf.at(ii);
-                }
-            }
-        }
-    }
-    /*------------------------------------------------------------------------*/
-    // Set default value for each known data field.
-    // //     int idDf = 0;
-    // //     for (int ii = 0; ii < nDataFields; ++ii) {
-    // //         if (0 == nLayers.at(ii)) {
-    // //             if (this->isKnownDf().at(ii)) {
-    // //                 this->mVectKnownDfDom.at(idDf) = defaultValue.at(ii);
-    // //                 ++idDf;
-    // //             }
-    // //         }
-    // //     }
-    // //     idDf = 0;
-    // //     for (int ii = 0; ii < nDataFields; ++ii) {
-    // //         if (0 < nLayers.at(ii)) {
-    // //             if (this->isKnownDf().at(ii)) {
-    // //                 this->mVectKnownDfBdry.at(idDf) = defaultValue.at(ii);
-    // //                 ++idDf;
-    // //             }
-    // //         }
-    // //     }
+    std::string nameSuffixNewKnownDf = "New";
+    this->createVectorOfKnownDataFields(
+        this->mVectKnownDfsDomNew, this->mVectKnownDfsBdryNew,
+        this->mMemoryVectKnownDfsTwo, nameDatafield, nameSuffixNewKnownDf, isKnownDf,
+        nLayers, stencilWidth, memAll, memHolePart, nRowsDf, writeToFile,
+        defaultValue, computeError, N_COLUMNS_KNOWN_DF);
 
     /*------------------------------------------------------------------------*/
     /*------------------------------------------------------------------------*/
@@ -1643,7 +1649,7 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
         defaultValue, N_COLUMNS_VECTUNKNOWN);
     /*------------------------------------------------------------------------*/
     // Create temporary vector only in case of
-    // ADOL-C + asynchronously MPI communication.
+    // ADOL-C + asynchronous MPI communication.
     if (params.enabledAdolc() && this->useAsynchronMode())
     {
         if (0 < this->nElemsUnknownDfs())
@@ -1763,7 +1769,7 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
                 if (ScaFES::WriteHowOften::NEVER != this->mWriteToFile[ii])
                 {
                     tmpNames.push_back(
-                        this->mVectKnownDfDom[idxKnownDf].name());
+                        this->mVectKnownDfsDomNew[idxKnownDf].name());
                 }
                 ++idxKnownDf;
             }
@@ -1789,7 +1795,7 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
                 if (ScaFES::WriteHowOften::NEVER != this->mWriteToFile[ii])
                 {
                     tmpNames.push_back(
-                        this->mVectKnownDfBdry[idxKnownDf].name());
+                        this->mVectKnownDfsBdryNew[idxKnownDf].name());
                 }
                 ++idxKnownDf;
             }
@@ -1819,7 +1825,7 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
                 if (ScaFES::WriteHowOften::NEVER != this->mWriteToFile[ii])
                 {
                     tmpMemNormal.push_back(
-                        this->mVectKnownDfDom[idxKnownDf].memNormal());
+                        this->mVectKnownDfsDomNew[idxKnownDf].memNormal());
                 }
                 ++idxKnownDf;
             }
@@ -1845,7 +1851,7 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
                 if (ScaFES::WriteHowOften::NEVER != this->mWriteToFile[ii])
                 {
                     tmpMemNormal.push_back(
-                        this->mVectKnownDfBdry[idxKnownDf].memNormal());
+                        this->mVectKnownDfsBdryNew[idxKnownDf].memNormal());
                 }
                 ++idxKnownDf;
             }
@@ -2129,8 +2135,129 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
         this->mNodes[ii] = ii;
     }
 }
-
 /*----------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
+// Firstly, all data fields which are defined at the whole domain.
+// Secondly, all data fields which are defined at the boundary, only.
+// This reordering of the data fields is important for the ADOL-C tracing
+// and evaluation as the fields must be available as a continuous memory
+// lump.
+template <class OWNPRBLM, typename CT, std::size_t DIM>
+inline void Problem<OWNPRBLM, CT, DIM>::createVectorOfKnownDataFields(
+    ScaFES_VectDf<CT>& dfDomain, ScaFES_VectDf<CT>& dfBdry,
+    const std::vector<CT>& memoryOfDfs,
+    const std::vector<std::string>& nameDatafield,
+    const std::string& nameSuffix, const std::vector<bool>& isKnownDf,
+    const std::vector<int>& nLayers, const std::vector<int>& stencilWidth,
+    const std::vector<ScaFES::Grid<DIM>>& memAll,
+    const std::vector<ScaFES::GridSub<DIM>>& memHolePart,
+    const std::vector<int>& nRowsDf,
+    const std::vector<ScaFES::WriteHowOften>& writeToFile,
+    const std::vector<CT>& defaultValue,
+    const std::vector<bool>& computeError,
+    const int& nColumns)
+{
+    CT* elemDataCurr = const_cast<CT*>(memoryOfDfs.data());
+    int idDf = 0;
+
+    for (std::size_t ii = 0; ii < nLayers.size(); ++ii)
+    {
+        if (0 == nLayers.at(ii))
+        {
+            if (isKnownDf.at(ii))
+            {
+                std::string nameDf = nameDatafield.at(ii) + nameSuffix + "SolDom";
+                dfDomain.push_back(ScaFES::DataField<CT, DIM>(
+                    nameDf, &(this->mParams), this->globalGrid(), memAll.at(ii),
+                    stencilWidth.at(ii), elemDataCurr, nColumns,
+                    memHolePart.at(ii), nLayers.at(ii), writeToFile.at(ii)));
+                elemDataCurr += (nRowsDf[ii] * nColumns);
+                ++idDf;
+            }
+            else
+            {
+                // Create reference data fields regardless if error should be
+                // computed or not. This important for the correct order of
+                // the data fields.
+                // BUT: Memory for reference data fields will be created only
+                // if error should be computed.
+                std::string nameDf = nameDatafield.at(ii) + nameSuffix + "SolDom";
+                dfDomain.push_back(ScaFES::DataField<CT, DIM>(
+                    nameDf, &(this->mParams), this->globalGrid(), memAll.at(ii),
+                    0, elemDataCurr, nColumns,
+                    memHolePart.at(ii), nLayers.at(ii), writeToFile.at(ii)));
+                if (computeError.at(ii))
+                {
+                    elemDataCurr += (nRowsDf[ii] * nColumns);
+                }
+                ++idDf;
+            }
+        }
+    }
+
+    /*------------------------------------------------------------------------*/
+    idDf = 0;
+    for (std::size_t ii = 0; ii < nLayers.size(); ++ii)
+    {
+        if (0 < nLayers.at(ii))
+        {
+            if (isKnownDf.at(ii))
+            {
+                std::string nameDf = nameDatafield.at(ii) + nameSuffix + "SolBdry";
+                dfBdry.push_back(ScaFES::DataField<CT, DIM>(
+                    nameDf, &(this->mParams), this->globalGrid(), memAll.at(ii),
+                    stencilWidth.at(ii), elemDataCurr, nColumns,
+                    memHolePart.at(ii), nLayers.at(ii), writeToFile.at(ii)));
+                elemDataCurr += (nRowsDf[ii] * nColumns);
+                ++idDf;
+            }
+            else
+            {
+                // Create reference data field regardless if error should be
+                // computed or not. This important for the correct order of
+                // the data fields.
+                // BUT: Memory for reference data field will be created only in
+                // case OF COMPUTING THE ERROR.
+                std::string nameDf = nameDatafield.at(ii) + nameSuffix + "SolBdry";
+                dfBdry.push_back(ScaFES::DataField<CT, DIM>(
+                    nameDf, &(this->mParams), this->globalGrid(), memAll.at(ii),
+                    0, elemDataCurr, nColumns,
+                    memHolePart.at(ii), nLayers.at(ii), writeToFile.at(ii)));
+                if (computeError.at(ii))
+                {
+                    elemDataCurr += (nRowsDf[ii] * nColumns);
+                }
+            }
+        }
+    }
+
+    /*------------------------------------------------------------------------*/
+    // Set default value for each known data field.
+//     idDf = 0;
+//     for (std::size_t ii = 0; ii < nLayers.size(); ++ii)
+//     {
+//         if (0 == nLayers.at(ii))
+//         {
+//             if (!(isKnownDf.at(ii)))
+//             {
+//                 dfDomain.at(idDf) = defaultValue.at(ii);
+//                 ++idDf;
+//             }
+//         }
+//     }
+//     idDf = 0;
+//     for (std::size_t ii = 0; ii < nLayers.size(); ++ii)
+//     {
+//         if (0 < nLayers.at(ii))
+//         {
+//             if (isKnownDf.at(ii))
+//             {
+//                 dfBdry.at(idDf) = defaultValue.at(ii);
+//                 ++idDf;
+//             }
+//         }
+//     }
+}
 /*----------------------------------------------------------------------------*/
 template <class OWNPRBLM, typename CT, std::size_t DIM>
 inline void Problem<OWNPRBLM, CT, DIM>::createVectorOfUnknownDataFields(
@@ -2320,11 +2447,18 @@ inline const std::vector<CT>& Problem<OWNPRBLM, CT, DIM>::vectParamsCurr() const
 }
 /*----------------------------------------------------------------------------*/
 template <class OWNPRBLM, typename CT, std::size_t DIM>
+inline const typename ScaFES::Problem<OWNPRBLM, CT, DIM>::template ScaFES_VectDf<CT>&
+Problem<OWNPRBLM, CT, DIM>::vectSol() const
+{
+    return this->mVectKnownDfsDomNew;
+}
+/*----------------------------------------------------------------------------*/
+template <class OWNPRBLM, typename CT, std::size_t DIM>
 inline const CT&
 Problem<OWNPRBLM, CT, DIM>::vectSol(const int& idx,
                                     const ScaFES_IntNtuple& idxNode) const
 {
-    return this->mVectKnownDfDom[idx](idxNode);
+    return this->knownDfNew(idx,idxNode);
 }
 /*----------------------------------------------------------------------------*/
 template <class OWNPRBLM, typename CT, std::size_t DIM>
@@ -2332,7 +2466,25 @@ inline const CT&
 Problem<OWNPRBLM, CT, DIM>::knownDf(const int& idx,
                                     const ScaFES_IntNtuple& idxNode) const
 {
-    return this->mVectKnownDfDom[idx](idxNode);
+    return this->knownDfNew(idx,idxNode);
+}
+
+/*----------------------------------------------------------------------------*/
+template <class OWNPRBLM, typename CT, std::size_t DIM>
+inline const CT&
+Problem<OWNPRBLM, CT, DIM>::knownDfNew(const int& idx,
+                                       const ScaFES_IntNtuple& idxNode) const
+{
+    return this->mVectKnownDfsDomNew[idx](idxNode);
+}
+
+/*----------------------------------------------------------------------------*/
+template <class OWNPRBLM, typename CT, std::size_t DIM>
+inline const CT&
+Problem<OWNPRBLM, CT, DIM>::knownDfOld(const int& idx,
+                                       const ScaFES_IntNtuple& idxNode) const
+{
+    return this->mVectKnownDfsDomOld[idx](idxNode);
 }
 
 /*******************************************************************************
@@ -2385,6 +2537,10 @@ inline void Problem<OWNPRBLM, CT, DIM>::iterateOverTime()
             this->evalUpdatePhase(currTimeIter);
             if (this->useLeapfrogIntegration())
             {
+                // Swap old / new known data fields, BUT DO NOT SWAP times.
+                // ==> Swap times 2x.
+                this->swapPointersOfKnownDfs(); // 1st swap of times.
+                this->swapTimesOfKnownDfs();    // 2nd swap of times.
                 // Swap old / new data fields, BUT DO NOT SWAP times.
                 // ==> Swap times 2x.
                 this->swapPointersOfUnknownDfs(); // 1st swap of times.
@@ -2408,8 +2564,10 @@ inline void Problem<OWNPRBLM, CT, DIM>::iterateOverTime()
         }
         this->writeAllDfs(currTimeIter);
         this->compErrOfUnknownDfs();
+        this->swapPointersOfKnownDfs();
         this->swapPointersOfUnknownDfs();
         // Update times of old / new data fields AFTER swapping.
+        this->updateTimesOfKnownDfs();
         this->updateTimesOfUnknownDfs();
 
         /*--------------------------------------------------------------------*/
@@ -2670,6 +2828,83 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalUpdate2Phase(const int& timeIter)
 /*----------------------------------------------------------------------------*/
 template <class OWNPRBLM, typename CT, std::size_t DIM>
 inline void
+Problem<OWNPRBLM, CT, DIM>::resetValsAtNodesOfKnownDfs(const int& /*timeIter*/                                                         )
+{
+    if (this->params().rankOutput() == this->myRank() &&
+        (0 < this->params().indentDepth()))
+    {
+        std::cout << this->mParams.getPrefix()
+                  << " * Reset all known data fields..." << std::endl;
+    }
+    this->mParams.decreaseLevel();
+
+    /*------------------------------------------------------------------------*/
+    // Set default value for each known data field.
+    int idDf = 0;
+    for (std::size_t ii = 0; ii < this->nLayers().size(); ++ii)
+    {
+        if (0 == this->nLayers().at(ii))
+        {
+            if (this->isKnownDf().at(ii))
+            {
+                this->mVectKnownDfsDomOld.at(idDf) =
+                    this->defaultValue().at(ii);
+                ++idDf;
+            }
+        }
+    }
+    idDf = 0;
+    for (std::size_t ii = 0; ii < this->nLayers().size(); ++ii)
+    {
+        if (0 < this->nLayers().at(ii))
+        {
+            if (this->isKnownDf().at(ii))
+            {
+                this->mVectKnownDfsBdryOld.at(idDf) =
+                    this->defaultValue().at(ii);
+                ++idDf;
+            }
+        }
+    }
+    idDf = 0;
+    for (std::size_t ii = 0; ii < this->nLayers().size(); ++ii)
+    {
+        if (0 == this->nLayers().at(ii))
+        {
+            if (this->isKnownDf().at(ii))
+            {
+                this->mVectKnownDfsDomNew.at(idDf) =
+                    this->defaultValue().at(ii);
+                ++idDf;
+            }
+        }
+    }
+    idDf = 0;
+    for (std::size_t ii = 0; ii < this->nLayers().size(); ++ii)
+    {
+        if (0 < this->nLayers().at(ii))
+        {
+            if (this->isKnownDf().at(ii))
+            {
+                this->mVectKnownDfsBdryNew.at(idDf) =
+                    this->defaultValue().at(ii);
+                ++idDf;
+            }
+        }
+    }
+
+    this->mParams.increaseLevel();
+    if ((this->params().rankOutput() == this->myRank()) &&
+        (0 < this->params().indentDepth()))
+    {
+        std::cout << this->mParams.getPrefix() << "   Reset."
+                  << std::endl;
+    }
+}
+/*----------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
+template <class OWNPRBLM, typename CT, std::size_t DIM>
+inline void
 Problem<OWNPRBLM, CT, DIM>::resetValsAtNodesOfUnknownDfs(const int& /*timeIter*/
                                                          )
 {
@@ -2746,6 +2981,40 @@ Problem<OWNPRBLM, CT, DIM>::resetValsAtNodesOfUnknownDfs(const int& /*timeIter*/
 }
 /*----------------------------------------------------------------------------*/
 template <class OWNPRBLM, typename CT, std::size_t DIM>
+inline void Problem<OWNPRBLM, CT, DIM>::resetTimesOfKnownDfs()
+{
+    if (this->params().rankOutput() == this->myRank() &&
+        (0 < this->params().indentDepth()))
+    {
+        std::cout << this->mParams.getPrefix()
+                  << " * Reset times of all known data fields..."
+                  << std::endl;
+    }
+    this->mParams.decreaseLevel();
+
+    /*------------------------------------------------------------------------*/
+    // Update current time of "new" data fields AFTER swapping.
+    for (std::size_t ii = 0; ii < this->mVectKnownDfsDomNew.size(); ++ii)
+    {
+        this->mVectKnownDfsDomNew[ii].time() =
+            this->params().timeIntervalStart();
+    }
+    for (std::size_t ii = 0; ii < this->mVectKnownDfsBdryNew.size(); ++ii)
+    {
+        this->mVectKnownDfsBdryNew[ii].time() =
+            this->params().timeIntervalStart();
+    }
+
+    this->mParams.increaseLevel();
+    if (this->params().rankOutput() == this->myRank() &&
+        (0 < this->params().indentDepth()))
+    {
+        std::cout << this->mParams.getPrefix() << "   Reset."
+                  << std::endl;
+    }
+}
+/*----------------------------------------------------------------------------*/
+template <class OWNPRBLM, typename CT, std::size_t DIM>
 inline void Problem<OWNPRBLM, CT, DIM>::resetTimesOfUnknownDfs()
 {
     if (this->params().rankOutput() == this->myRank() &&
@@ -2788,6 +3057,39 @@ inline void Problem<OWNPRBLM, CT, DIM>::resetTimesOfUnknownDfs()
 }
 /*----------------------------------------------------------------------------*/
 template <class OWNPRBLM, typename CT, std::size_t DIM>
+inline void Problem<OWNPRBLM, CT, DIM>::updateTimesOfKnownDfs()
+{
+    if (this->params().rankOutput() == this->myRank() &&
+        (0 < this->params().indentDepth()))
+    {
+        std::cout << this->mParams.getPrefix()
+                  << " * Update times of all known data fields..."
+                  << std::endl;
+    }
+    this->mParams.decreaseLevel();
+
+    /*------------------------------------------------------------------------*/
+    // Update current time of "new" data fields AFTER swapping.
+    for (std::size_t ii = 0; ii < this->mVectKnownDfsDomNew.size(); ++ii)
+    {
+        this->mVectKnownDfsDomNew[ii].time() =
+            this->mVectKnownDfsDomOld[ii].time() + this->params().tau();
+    }
+    for (std::size_t ii = 0; ii < this->mVectKnownDfsBdryNew.size(); ++ii)
+    {
+        this->mVectKnownDfsBdryNew[ii].time() =
+            this->mVectKnownDfsBdryOld[ii].time() + this->params().tau();
+    }
+
+    this->mParams.increaseLevel();
+    if (this->params().rankOutput() == this->myRank() &&
+        (0 < this->params().indentDepth()))
+    {
+        std::cout << this->mParams.getPrefix() << "   Updated."
+                  << std::endl;
+    }
+}/*----------------------------------------------------------------------------*/
+template <class OWNPRBLM, typename CT, std::size_t DIM>
 inline void Problem<OWNPRBLM, CT, DIM>::updateTimesOfUnknownDfs()
 {
     if (this->params().rankOutput() == this->myRank() &&
@@ -2825,6 +3127,40 @@ inline void Problem<OWNPRBLM, CT, DIM>::updateTimesOfUnknownDfs()
         (0 < this->params().indentDepth()))
     {
         std::cout << this->mParams.getPrefix() << "   Updated."
+                  << std::endl;
+    }
+}
+/*----------------------------------------------------------------------------*/
+template <class OWNPRBLM, typename CT, std::size_t DIM>
+inline void Problem<OWNPRBLM, CT, DIM>::swapPointersOfKnownDfs()
+{
+    if (this->params().rankOutput() == this->myRank() &&
+        (0 < this->params().indentDepth()))
+    {
+        std::cout << this->mParams.getPrefix()
+                  << " * Swap pointers of all known data fields..."
+                  << std::endl;
+    }
+    this->mParams.decreaseLevel();
+
+    /*------------------------------------------------------------------------*/
+    // Swap old and new iterate.
+    for (std::size_t ii = 0; ii < this->vectKnownDfsDomNew().size(); ++ii)
+    {
+        this->mVectKnownDfsDomNew[ii]
+            .swapPointerToMemoryWith(this->mVectKnownDfsDomOld[ii]);
+    }
+    for (std::size_t ii = 0; ii < this->vectKnownDfsBdryNew().size(); ++ii)
+    {
+        this->mVectKnownDfsBdryNew[ii]
+            .swapPointerToMemoryWith(this->mVectKnownDfsBdryOld[ii]);
+    }
+
+    this->mParams.increaseLevel();
+    if (this->params().rankOutput() == this->myRank() &&
+        (0 < this->params().indentDepth()))
+    {
+        std::cout << this->mParams.getPrefix() << "   Swapped."
                   << std::endl;
     }
 }
@@ -2871,6 +3207,43 @@ inline void Problem<OWNPRBLM, CT, DIM>::swapPointersOfUnknownDfs()
         (0 < this->params().indentDepth()))
     {
         std::cout << this->mParams.getPrefix() << "   Swapped."
+                  << std::endl;
+    }
+}
+/*----------------------------------------------------------------------------*/
+template <class OWNPRBLM, typename CT, std::size_t DIM>
+inline void Problem<OWNPRBLM, CT, DIM>::swapTimesOfKnownDfs()
+{
+    if (this->params().rankOutput() == this->myRank() &&
+        (0 < this->params().indentDepth()))
+    {
+        std::cout << this->mParams.getPrefix()
+                  << " * Swap times of all known data fields..." << std::endl;
+    }
+    this->mParams.decreaseLevel();
+
+    double tmpTime = 0.0;
+    for (std::size_t ii = 0; ii < this->mVectKnownDfsDomNew.size(); ++ii)
+    {
+        tmpTime = this->mVectKnownDfsDomOld[ii].time();
+        this->mVectKnownDfsDomOld[ii].time() =
+            this->mVectKnownDfsDomNew[ii].time();
+        this->mVectKnownDfsDomNew[ii].time() = tmpTime;
+    }
+    for (std::size_t ii = 0; ii < this->mVectKnownDfsBdryNew.size(); ++ii)
+    {
+        tmpTime = this->mVectKnownDfsBdryOld[ii].time();
+        this->mVectKnownDfsBdryOld[ii].time() =
+            this->mVectKnownDfsBdryNew[ii].time();
+        this->mVectKnownDfsBdryNew[ii].time() = tmpTime;
+    }
+
+    this->mParams.increaseLevel();
+    if ((this->params().rankOutput() == this->myRank()) &&
+        (0 < this->params().indentDepth()))
+    {
+        std::cout << this->mParams.getPrefix()
+                  << "   Swapped."
                   << std::endl;
     }
 }
@@ -2981,18 +3354,18 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalKnownDfs(const int& timeIter)
 
     timerEval.restart();
 
-    this->evalGlobInner(this->mVectKnownDfDom, timeIter);
-    this->evalGlobBorder(this->mVectKnownDfDom, timeIter);
-    for (std::size_t ii = 0; ii < this->mVectKnownDfDom.size(); ++ii)
+    this->evalGlobInner(this->mVectKnownDfsDomNew, timeIter);
+    this->evalGlobBorder(this->mVectKnownDfsDomNew, timeIter);
+    for (std::size_t ii = 0; ii < this->mVectKnownDfsDomNew.size(); ++ii)
     {
-        this->mVectKnownDfDom[ii].sync(timeIter);
+        this->mVectKnownDfsDomNew[ii].sync(timeIter);
     }
     if (0 < this->nUnknownBdryDfs())
     {
-        this->evalGlobBorder(this->mVectKnownDfBdry, timeIter);
-        for (std::size_t ii = 0; ii < this->mVectKnownDfBdry.size(); ++ii)
+        this->evalGlobBorder(this->mVectKnownDfsBdryNew, timeIter);
+        for (std::size_t ii = 0; ii < this->mVectKnownDfsBdryNew.size(); ++ii)
         {
-            this->mVectKnownDfBdry[ii].sync(timeIter);
+            this->mVectKnownDfsBdryNew[ii].sync(timeIter);
         }
     }
     this->mWallClockTimes["evalKnownDf"] += timerEval.elapsed();
@@ -3032,7 +3405,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::compErrOfUnknownDfs()
                 if (this->mComputeError.at(ii))
                 {
                     this->mVectUnknownDfsDomNew[idDf]
-                        .compErrLinf(this->mVectKnownDfDom[ii]);
+                        .compErrLinf(this->mVectKnownDfsDomNew[ii]);
                 }
                 ++idDf;
             }
@@ -3050,7 +3423,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::compErrOfUnknownDfs()
                     if (this->mComputeError.at(ii))
                     {
                         this->mVectUnknownDfsBdryNew[idDf]
-                            .compErrLinf(this->mVectKnownDfBdry[ii]);
+                            .compErrLinf(this->mVectKnownDfsBdryNew[ii]);
                     }
                     ++idDf;
                 }
@@ -3211,6 +3584,34 @@ template <class OWNPRBLM, typename CT, std::size_t DIM>
 inline const int& Problem<OWNPRBLM, CT, DIM>::nNodesTotalPartition() const
 {
     return this->mNnodesTotalPartition;
+}
+/*----------------------------------------------------------------------------*/
+template <class OWNPRBLM, typename CT, std::size_t DIM>
+inline const std::vector<DataField<CT, DIM>>&
+Problem<OWNPRBLM, CT, DIM>::vectKnownDfsDomNew() const
+{
+    return this->mVectKnownDfsDomNew;
+}
+/*----------------------------------------------------------------------------*/
+template <class OWNPRBLM, typename CT, std::size_t DIM>
+inline const std::vector<DataField<CT, DIM>>&
+Problem<OWNPRBLM, CT, DIM>::vectKnownDfsDomOld() const
+{
+    return this->mVectKnownDfsDomOld;
+}
+/*----------------------------------------------------------------------------*/
+template <class OWNPRBLM, typename CT, std::size_t DIM>
+inline const std::vector<DataField<CT, DIM>>&
+Problem<OWNPRBLM, CT, DIM>::vectKnownDfsBdryNew() const
+{
+    return this->mVectKnownDfsBdryNew;
+}
+/*----------------------------------------------------------------------------*/
+template <class OWNPRBLM, typename CT, std::size_t DIM>
+inline const std::vector<DataField<CT, DIM>>&
+Problem<OWNPRBLM, CT, DIM>::vectKnownDfsBdryOld() const
+{
+    return this->mVectKnownDfsBdryOld;
 }
 /*----------------------------------------------------------------------------*/
 template <class OWNPRBLM, typename CT, std::size_t DIM>
@@ -3725,7 +4126,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::writeDfsToFile(const int& timeIter)
                     if (ScaFES::WriteHowOften::NEVER != this->mWriteToFile[ii])
                     {
                         tmpElemData.push_back(
-                            this->mVectKnownDfDom[idxKnownDf].elemData());
+                            this->mVectKnownDfsDomNew[idxKnownDf].elemData());
                         ++idxKnownDf;
                     }
                 }
@@ -3752,7 +4153,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::writeDfsToFile(const int& timeIter)
                     if (ScaFES::WriteHowOften::NEVER != this->mWriteToFile[ii])
                     {
                         tmpElemData.push_back(
-                            this->mVectKnownDfBdry[idxKnownDf].elemData());
+                            this->mVectKnownDfsBdryNew[idxKnownDf].elemData());
                         ++idxKnownDf;
                     }
                 }
