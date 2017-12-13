@@ -1,4 +1,5 @@
-SUBDIRS = Dirichlet \
+SUBDIRS = Cauchy \
+          Dirichlet \
           Neumann
 
 ################################################################################

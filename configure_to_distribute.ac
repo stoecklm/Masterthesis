@@ -495,6 +495,25 @@ AC_CONFIG_FILES([tests/system/HeatEqnFDM/Neumann/TimeLinSpaceLin/TESTMATRIX_RUN_
        [chmod +x tests/system/HeatEqnFDM/Neumann/TimeLinSpaceLin/TESTMATRIX_RUN_3D.sh])
 
 AC_CONFIG_FILES(tests/system/PennesBioheatEqnFDM/Makefile)
+AC_CONFIG_FILES(tests/system/PennesBioheatEqnFDM/Cauchy/Makefile)
+AC_CONFIG_FILES(tests/system/PennesBioheatEqnFDM/Cauchy/TimeLinSpaceLin/Makefile)
+AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/Cauchy/TimeLinSpaceLin/RUN.sh],
+       [chmod +x tests/system/PennesBioheatEqnFDM/Cauchy/TimeLinSpaceLin/RUN.sh])
+AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/Cauchy/TimeLinSpaceLin/RUN_1D.sh],
+       [chmod +x tests/system/PennesBioheatEqnFDM/Cauchy/TimeLinSpaceLin/RUN_1D.sh])
+AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/Cauchy/TimeLinSpaceLin/RUN_2D.sh],
+       [chmod +x tests/system/PennesBioheatEqnFDM/Cauchy/TimeLinSpaceLin/RUN_2D.sh])
+AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/Cauchy/TimeLinSpaceLin/RUN_3D.sh],
+       [chmod +x tests/system/PennesBioheatEqnFDM/Cauchy/TimeLinSpaceLin/RUN_3D.sh])
+AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/Cauchy/TimeLinSpaceLin/TESTMATRIX_RUN.sh],
+       [chmod +x tests/system/PennesBioheatEqnFDM/Cauchy/TimeLinSpaceLin/TESTMATRIX_RUN.sh])
+AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/Cauchy/TimeLinSpaceLin/TESTMATRIX_RUN_1D.sh],
+       [chmod +x tests/system/PennesBioheatEqnFDM/Cauchy/TimeLinSpaceLin/TESTMATRIX_RUN_1D.sh])
+AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/Cauchy/TimeLinSpaceLin/TESTMATRIX_RUN_2D.sh],
+       [chmod +x tests/system/PennesBioheatEqnFDM/Cauchy/TimeLinSpaceLin/TESTMATRIX_RUN_2D.sh])
+AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/Cauchy/TimeLinSpaceLin/TESTMATRIX_RUN_3D.sh],
+       [chmod +x tests/system/PennesBioheatEqnFDM/Cauchy/TimeLinSpaceLin/TESTMATRIX_RUN_3D.sh])
+
 AC_CONFIG_FILES(tests/system/PennesBioheatEqnFDM/Dirichlet/Makefile)
 AC_CONFIG_FILES(tests/system/PennesBioheatEqnFDM/Dirichlet/TimeLinSpaceLin/Makefile)
 AC_CONFIG_FILES([tests/system/PennesBioheatEqnFDM/Dirichlet/TimeLinSpaceLin/RUN.sh],

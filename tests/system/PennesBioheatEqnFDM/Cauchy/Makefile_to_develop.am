@@ -1,8 +1,6 @@
-SUBDIRS = Cauchy \
-          Dirichlet \
-          Neumann
+SUBDIRS = TimeLinSpaceLin
 
 ################################################################################
-include_HEADERS= PennesBioheatEqnFDM.hpp
+include_HEADERS= Cauchy.hpp
 noinst_PROGRAMS=
 EXTRA_DIST=
