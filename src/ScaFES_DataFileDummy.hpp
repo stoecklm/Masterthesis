@@ -127,6 +127,10 @@ public:
      *  from the file at the given time step. */
     void read(std::vector<TT*>& elemData, int const& timestep);
 
+    /** Initializes the elements in the memory to which the pointer points to
+     *  from the file. */
+    void init(std::vector<TT*>& elemData);
+
 private:
     /*----------------------------------------------------------------------
     | TYPE DEFINITIONS.
@@ -333,6 +337,12 @@ template <typename TT, std::size_t DIM>
 void DataFile<TT, DIM>::read(std::vector<TT*>& /*elemData*/,
                              int const& /*timestep*/
                              )
+{
+}
+/*----------------------------------------------------------------------------*/
+template <typename TT, std::size_t DIM>
+void DataFile<TT, DIM>::init(std::vector<TT*>& /*elemData*/
+                            )
 {
 }
 /*----------------------------------------------------------------------------*/
