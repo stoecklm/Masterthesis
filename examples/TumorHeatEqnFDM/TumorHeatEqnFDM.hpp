@@ -7,7 +7,7 @@
 /**
  *  @file TumorHeatEqnFDM.hpp
  *
- *  @brief Implementation of a 3-dimensional Pennes bioheat equation problem.
+ *  @brief Implementation of a n-dimensional Pennes bioheat equation problem.
  */
 
 #include <iostream>
@@ -50,8 +50,7 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
     const double OMEGA_B_BRAIN = 0.004; /* 1/s */
 
     /** constant omega_b. Blood perfusion rate (Astrocytoma brain tumor).
-      * Table 1 presents an interval. Exact value is given in text.
-      */
+      * Table 1 presents an interval. Exact value is given in text. */
     const double OMEGA_B_TUMOR = 0.0007; /* 1/s */
 
     /************************************************************************/
@@ -63,31 +62,32 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
     const double H = 10.0; /* W/(m^2 K) */
 
     /** constant T_inf. Air temperature. */
-    const double T_inf = 22.4; /* K */
+    const double T_INF = 22.4; /* K */
+
+    /** constant q_bc. Heat flux at surface. */
+    const double Q_BC = 0.0; /* W/(m^2) */
 
     /************************************************************************/
     /* Values varied in text. */
     /** constant diameter. diameter of the tumor. */
-    const double DIAMETER = 0.02; /* m */
+    const double DIAMETER = 0.01; /* m */
 
     /** constant depth. depth of the tumor. */
-    const double DEPTH = 0.008; /* m */
+    const double DEPTH = 0.01; /* m */
 
     /************************************************************************/
     /* Values missing in text. */
     /* constant T_a. Temperature of artery.
      * Value from Das et al.: Numerical estimation... (2013). */
-    const double T_a = 37.0; /* K */
+    const double T_A = 37.0; /* K */
 
     /************************************************************************/
     /* Auxiliary values. */
-    /* Center of tumor = (x0, y0, z0). */
-    const double x0 = this->params().coordNodeLast()[0]/2.0;
-    const double y0 = this->params().coordNodeLast()[1]/2.0;
-    const double z0 = this->params().coordNodeLast()[2]-DEPTH;
-
     /* Radius of tumor. */
     const double RADIUS = DIAMETER/2.0;
+
+    /* Center of tumor. */
+    ScaFES::Ntuple<double,DIM> tumorCenter;
 
     /************************************************************************/
 
@@ -124,7 +124,15 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
                                                              isKnownDf, nLayers,
                                                              defaultValue, writeToFile,
                                                              computeError, geomparamsInit)
-        { }
+        {
+            for (std::size_t pp = 0; pp < DIM; ++pp) {
+                if (pp == (DIM-1)) {
+                    tumorCenter[pp] = this->params().coordNodeLast()[pp] - DEPTH;
+                } else {
+                    tumorCenter[pp] = this->params().coordNodeLast()[pp]/2.0;
+                }
+            }
+        }
 
     /** Evaluates all fields at one given global inner grid node.
      *  @param vNew Set of all fields.
@@ -137,9 +145,10 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
         ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
 
         /* Calculate distance to tumor center. */
-        double distance = ((x[0] - this->x0) * (x[0] - this->x0))
-                          + ((x[1] - this->y0) * (x[1] - this->y0))
-                          + ((x[2] - this->z0) * (x[2] - this->z0));
+        double distance = 0.0;
+        for (std::size_t pp = 0; pp < DIM; ++pp) {
+            distance += (x[pp] - tumorCenter[pp]) * (x[pp] - tumorCenter[pp]);
+        }
 
         /* Check if current point is inside tumor. */
         if (distance <= (this->RADIUS*this->RADIUS)) {
@@ -154,11 +163,10 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
     /** Evaluates all fields at one given global border grid node.
      *  @param vNew Set of all fields.
      *  @param idxNode Index of given grid node.
-     *  @param timestep Given time step.
      */
     void evalBorder(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
                     ScaFES::Ntuple<int,DIM> const& idxNode,
-                    int const& timestep) {
+                    int const& /*timestep*/) {
         /* Assuming border is always healthy brain tissue. */
         vNew[0](idxNode) = OMEGA_B_BRAIN;
     }
@@ -172,17 +180,22 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
                    std::vector<TT> const& /*vOld*/,
                    ScaFES::Ntuple<int,DIM> const& idxNode,
                    int const& /*timestep*/) {
+        /* Init all nodes with the same temperature. */
+        vNew[0](idxNode) = T_I;
     }
 
     /** Initializes all unknown fields at one given global border grid node.
      *  @param vNew Set of all unknown fields (return value).
+     *  @param vOld Set of all unknown fields at old time step.
      *  @param idxNode Index of given grid node.
+     *  @param timestep Given time step.
      */
     template<typename TT>
     void initBorder(std::vector< ScaFES::DataField<TT, DIM> >& vNew,
-                   std::vector<TT> const& /*vOld*/,
+                   std::vector<TT> const& vOld,
                    ScaFES::Ntuple<int,DIM> const& idxNode,
-                   int const& /*timestep*/) {
+                   int const& timestep) {
+        this->template initInner<TT>(vNew, vOld, idxNode, timestep);
     }
 
     /** Updates all unknown fields at one given global inner grid node.
@@ -195,6 +208,20 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
                      std::vector<ScaFES::DataField<TT,DIM>> const& vOld,
                      ScaFES::Ntuple<int,DIM> const& idxNode,
                      int const& /*timestep*/) {
+        /* Discrete Pennes Bioheat Equation for updating inner nodes. */
+        vNew[0](idxNode) = vOld[0](idxNode);
+        for (std::size_t pp = 0; pp < DIM; ++pp) {
+            vNew[0](idxNode) += this->tau() * (K/(RHO*C))
+                                * (vOld[0](this->connect(idxNode, 2*pp))
+                                   + vOld[0](this->connect(idxNode, 2*pp+1))
+                                   - 2.0 * vOld[0](idxNode))
+                                / (this->gridsize(pp) * this->gridsize(pp));
+        }
+        /* knownDfOld(0) = perfusion rate omega. */
+        vNew[0](idxNode) += this->tau() * ((RHO_B*C_PB)/(RHO*C))
+                            * this->knownDfOld(0, idxNode)
+                            * (T_A - vOld[0](idxNode));
+        vNew[0](idxNode) += this->tau() * (1.0/(RHO*C)) * Q;
     }
 
     /** Updates all unknown fields at one given global border grid node.
@@ -207,6 +234,63 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
                       std::vector<ScaFES::DataField<TT,DIM>>const& vOld,
                       ScaFES::Ntuple<int,DIM> const& idxNode,
                       int const& /*timestep*/) {
+        vNew[0](idxNode) = vOld[0](idxNode);
+
+        for (std::size_t pp = 0; pp < DIM; ++pp) {
+            /* Last node/edge/surface in highest dimension will be convection
+             * boundary condition. */
+            if (idxNode.elem(pp) == (this->nNodes(pp)-1)) {
+            /* vOld[0](this->connect(idxNode, 2*pp+1) needs to be replaced. */
+                if (pp == (DIM-1)) {
+                /* Cauchy boundary condition. */
+                    vNew[0](idxNode) += this->tau() * (K/(RHO*C))
+                                        * (vOld[0](this->connect(idxNode, 2*pp))
+                                        /* + vOld[0](this->connect(idxNode, 2*pp+1) */
+                                           + vOld[0](this->connect(idxNode, 2*pp))
+                                           - ((2.0*this->gridsize(pp)/K)
+                                              * H * (vOld[0](idxNode) - T_INF))
+                                        /********************************************/
+                                           - 2.0 * vOld[0](idxNode))
+                                        / (this->gridsize(pp) * this->gridsize(pp));
+                } else {
+                /* Neumann boundary condition. */
+                    vNew[0](idxNode) += this->tau() * (K/(RHO*C))
+                                        * (vOld[0](this->connect(idxNode, 2*pp))
+                                        /* + vOld[0](this->connect(idxNode, 2*pp+1)) */
+                                           + vOld[0](this->connect(idxNode, 2*pp))
+                                           - ((2.0*this->gridsize(pp)/K) * Q_BC)
+                                        /*********************************************/
+                                           - 2.0 * vOld[0](idxNode))
+                                        / (this->gridsize(pp) * this->gridsize(pp));
+                }
+            } else if (idxNode.elem(pp) == 0){
+            /* vOld[0](this->connect(idxNode, 2*pp) needs to be replaced.
+             * Neumann boundary condition. */
+                vNew[0](idxNode) += this->tau() * (K/(RHO*C))
+                                    /* + vOld[0](this->connect(idxNode, 2*pp)) */
+                                    * (vOld[0](this->connect(idxNode, 2*pp+1))
+                                       + ((2.0*this->gridsize(pp)/K) * Q_BC)
+                                    /*******************************************/
+                                       + vOld[0](this->connect(idxNode, 2*pp+1))
+                                       - 2.0 * vOld[0](idxNode))
+                                    / (this->gridsize(pp) * this->gridsize(pp));
+            } else {
+            /* No value needs to be replaced.
+             * Use central differencing scheme. */
+                vNew[0](idxNode) += this->tau() * (K/(RHO*C))
+                                    * (vOld[0](this->connect(idxNode, 2*pp))
+                                       + vOld[0](this->connect(idxNode, 2*pp+1))
+                                       - 2.0 * vOld[0](idxNode))
+                                    / (this->gridsize(pp) * this->gridsize(pp));
+            }
+        }
+
+        /* These terms are independet of the boundary condition. */
+        /* knownDfOld(0) = perfusion rate omega. */
+        vNew[0](idxNode) += this->tau() * ((RHO_B*C_PB)/(RHO*C))
+                            * this->knownDfOld(0, idxNode)
+                            * (T_A - vOld[0](idxNode));
+        vNew[0](idxNode) += this->tau() * (1.0/(RHO*C)) * Q;
     }
 
     /** Updates (2nd cycle) all unknown fields at one given global inner grid node.
