@@ -675,11 +675,14 @@ AC_CONFIG_FILES([examples/EMFDTD/RUN.sh],
        [chmod +x examples/EMFDTD/RUN.sh])
 AC_CONFIG_FILES([examples/EMFDTD/TESTMATRIX_RUN.sh],
        [chmod +x examples/EMFDTD/TESTMATRIX_RUN.sh])
+
 AC_CONFIG_FILES(examples/TumorHeatEqnFDM/Makefile)
 AC_CONFIG_FILES([examples/TumorHeatEqnFDM/RUN.sh],
        [chmod +x examples/TumorHeatEqnFDM/RUN.sh])
 AC_CONFIG_FILES([examples/TumorHeatEqnFDM/TESTMATRIX_RUN.sh],
        [chmod +x examples/TumorHeatEqnFDM/TESTMATRIX_RUN.sh])
+AC_CONFIG_FILES(examples/TumorHeatEqnFDM/Parameters.ini)
+
 AC_CONFIG_FILES(examples/ZhangExampleFDM/Makefile)
 AC_CONFIG_FILES([examples/ZhangExampleFDM/RUN.sh],
        [chmod +x examples/ZhangExampleFDM/RUN.sh])

@@ -13,6 +13,8 @@
 #include <iostream>
 #include "ScaFES.hpp"
 
+#include <boost/property_tree/ini_parser.hpp>
+
 /*******************************************************************************
  ******************************************************************************/
 /**
@@ -22,6 +24,10 @@
 */
 template<typename CT, std::size_t DIM>
 class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM> {
+  private:
+    using PTree = boost::property_tree::ptree;
+    const PTree ptree;
+
   public:
 
     /* Values from Bousselham et al. (2017). */
@@ -29,62 +35,62 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
     /************************************************************************/
     /* Values from Table 1: Thermophysical properties. */
     /** constant rho. Density. */
-    const double RHO = 1040.0; /* kg/m^3 */
+    const double RHO; /* kg/m^3 */
 
     /** constant C. Specific heat capacity. */
-    const double C = 3650.0; /* J/(kg K) */
+    const double C; /* J/(kg K) */
 
     /** constant K. Thermal conductivity). */
-    const double K = 0.6; /* W/(m K) */
+    const double K; /* W/(m K) */
 
     /** constant Q. Metabolism heat generation. */
-    const double Q = 25000.0; /* W/(m^3) */
+    const double Q; /* W/(m^3) */
 
     /** constant rho_b. Density of the blood. */
-    const double RHO_B = 1052.0; /* kg/m^3 */
+    const double RHO_B; /* kg/m^3 */
 
     /** constant C_Pb. Specific heat of the blood. */
-    const double C_PB = 3800.0; /* J/(kg K) */
+    const double C_PB; /* J/(kg K) */
 
     /** constant omega_b. Blood perfusion rate (normal brain tissue). */
-    const double OMEGA_B_BRAIN = 0.004; /* 1/s */
+    const double OMEGA_B_BRAIN; /* 1/s */
 
     /** constant omega_b. Blood perfusion rate (Astrocytoma brain tumor).
       * Table 1 presents an interval. Exact value is given in text. */
-    const double OMEGA_B_TUMOR = 0.0007; /* 1/s */
+    const double OMEGA_B_TUMOR; /* 1/s */
 
     /************************************************************************/
     /* Values given in text. */
     /** constant T_i. Initial condition for T. */
-    const double T_I = 37.0; /* K */
+    const double T_I; /* K */
 
     /** constant h. Ambient convetion. */
-    const double H = 10.0; /* W/(m^2 K) */
+    const double H; /* W/(m^2 K) */
 
     /** constant T_inf. Air temperature. */
-    const double T_INF = 22.4; /* K */
+    const double T_INF; /* K */
 
     /** constant q_bc. Heat flux at surface. */
-    const double Q_BC = 0.0; /* W/(m^2) */
+    const double Q_BC; /* W/(m^2) */
 
     /************************************************************************/
     /* Values varied in text. */
     /** constant diameter. diameter of the tumor. */
-    const double DIAMETER = 10.01; /* m */
+    const double DIAMETER; /* m */
 
     /** constant depth. depth of the tumor. */
-    const double DEPTH = 10.01; /* m */
+    const double DEPTH; /* m */
 
     /************************************************************************/
     /* Values missing in text. */
     /* constant T_a. Temperature of artery.
      * Value from Das et al.: Numerical estimation... (2013). */
-    const double T_A = 37.0; /* K */
+    const double T_A; /* K */
 
     /************************************************************************/
     /* Auxiliary values. */
     /* Radius of tumor. */
-    const double RADIUS = DIAMETER/2.0;
+    double RADIUS;
 
     /* Center of tumor. */
     ScaFES::Ntuple<double,DIM> tumorCenter;
@@ -113,6 +119,7 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
                     std::vector<std::string> const& nameDatafield,
                     std::vector<int> const& stencilWidth,
                     std::vector<bool> const& isKnownDf,
+                    PTree const& ptree_,
                     std::vector<int> const& nLayers = std::vector<int>(),
                     std::vector<CT> const& defaultValue = std::vector<CT>(),
                     std::vector<ScaFES::WriteHowOften> const& writeToFile
@@ -123,8 +130,26 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
                                                              nameDatafield, stencilWidth,
                                                              isKnownDf, nLayers,
                                                              defaultValue, writeToFile,
-                                                             computeError, geomparamsInit)
+                                                             computeError, geomparamsInit),
+        ptree(ptree_),
+        RHO(ptree.get<CT>("Parameters.RHO")),
+        C(ptree.get<CT>("Parameters.C")),
+        K(ptree.get<CT>("Parameters.K")),
+        Q(ptree.get<CT>("Parameters.Q")),
+        RHO_B(ptree.get<CT>("Parameters.RHO_B")),
+        C_PB(ptree.get<CT>("Parameters.C_PB")),
+        OMEGA_B_BRAIN(ptree.get<CT>("Parameters.OMEGA_B_BRAIN")),
+        OMEGA_B_TUMOR(ptree.get<CT>("Parameters.OMEGA_B_TUMOR")),
+        T_I(ptree.get<CT>("Parameters.T_I")),
+        H(ptree.get<CT>("Parameters.H")),
+        T_INF(ptree.get<CT>("Parameters.T_INF")),
+        Q_BC(ptree.get<CT>("Parameters.Q_BC")),
+        DIAMETER(ptree.get<CT>("Parameters.DIAMETER")),
+        DEPTH(ptree.get<CT>("Parameters.DEPTH")),
+        T_A(ptree.get<CT>("Parameters.T_A"))
         {
+            RADIUS = DIAMETER/2.0;
+
             for (std::size_t pp = 0; pp < DIM; ++pp) {
                 if (pp == (DIM-1)) {
                     if (this->params().coordNodeLast()[pp] <= DIAMETER) {

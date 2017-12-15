@@ -71,6 +71,7 @@ EXTRA_DIST += results/scafes-scalingtests.plt \
         results/ZIH_TAURUS-scaling_strong.dat \
         results/ZIH_TAURUS-scaling_weak.plt \
         results/README
+EXTRA_DIST += Parameters.ini
 
 
 #------------------------------------------------------------------------------#

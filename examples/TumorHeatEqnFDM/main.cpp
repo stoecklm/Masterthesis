@@ -30,15 +30,18 @@ int main(int argc, char *argv[]) {
     defaultValue[0] = 0.0;
     defaultValue[1] = 0.0;
     std::vector<ScaFES::WriteHowOften> writeToFile(2);
-    writeToFile[0] = ScaFES::WriteHowOften::NEVER;
+    writeToFile[0] = ScaFES::WriteHowOften::LIKE_GIVEN_AT_CL;
     writeToFile[1] = ScaFES::WriteHowOften::LIKE_GIVEN_AT_CL;
     std::vector<bool> computeError(2);
     computeError[0] = false;
     computeError[1] = false;
     std::vector<double> geomparamsInit;
 
+    boost::property_tree::ptree pt;
+    boost::property_tree::ini_parser::read_ini(paramsCl.nameConfigFile(), pt);
+
     TumorHeatEqnFDM<double, DIM> ppp(paramsCl, gg, false, nameDatafield,
-                                     stencilWidth, isKnownDf, nLayers,
+                                     stencilWidth, isKnownDf, pt, nLayers,
                                      defaultValue, writeToFile, computeError,
                                      geomparamsInit);
     ppp.iterateOverTime();
