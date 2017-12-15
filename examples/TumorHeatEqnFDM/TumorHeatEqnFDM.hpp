@@ -70,10 +70,10 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
     /************************************************************************/
     /* Values varied in text. */
     /** constant diameter. diameter of the tumor. */
-    const double DIAMETER = 0.01; /* m */
+    const double DIAMETER = 10.01; /* m */
 
     /** constant depth. depth of the tumor. */
-    const double DEPTH = 0.01; /* m */
+    const double DEPTH = 10.01; /* m */
 
     /************************************************************************/
     /* Values missing in text. */
@@ -127,8 +127,24 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
         {
             for (std::size_t pp = 0; pp < DIM; ++pp) {
                 if (pp == (DIM-1)) {
+                    if (this->params().coordNodeLast()[pp] <= DIAMETER) {
+                        std::cerr << "WARNING: Diameter of tumor is bigger than grid in dimension: "
+                                  << pp << "." << std::endl;
+                    }
+                    if (this->params().coordNodeLast()[pp] < DEPTH) {
+                        std::cerr << "WARNING: Center of tumor is outside of grid in dimension: "
+                                  << pp << "." << std::endl;
+                    }
+                    if (std::fabs(this->params().coordNodeLast()[pp] - DEPTH) < RADIUS) {
+                        std::cerr << "WARNING: Part of tumor is outside of grid in dimension: "
+                                  << pp << "." << std::endl;
+                    }
                     tumorCenter[pp] = this->params().coordNodeLast()[pp] - DEPTH;
                 } else {
+                    if (this->params().coordNodeLast()[pp] <= DIAMETER) {
+                        std::cerr << "WARNING: Diameter of tumor is bigger than grid in dimension: "
+                                  << pp << "." << std::endl;
+                    }
                     tumorCenter[pp] = this->params().coordNodeLast()[pp]/2.0;
                 }
             }
