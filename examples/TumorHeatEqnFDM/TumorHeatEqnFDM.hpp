@@ -156,11 +156,16 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
                         std::cerr << "WARNING: Diameter of tumor is bigger than grid in dimension: "
                                   << pp << "." << std::endl;
                     }
-                    if (this->params().coordNodeLast()[pp] < DEPTH) {
+                    if (this->params().coordNodeLast()[pp] < std::fabs(DEPTH) ||
+                        DEPTH < 0.0) {
                         std::cerr << "WARNING: Center of tumor is outside of grid in dimension: "
                                   << pp << "." << std::endl;
                     }
-                    if (std::fabs(this->params().coordNodeLast()[pp] - DEPTH) < RADIUS) {
+                    if ((this->params().coordNodeLast()[pp] + RADIUS) < std::fabs(DEPTH)) {
+                        std::cerr << "WARNING: Tumor is completely outside of grid." << std::endl;
+                    }
+                    if (std::fabs(this->params().coordNodeLast()[pp] - DEPTH) < RADIUS ||
+                        std::fabs(DEPTH) < RADIUS) {
                         std::cerr << "WARNING: Part of tumor is outside of grid in dimension: "
                                   << pp << "." << std::endl;
                     }
