@@ -25,15 +25,18 @@
 template<typename CT, std::size_t DIM>
 class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM> {
   private:
+    /** Parser for ini files. */
     using PTree = boost::property_tree::ptree;
     const PTree ptree;
 
+    /** Enum to call knownDfs by variable name instead of index. */
+    enum knownDf {omega = 0, T = 1};
+
   public:
 
-    /* Values from Bousselham et al. (2017). */
+    /* Based on Bousselham et al. (2017). */
 
     /************************************************************************/
-    /* Values from Table 1: Thermophysical properties. */
     /** constant rho. Density. */
     const double RHO; /* kg/m^3 */
 
@@ -55,12 +58,9 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
     /** constant omega_b. Blood perfusion rate (normal brain tissue). */
     const double OMEGA_B_BRAIN; /* 1/s */
 
-    /** constant omega_b. Blood perfusion rate (Astrocytoma brain tumor).
-      * Table 1 presents an interval. Exact value is given in text. */
+    /** constant omega_b. Blood perfusion rate (Astrocytoma brain tumor). */
     const double OMEGA_B_TUMOR; /* 1/s */
 
-    /************************************************************************/
-    /* Values given in text. */
     /** constant T_i. Initial condition for T. */
     const double T_I; /* K */
 
@@ -73,18 +73,13 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
     /** constant q_bc. Heat flux at surface. */
     const double Q_BC; /* W/(m^2) */
 
-    /************************************************************************/
-    /* Values varied in text. */
     /** constant diameter. diameter of the tumor. */
     const double DIAMETER; /* m */
 
     /** constant depth. depth of the tumor. */
     const double DEPTH; /* m */
 
-    /************************************************************************/
-    /* Values missing in text. */
-    /* constant T_a. Temperature of artery.
-     * Value from Das et al.: Numerical estimation... (2013). */
+    /* constant T_a. Temperature of artery. */
     const double T_A; /* K */
 
     /************************************************************************/
@@ -265,7 +260,7 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
         }
         /* knownDfOld(0) = perfusion rate omega. */
         vNew[0](idxNode) += this->tau() * ((RHO_B*C_PB)/(RHO*C))
-                            * this->knownDfOld(0, idxNode)
+                            * this->knownDfOld(omega, idxNode)
                             * (T_A - vOld[0](idxNode));
         vNew[0](idxNode) += this->tau() * (1.0/(RHO*C)) * Q;
     }
@@ -334,7 +329,7 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
         /* These terms are independet of the boundary condition. */
         /* knownDfOld(0) = perfusion rate omega. */
         vNew[0](idxNode) += this->tau() * ((RHO_B*C_PB)/(RHO*C))
-                            * this->knownDfOld(0, idxNode)
+                            * this->knownDfOld(omega, idxNode)
                             * (T_A - vOld[0](idxNode));
         vNew[0](idxNode) += this->tau() * (1.0/(RHO*C)) * Q;
     }

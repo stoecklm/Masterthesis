@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
     ScaFES::Parameters paramsCl(argc, argv);
     ScaFES::GridGlobal<DIM> gg(paramsCl);
     std::vector<std::string> nameDatafield(2);
-    nameDatafield[0] = "w";       /* blood perfusion rate. */
+    nameDatafield[0] = "omega";   /* blood perfusion rate. */
     nameDatafield[1] = "T";       /* Temperature.          */
     std::vector<int> stencilWidth(2);
     stencilWidth[0] = 0;

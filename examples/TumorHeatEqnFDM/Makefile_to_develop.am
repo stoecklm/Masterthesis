@@ -50,7 +50,7 @@ DEPENDENCIES_COMMON= $(top_builddir)/src/libscafes.la
 ################################################################################
 exampledir = $(exec_prefix)/examples/TumorHeatEqnFDM
 example_PROGRAMS = TumorHeatEqnFDM
-example_SCRIPTS = RUN.sh
+example_SCRIPTS = RUN_HELPER.sh
 example_SCRIPTS += Parameters.ini
 bin_PROGRAMS =
 include_HEADERS =
@@ -65,7 +65,7 @@ TumorHeatEqnFDM_CPPFLAGS = $(CPPFLAGS_COMMON)
 TumorHeatEqnFDM_LDFLAGS = $(LDFLAGS_COMMON)
 TumorHeatEqnFDM_LDADD = $(LDADD_COMMON)
 TumorHeatEqnFDM_DEPENDENCIES = $(DEPENDENCIES_COMMON)
-EXTRA_DIST = RUN.sh
+EXTRA_DIST = RUN_HELPER.sh
 EXTRA_DIST += results/scafes-scalingtests.plt \
         results/ZIH_TAURUS-scaling_strong.plt \
         results/ZIH_TAURUS-scaling_weak.dat \

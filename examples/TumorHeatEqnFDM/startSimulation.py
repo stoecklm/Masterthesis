@@ -5,16 +5,20 @@ import subprocess
 import sys
 
 def main():
-    NAME_CONFIGFILE = 'Parameters.ini'
     if len(sys.argv) > 1:
         if os.path.isfile(sys.argv[1]) == True:
             NAME_CONFIGFILE = sys.argv[1]
         else:
-            print(sys.arv[1], "does not exist.")
-            print("Use default configfile: ", NAME_CONFIGFILE)
+            print(sys.argv[1], "does not exist.")
+            print("Usage: python3", sys.argv[0], "<PATH/TO/CONFIGFILE>")
+            print("Aborting.")
+            exit()
     else:
-        print("No command line argument for configfile.")
-        print("Use default configfile: ", NAME_CONFIGFILE)
+        print("No command line argument for configfile provided.")
+        print("Usage: python3", sys.argv[0], "<PATH/TO/CONFIGFILE>")
+        print("Aborting.")
+        exit()
+
     config = configparser.ConfigParser()
     config.read(NAME_CONFIGFILE)
 
