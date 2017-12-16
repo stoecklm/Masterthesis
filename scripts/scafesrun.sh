@@ -351,10 +351,12 @@ fi
 # Only relevant if SCAFESRUN_TYPE_DOMAIN_DECOMPOSITION="RCB"; is set.
 if [ "x$SCAFESRUN_PARTITION_GRID" == "x" ] ; then
     SCAFESRUN_PARTITION_GRID="1";
-    for idxDim in `seq 2 $spaceDim`; do
-        tmpPg="${SCAFESRUN_PARTITION_GRID}x1";
-        SCAFESRUN_PARTITION_GRID=$tmpPg;
-    done
+    if (("$spaceDim" > 1)); then
+        for idxDim in `seq 2 $spaceDim`; do
+            tmpPg="${SCAFESRUN_PARTITION_GRID}x1";
+            SCAFESRUN_PARTITION_GRID=$tmpPg;
+        done
+    fi
     echo "* WARNING: Use default value SCAFESRUN_PARTITION_GRID=$SCAFESRUN_PARTITION_GRID"
 fi
 
