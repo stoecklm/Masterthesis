@@ -51,6 +51,7 @@ DEPENDENCIES_COMMON= $(top_builddir)/src/libscafes.la
 exampledir = $(exec_prefix)/examples/TumorHeatEqnFDM
 example_PROGRAMS = TumorHeatEqnFDM
 example_SCRIPTS = RUN.sh
+example_SCRIPTS += Parameters.ini
 bin_PROGRAMS =
 include_HEADERS =
 noinst_PROGRAMS =

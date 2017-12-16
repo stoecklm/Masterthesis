@@ -8,7 +8,7 @@
 #include "TumorHeatEqnFDM.hpp"
 
 /** Space dimension of problem. */
-const int DIM = 3;
+const int DIM = 2;
 
 /** Main program for TumorHeatEqnFDM. */
 int main(int argc, char *argv[]) {

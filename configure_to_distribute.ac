@@ -606,7 +606,10 @@ AC_CONFIG_FILES([examples/TumorHeatEqnFDM/RUN.sh],
        [chmod +x examples/TumorHeatEqnFDM/RUN.sh])
 AC_CONFIG_FILES([examples/TumorHeatEqnFDM/TESTMATRIX_RUN.sh],
        [chmod +x examples/TumorHeatEqnFDM/TESTMATRIX_RUN.sh])
+AC_CONFIG_FILES([examples/TumorHeatEqnFDM/RUN_HELPER.sh],
+       [chmod +x examples/TumorHeatEqnFDM/RUN_HELPER.sh])
 AC_CONFIG_FILES(examples/TumorHeatEqnFDM/Parameters.ini)
+AC_CONFIG_LINKS([examples/TumorHeatEqnFDM/startSimulation.py:examples/TumorHeatEqnFDM/startSimulation.py])
 
 AC_CONFIG_FILES(examples/ZhangExampleFDM/Makefile)
 AC_CONFIG_FILES([examples/ZhangExampleFDM/RUN.sh],
