@@ -1,3 +1,6 @@
+[Dimension]
+SPACE_DIM = 2
+
 [Parameters]
 # Values from Bousselham et al. (2017).
 RHO = 1040.0
@@ -16,9 +19,6 @@ DIAMETER = 0.01
 DEPTH = 0.01
 # Value from Das et al.: Numerical estimation... (2013).
 T_A = 37.0
-
-[Dimension]
-SPACE_DIM = 2
 
 [Geometry]
 # in [m]
