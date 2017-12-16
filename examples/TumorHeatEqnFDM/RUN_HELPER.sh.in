@@ -6,7 +6,6 @@
 # For details, see the files COPYING and LICENSE in the base directory
 # of the package.
 
-export SCAFESRUN_NAME_EXECUTABLE="$(basename $PWD)";
 export SCAFESRUN_TYPE_DOMAIN_DECOMPOSITION="UNI"
 export SCAFESRUN_OUTPUT_LEVEL=5
 export SCAFESRUN_NLAYERS_AT_BORDER=1

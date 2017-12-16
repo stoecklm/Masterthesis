@@ -49,22 +49,39 @@ DEPENDENCIES_COMMON= $(top_builddir)/src/libscafes.la
 
 ################################################################################
 exampledir = $(exec_prefix)/examples/TumorHeatEqnFDM
-example_PROGRAMS = TumorHeatEqnFDM
+example_PROGRAMS =
 example_SCRIPTS = RUN_HELPER.sh
-example_SCRIPTS += Parameters.ini
+example_SCRIPTS += Bousselham.ini
 bin_PROGRAMS =
 include_HEADERS =
 noinst_PROGRAMS =
 
 
 ################################################################################
-noinst_PROGRAMS += TumorHeatEqnFDM
-TumorHeatEqnFDM_SOURCES = main.cpp \
-                     TumorHeatEqnFDM.hpp
-TumorHeatEqnFDM_CPPFLAGS = $(CPPFLAGS_COMMON)
-TumorHeatEqnFDM_LDFLAGS = $(LDFLAGS_COMMON)
-TumorHeatEqnFDM_LDADD = $(LDADD_COMMON)
-TumorHeatEqnFDM_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+noinst_PROGRAMS += TumorHeatEqnFDM1D
+TumorHeatEqnFDM1D_SOURCES = main1D.cpp \
+                            TumorHeatEqnFDM.hpp
+TumorHeatEqnFDM1D_CPPFLAGS = $(CPPFLAGS_COMMON)
+TumorHeatEqnFDM1D_LDFLAGS = $(LDFLAGS_COMMON)
+TumorHeatEqnFDM1D_LDADD = $(LDADD_COMMON)
+TumorHeatEqnFDM1D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+#------------------------------------------------------------------------------#
+noinst_PROGRAMS += TumorHeatEqnFDM2D
+TumorHeatEqnFDM2D_SOURCES = main2D.cpp \
+                            TumorHeatEqnFDM.hpp
+TumorHeatEqnFDM2D_CPPFLAGS = $(CPPFLAGS_COMMON)
+TumorHeatEqnFDM2D_LDFLAGS = $(LDFLAGS_COMMON)
+TumorHeatEqnFDM2D_LDADD = $(LDADD_COMMON)
+TumorHeatEqnFDM2D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+#------------------------------------------------------------------------------#
+noinst_PROGRAMS += TumorHeatEqnFDM3D
+TumorHeatEqnFDM3D_SOURCES = main3D.cpp \
+                            TumorHeatEqnFDM.hpp
+TumorHeatEqnFDM3D_CPPFLAGS = $(CPPFLAGS_COMMON)
+TumorHeatEqnFDM3D_LDFLAGS = $(LDFLAGS_COMMON)
+TumorHeatEqnFDM3D_LDADD = $(LDADD_COMMON)
+TumorHeatEqnFDM3D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
+#------------------------------------------------------------------------------#
 EXTRA_DIST = RUN_HELPER.sh
 EXTRA_DIST += results/scafes-scalingtests.plt \
         results/ZIH_TAURUS-scaling_strong.plt \
@@ -72,7 +89,7 @@ EXTRA_DIST += results/scafes-scalingtests.plt \
         results/ZIH_TAURUS-scaling_strong.dat \
         results/ZIH_TAURUS-scaling_weak.plt \
         results/README
-EXTRA_DIST += Parameters.ini
+EXTRA_DIST += Bousselham.ini
 
 
 #------------------------------------------------------------------------------#

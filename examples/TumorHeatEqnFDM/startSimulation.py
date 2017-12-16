@@ -79,11 +79,11 @@ def setEnvironmentVariables():
     COORD_NODE_LAST = str(params['COORD_NODE_LAST_DIM1'])
     N_NODES = str(params['N_NODES_DIM1'])
 
-    if params['SPACE_DIM'] == 2:
+    if params['SPACE_DIM'] > 1:
         COORD_NODE_FIRST += "x" + str(params['COORD_NODE_FIRST_DIM2'])
         COORD_NODE_LAST += "x" + str(params['COORD_NODE_LAST_DIM2'])
         N_NODES += "x" + str(params['N_NODES_DIM2'])
-    if params['SPACE_DIM'] == 3:
+    if params['SPACE_DIM'] > 2:
         COORD_NODE_FIRST += "x" + str(params['COORD_NODE_FIRST_DIM3'])
         COORD_NODE_LAST += "x" + str(params['COORD_NODE_LAST_DIM3'])
         N_NODES += "x" + str(params['N_NODES_DIM3'])
@@ -91,6 +91,10 @@ def setEnvironmentVariables():
     os.putenv("SCAFESRUN_COORD_NODE_FIRST", COORD_NODE_FIRST)
     os.putenv("SCAFESRUN_COORD_NODE_LAST", COORD_NODE_LAST)
     os.putenv("SCAFESRUN_N_NODES", N_NODES)
+
+    NAME_EXECUTABLE = os.path.basename(os.getcwd()) + str(params['SPACE_DIM']) + 'D'
+
+    os.putenv('SCAFESRUN_NAME_EXECUTABLE', NAME_EXECUTABLE)
 
 def main():
     global params
