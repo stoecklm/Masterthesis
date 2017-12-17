@@ -27,7 +27,7 @@ def create_nc_file_2D():
     nNodes_0 = nc_file.createDimension("nNodes_0", dim)
     nNodes_1 = nc_file.createDimension("nNodes_1", dim)
     time = nc_file.createDimension("time")
-    init_values = nc_file.createVariable("U", "f8", ("time", "nNodes_0", "nNodes_1"))
+    init_values = nc_file.createVariable("U", "f8", ("time", "nNodes_1", "nNodes_0"))
     num_elem = dim * dim
     a = np.ones(num_elem).reshape(dim, dim)
     init_values[0,:,:] = a
@@ -46,7 +46,7 @@ def create_nc_file_3D():
     nNodes_1 = nc_file.createDimension("nNodes_1", dim)
     nNodes_2 = nc_file.createDimension("nNodes_2", dim)
     time = nc_file.createDimension("time")
-    init_values = nc_file.createVariable("U", "f8", ("time", "nNodes_0", "nNodes_1", "nNodes_2"))
+    init_values = nc_file.createVariable("U", "f8", ("time", "nNodes_2", "nNodes_1", "nNodes_0"))
     num_elem = dim * dim * dim
     a = np.ones(num_elem).reshape(dim, dim, dim)
     init_values[0,:,:,:] = a
