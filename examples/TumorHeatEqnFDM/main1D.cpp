@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
     defaultValue[0] = 0.0;
     defaultValue[1] = 0.0;
     std::vector<ScaFES::WriteHowOften> writeToFile(2);
-    writeToFile[0] = ScaFES::WriteHowOften::LIKE_GIVEN_AT_CL;
+    writeToFile[0] = ScaFES::WriteHowOften::NEVER;
     writeToFile[1] = ScaFES::WriteHowOften::LIKE_GIVEN_AT_CL;
     std::vector<bool> computeError(2);
     computeError[0] = false;

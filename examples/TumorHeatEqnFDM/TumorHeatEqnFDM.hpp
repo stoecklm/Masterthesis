@@ -145,8 +145,10 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
         {
             RADIUS = DIAMETER/2.0;
 
+            /* Calculate center of tumor. */
             for (std::size_t pp = 0; pp < DIM; ++pp) {
                 if (pp == (DIM-1)) {
+                    /* In the highest dimension parameter 'depth' will be used. */
                     if (this->params().coordNodeLast()[pp] <= DIAMETER) {
                         std::cerr << "WARNING: Diameter of tumor is bigger than grid in dimension: "
                                   << pp << "." << std::endl;
@@ -166,6 +168,7 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
                     }
                     tumorCenter[pp] = this->params().coordNodeLast()[pp] - DEPTH;
                 } else {
+                    /* In every other dimension the tumor will be located in the center. */
                     if (this->params().coordNodeLast()[pp] <= DIAMETER) {
                         std::cerr << "WARNING: Diameter of tumor is bigger than grid in dimension: "
                                   << pp << "." << std::endl;

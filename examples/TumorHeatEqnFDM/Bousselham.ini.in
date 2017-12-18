@@ -19,6 +19,8 @@ DIAMETER = 0.01
 DEPTH = 0.01
 # Value from Das et al.: Numerical estimation... (2013).
 T_A = 37.0
+# Value from ?
+T_TUMOR = 37.0
 
 [Geometry]
 # in [m].
@@ -33,15 +35,15 @@ COORD_NODE_LAST_DIM3 = 0.03
 [Time]
 # in [s].
 START_TIME = 0
-END_TIME = 1
-DELTA_TIME = 0.001
+END_TIME = 1000
+DELTA_TIME = 1.0
 
 [Input]
 # Name of file without file exentsion.
 NAME_INITFILE = init
 # Set USE_INITFILE to True even if CREATE_INITFILE is True,
 # if you want to use a init file.
-USE_INITFILE = False
+USE_INITFILE = True
 CREATE_INITFILE = True
 
 [Output]
