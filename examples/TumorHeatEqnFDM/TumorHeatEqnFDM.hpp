@@ -207,9 +207,8 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
      */
     void evalBorder(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
                     ScaFES::Ntuple<int,DIM> const& idxNode,
-                    int const& /*timestep*/) {
-        /* Assuming border is always healthy brain tissue. */
-        vNew[0](idxNode) = OMEGA_B_BRAIN;
+                    int const& timestep) {
+        this->template evalInner(vNew, idxNode, timestep);
     }
 
     /** Initializes all unknown fields at one given global inner grid node.

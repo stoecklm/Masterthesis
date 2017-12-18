@@ -75,11 +75,11 @@ def calc_variables():
 
     # Calculate number of nodes in each dimension.
     N_NODES_DIM1 = (params['COORD_NODE_LAST_DIM1'] - params['COORD_NODE_FIRST_DIM1'])/params['GRIDSIZE_GLOBAL']
-    params['N_NODES_DIM1'] = int(math.ceil(N_NODES_DIM1))
+    params['N_NODES_DIM1'] = int(math.ceil(N_NODES_DIM1)) + 1
     N_NODES_DIM2 = (params['COORD_NODE_LAST_DIM2'] - params['COORD_NODE_FIRST_DIM2'])/params['GRIDSIZE_GLOBAL']
-    params['N_NODES_DIM2'] = int(math.ceil(N_NODES_DIM2))
+    params['N_NODES_DIM2'] = int(math.ceil(N_NODES_DIM2)) + 1
     N_NODES_DIM3 = (params['COORD_NODE_LAST_DIM3'] - params['COORD_NODE_FIRST_DIM3'])/params['GRIDSIZE_GLOBAL']
-    params['N_NODES_DIM3'] = int(math.ceil(N_NODES_DIM3))
+    params['N_NODES_DIM3'] = int(math.ceil(N_NODES_DIM3)) + 1
     # Calculate number of timesteps.
     N_TIMESTEPS = (params['END_TIME'] - params['START_TIME'])/params['DELTA_TIME']
     params['N_TIMESTEPS'] = int(math.ceil(N_TIMESTEPS))
