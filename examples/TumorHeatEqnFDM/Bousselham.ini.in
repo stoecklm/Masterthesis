@@ -21,7 +21,7 @@ DEPTH = 0.01
 T_A = 37.0
 
 [Geometry]
-# in [m]
+# in [m].
 GRIDSIZE_GLOBAL = 0.001
 COORD_NODE_FIRST_DIM1 = 0
 COORD_NODE_FIRST_DIM2 = 0
@@ -31,10 +31,18 @@ COORD_NODE_LAST_DIM2 = 0.03
 COORD_NODE_LAST_DIM3 = 0.03
 
 [Time]
-# in [s]
+# in [s].
 START_TIME = 0
 END_TIME = 1
 DELTA_TIME = 0.001
+
+[Input]
+# Name of file without file exentsion.
+NAME_INITFILE = init
+# Set USE_INITFILE to True even if CREATE_INITFILE is True,
+# if you want to use a init file.
+USE_INITFILE = False
+CREATE_INITFILE = True
 
 [Output]
 N_SNAPSHOTS = 1
