@@ -66,6 +66,9 @@ def parse_config_file():
     params['CREATE_INITFILE'] = config['Input'].getboolean('CREATE_INITFILE', fallback=False)
     # Get values from section 'Parameters'.
     params['T_INIT'] = config['Parameters'].getfloat('T_I', fallback=0.0)
+    params['T_TUMOR'] = config['Parameters'].getfloat('T_TUMOR', fallback=0.0)
+    params['DIAMETER'] = config['Parameters'].getfloat('DIAMETER', fallback=0.0)
+    params['DEPTH'] = config['Parameters'].getfloat('DEPTH', fallback=0.0)
 
     print('Done.')
 
@@ -95,19 +98,45 @@ def create_init_file():
     global params
     global NAME_INITFILE
     global T_INIT
+    global T
     SPACE_DIM = params['SPACE_DIM']
     NAME_INITFILE = params['NAME_INITFILE']
     T_INIT = params['T_INIT']
     print('Creating {0}.nc.'.format(NAME_INITFILE))
 
     if SPACE_DIM == 1:
+        create_temperature_array_1D()
         create_init_file_1D()
     elif SPACE_DIM == 2:
+        create_temperature_array_2D()
         create_init_file_2D()
     else:
+        create_temperature_array_3D()
         create_init_file_3D()
 
     print('Done.')
+
+def create_temperature_array_1D():
+    global T
+    RADIUS = params['DIAMETER']/2
+    T_TUMOR = params['T_TUMOR']
+    # Get file/grid dimensions.
+    dim0 = params['N_NODES_DIM1']
+    # Resize temperature array.
+    num_elem = dim0
+    T = T_INIT * np.ones(num_elem).reshape(dim0)
+    # Calculate location of tumor center.
+    TUMOR_CENTER = params['COORD_NODE_LAST_DIM1'] - params['DEPTH']
+    # Iterate through temperature array.
+    for elem in range(0, T.shape[0]):
+        # Calculate location of current node.
+        x = elem * params['GRIDSIZE_GLOBAL']
+        # Calculate distance (squared) to tumor center.
+        distance = (x - TUMOR_CENTER) * (x - TUMOR_CENTER)
+        # Check if current point is inside Tumor.
+        # If yes, set temperature for this point to tumor temperature.
+        if distance <= RADIUS*RADIUS:
+            T[elem] = T_TUMOR
 
 def create_init_file_1D():
     # Get file/grid dimensions.
@@ -117,12 +146,36 @@ def create_init_file_1D():
     nNodes_0 = nc_file.createDimension('nNodes_0', dim0)
     time = nc_file.createDimension('time')
     init_values = nc_file.createVariable('T', 'f8', ('time', 'nNodes_0'))
-    # Create NumPy array.
-    num_elem = dim0
-    a = T_INIT * np.ones(num_elem).reshape(dim0)
     # Write NumPy Array to file.
-    init_values[0,:] = a
+    init_values[0,:] = T
     nc_file.close()
+
+def create_temperature_array_2D():
+    global T
+    RADIUS = params['DIAMETER']/2
+    T_TUMOR = params['T_TUMOR']
+    # Get file/grid dimensions.
+    dim0 = params['N_NODES_DIM1']
+    dim1 = params['N_NODES_DIM2']
+    # Resize temperature array.
+    num_elem = dim0 * dim1
+    T = T_INIT * np.ones(num_elem).reshape(dim1, dim0)
+    # Calculate location of tumor center.
+    TUMOR_CENTER_DIM1 = params['COORD_NODE_LAST_DIM1']/2.0
+    TUMOR_CENTER_DIM2 = params['COORD_NODE_LAST_DIM2'] - params['DEPTH']
+    # Iterate through temperature array.
+    for elem_y in range(0, T.shape[1]):
+        for elem_x in range(0, T.shape[0]):
+            # Calculate location of current node.
+            x = elem_x * params['GRIDSIZE_GLOBAL']
+            y = elem_y * params['GRIDSIZE_GLOBAL']
+            # Calculate distance (squared) to tumor center.
+            distance = ((x - TUMOR_CENTER_DIM1) * (x - TUMOR_CENTER_DIM1)) \
+                        + ((y - TUMOR_CENTER_DIM2) * (y - TUMOR_CENTER_DIM2))
+            # Check if current point is inside Tumor.
+            # If yes, set temperature for this point to tumor temperature.
+            if distance <= RADIUS*RADIUS:
+                T[elem_y, elem_x] = T_TUMOR
 
 def create_init_file_2D():
     # Get file/grid dimensions.
@@ -134,12 +187,41 @@ def create_init_file_2D():
     nNodes_1 = nc_file.createDimension('nNodes_1', dim1)
     time = nc_file.createDimension('time')
     init_values = nc_file.createVariable('T', 'f8', ('time', 'nNodes_1', 'nNodes_0'))
-    # Create NumPy array.
-    num_elem = dim0 * dim1
-    a = T_INIT * np.ones(num_elem).reshape(dim1, dim0)
     # Write NumPy Array to file.
-    init_values[0,:,:] = a
+    init_values[0,:,:] = T
     nc_file.close()
+
+def create_temperature_array_3D():
+    global T
+    RADIUS = params['DIAMETER']/2
+    T_TUMOR = params['T_TUMOR']
+    # Get file/grid dimensions.
+    dim0 = params['N_NODES_DIM1']
+    dim1 = params['N_NODES_DIM2']
+    dim2 = params['N_NODES_DIM3']
+    # Resize temperature array.
+    num_elem = dim0 * dim1 * dim2
+    T = T_INIT * np.ones(num_elem).reshape(dim2, dim1, dim0)
+    # Calculate location of tumor center.
+    TUMOR_CENTER_DIM1 = params['COORD_NODE_LAST_DIM1']/2.0
+    TUMOR_CENTER_DIM2 = params['COORD_NODE_LAST_DIM2']/2.0
+    TUMOR_CENTER_DIM3 = params['COORD_NODE_LAST_DIM3'] - params['DEPTH']
+    # Iterate through temperature array.
+    for elem_z in range(0, T.shape[2]):
+        for elem_y in range(0, T.shape[1]):
+            for elem_x in range(0, T.shape[0]):
+                # Calculate location of current node.
+                x = elem_x * params['GRIDSIZE_GLOBAL']
+                y = elem_y * params['GRIDSIZE_GLOBAL']
+                z = elem_z * params['GRIDSIZE_GLOBAL']
+                # Calculate distance (squared) to tumor center.
+                distance = ((x - TUMOR_CENTER_DIM1) * (x - TUMOR_CENTER_DIM1)) \
+                            + ((y - TUMOR_CENTER_DIM2) * (y - TUMOR_CENTER_DIM2)) \
+                            + ((z - TUMOR_CENTER_DIM3) * (z - TUMOR_CENTER_DIM3))
+                # Check if current point is inside Tumor.
+                # If yes, set temperature for this point to tumor temperature.
+                if distance <= RADIUS*RADIUS:
+                    T[elem_z, elem_y, elem_x] = T_TUMOR
 
 def create_init_file_3D():
     # Get file/grid dimensions.
@@ -153,11 +235,8 @@ def create_init_file_3D():
     nNodes_2 = nc_file.createDimension('nNodes_2', dim2)
     time = nc_file.createDimension('time')
     init_values = nc_file.createVariable('T', 'f8', ('time', 'nNodes_2', 'nNodes_1', 'nNodes_0'))
-    # Create NumPy array.
-    num_elem = dim0 * dim1 * dim2
-    a = T_INIT * np.ones(num_elem).reshape(dim2, dim1, dim0)
     # Write NumPy Array to file.
-    init_values[0,:,:,:] = a
+    init_values[0,:,:,:] = T
     nc_file.close()
 
 def set_environment_variables():
