@@ -7,26 +7,7 @@ import subprocess
 import sys
 
 params = {
-    'NAME_CONFIGFILE' : '',
-    'SPACE_DIM' : 0,
-    'GRIDSIZE_GLOBAL' : 0.0,
-    'COORD_NODE_FIRST_DIM1' : 0.0,
-    'COORD_NODE_FIRST_DIM2' : 0.0,
-    'COORD_NODE_FIRST_DIM3' : 0.0,
-    'COORD_NODE_LAST_DIM1' : 0.0,
-    'COORD_NODE_LAST_DIM2' : 0.0,
-    'COORD_NODE_LAST_DIM3' : 0.0,
-    'START_TIME' : 0,
-    'END_TIME' : 0,
-    'DELTA_TIME' : 0.0,
-    'N_SNAPSHOTS': 0,
-    'N_TIMESTEPS' : 0,
-    'N_NODES_DIM1' : 0,
-    'N_NODES_DIM2' : 0,
-    'N_NODES_DIM3' : 0,
-    'NAME_INITFILE' : '',
-    'USE_INITFILE' : False,
-    'CREATE_INITFILE' : False,
+    'NAME_CONFIGFILE' : ''
 }
 
 def parse_config_file():
@@ -37,33 +18,34 @@ def parse_config_file():
     config = configparser.ConfigParser()
     config.read(params['NAME_CONFIGFILE'])
     # Get values from section 'Dimension'.
-    params['SPACE_DIM'] = config['Dimension'].getint('SPACE_DIM')
-    # Check if dimension makes sense and
-    # some functions and variables only work for dimension 1, 2 or 3.
-    SPACE_DIM = params['SPACE_DIM']
-    if SPACE_DIM < 1 or SPACE_DIM > 3:
-        print('SPACE_DIM is {0}.'.format(SPACE_DIM))
-        print('SPACE_DIM must be 1, 2 or 3.')
-        print('Aborting.')
-        exit()
+    params['SPACE_DIM'] = config['Dimension'].getint('SPACE_DIM', fallback=1)
     # Get values from section 'Geometry'.
-    params['GRIDSIZE_GLOBAL'] = config['Geometry'].getfloat('GRIDSIZE_GLOBAL')
-    params['COORD_NODE_FIRST_DIM1'] = config['Geometry'].getfloat('COORD_NODE_FIRST_DIM1')
-    params['COORD_NODE_FIRST_DIM2'] = config['Geometry'].getfloat('COORD_NODE_FIRST_DIM2')
-    params['COORD_NODE_FIRST_DIM3'] = config['Geometry'].getfloat('COORD_NODE_FIRST_DIM3')
-    params['COORD_NODE_LAST_DIM1'] = config['Geometry'].getfloat('COORD_NODE_LAST_DIM1')
-    params['COORD_NODE_LAST_DIM2'] = config['Geometry'].getfloat('COORD_NODE_LAST_DIM2')
-    params['COORD_NODE_LAST_DIM3'] = config['Geometry'].getfloat('COORD_NODE_LAST_DIM3')
+    # Coordinates of first node.
+    COORD_NODE_FIRST = config['Geometry'].get('COORD_NODE_FIRST')
+    params['COORD_NODE_FIRST_ENV'] = COORD_NODE_FIRST
+    COORD_NODE_FIRST = list(map(float, COORD_NODE_FIRST.split('x')))
+    params['COORD_NODE_FIRST'] = COORD_NODE_FIRST
+    # Coordinates of last node.
+    COORD_NODE_LAST = config['Geometry'].get('COORD_NODE_LAST')
+    params['COORD_NODE_LAST_ENV'] = COORD_NODE_LAST
+    COORD_NODE_LAST = list(map(float, COORD_NODE_LAST.split('x')))
+    params['COORD_NODE_LAST'] = COORD_NODE_LAST
+    # Number of nodes.
+    N_NODES = config['Geometry'].get('N_NODES')
+    params['N_NODES_ENV'] = N_NODES
+    N_NODES = list(map(int, N_NODES.split('x')))
+    params['N_NODES'] = N_NODES
     # Get values from section 'Time'.
-    params['START_TIME'] = config['Time'].getint('START_TIME')
-    params['END_TIME']= config['Time'].getint('END_TIME')
-    params['DELTA_TIME'] = config['Time'].getfloat('DELTA_TIME')
+    params['START_TIME'] = config['Time'].getint('START_TIME', fallback=0)
+    params['END_TIME']= config['Time'].getint('END_TIME', fallback=1)
+    params['N_TIMESTEPS'] = config['Time'].getint('N_TIMESTEPS', fallback=1)
     # Get values from section 'Output'.
     params['N_SNAPSHOTS'] = config['Output'].getint('N_SNAPSHOTS')
     # Get values from section 'Input'.
     params['NAME_INITFILE'] = config['Input'].get('NAME_INITFILE', fallback='init')
     params['USE_INITFILE'] = config['Input'].getboolean('USE_INITFILE', fallback=False)
     params['CREATE_INITFILE'] = config['Input'].getboolean('CREATE_INITFILE', fallback=False)
+    params['NAME_VARIABLE'] = config['Input'].get('NAME_VARIABLE', fallback='U')
     # Get values from section 'Parameters'.
     params['T_INIT'] = config['Parameters'].getfloat('T_I', fallback=0.0)
     params['T_TUMOR'] = config['Parameters'].getfloat('T_TUMOR', fallback=0.0)
@@ -76,21 +58,80 @@ def calc_variables():
     global params
     print('Calculating variables.')
 
-    # Calculate number of nodes in each dimension.
-    N_NODES_DIM1 = (params['COORD_NODE_LAST_DIM1'] - params['COORD_NODE_FIRST_DIM1'])/params['GRIDSIZE_GLOBAL']
-    params['N_NODES_DIM1'] = int(math.ceil(N_NODES_DIM1)) + 1
-    N_NODES_DIM2 = (params['COORD_NODE_LAST_DIM2'] - params['COORD_NODE_FIRST_DIM2'])/params['GRIDSIZE_GLOBAL']
-    params['N_NODES_DIM2'] = int(math.ceil(N_NODES_DIM2)) + 1
-    N_NODES_DIM3 = (params['COORD_NODE_LAST_DIM3'] - params['COORD_NODE_FIRST_DIM3'])/params['GRIDSIZE_GLOBAL']
-    params['N_NODES_DIM3'] = int(math.ceil(N_NODES_DIM3)) + 1
-    # Calculate number of timesteps.
-    N_TIMESTEPS = (params['END_TIME'] - params['START_TIME'])/params['DELTA_TIME']
-    params['N_TIMESTEPS'] = int(math.ceil(N_TIMESTEPS))
+    # Calculate gridsize in each dimension.
+    GRIDSIZE = []
+    for dim in range(0, params['SPACE_DIM']):
+        GRIDSIZE.append((params['COORD_NODE_LAST'][dim] - params['COORD_NODE_FIRST'][dim])/(params['N_NODES'][dim]-1))
+    params['GRIDSIZE'] = GRIDSIZE
+    # Calculate delta time.
+    DELTA_TIME = (params['END_TIME'] - params['START_TIME'])/params['N_TIMESTEPS']
+    params['DELTA_TIME'] = DELTA_TIME
+
+    print('Done.')
+
+def check_variables():
+    global params
+    print('Checking variables.')
+
+    # Check if dimension makes sense and
+    # some functions and variables only work for dimension 1, 2 or 3.
+    SPACE_DIM = params['SPACE_DIM']
+    if SPACE_DIM < 1 or SPACE_DIM > 3:
+        print('SPACE_DIM is {0}.'.format(SPACE_DIM))
+        print('SPACE_DIM must be 1, 2 or 3.')
+        print('Aborting.')
+        exit()
+    # Check if there are enough coordinates for first node.
+    DIM_COORD_NODE_FIRST = len(params['COORD_NODE_FIRST'])
+    if DIM_COORD_NODE_FIRST != SPACE_DIM:
+        print('Dimension of COORD_NODE_FIRST has to be {0}.'.format(SPACE_DIM))
+        print('Dimension of COORD_NODE_FIRST is {0}.'.format(DIM_COORD_NODE_FIRST))
+        print('Aborting.')
+        exit()
+    # Check if there are enough coordinates for last node.
+    DIM_COORD_NODE_LAST = len(params['COORD_NODE_LAST'])
+    if DIM_COORD_NODE_LAST != SPACE_DIM:
+        print('Dimension of COORD_NODE_LAST has to be {0}.'.format(SPACE_DIM))
+        print('Dimension of COORD_NODE_LAST is {0}.'.format(DIM_COORD_NODE_LAST))
+        print('Aborting.')
+        exit()
+    # Check if there are enough number of nodes.
+    DIM_N_NODES = len(params['N_NODES'])
+    if DIM_N_NODES != SPACE_DIM:
+        print('Dimension of N_NODES has to be {0}.'.format(SPACE_DIM))
+        print('Dimension of N_NODES is {0}.'.format(DIM_N_NODES))
+        print('Aborting.')
+        exit()
+    # Check if END_TIME is after START_TIME.
+    START_TIME = params['START_TIME']
+    END_TIME = params['END_TIME']
+    if END_TIME < START_TIME:
+        print('END_TIME is smaller than START_TIME.')
+        print('END_TIME must be greater than START_TIME.')
+        print('Aborting.')
+        exit()
     # Check if number of snapshots is possible.
     if params['N_SNAPSHOTS'] > params['N_TIMESTEPS']:
         print('WARNING: N_SNAPSHOTS was bigger than N_TIMESTEPS.')
         params['N_SNAPSHOTS'] = params['N_TIMESTEPS']
-        print('N_SNAPSHOTS was set to N_TIMESTEPS')
+        print('N_SNAPSHOTS was set to N_TIMESTEPS.')
+    # Check if combinations of USE_INITFILE and CREATE_INITFILE makes sense.
+    if params['USE_INITFILE'] == True and params['CREATE_INITFILE'] == False:
+        if os.path.isfile(params['NAME_INITFILE'] + '.nc') == False:
+            print('USE_INITFILE = True and CREATE_INITFILE = False, but', params['NAME_INITFILE'] + '.nc', 'does not exist.')
+            print('Aborting.')
+            exit()
+    if params['USE_INITFILE'] == False and params['CREATE_INITFILE'] == True:
+        print('WARNING: CREATE_INITFILE = True, but USE_INITFILE = False.')
+    else:
+        pass
+    # Check if executable exists.
+    NAME_EXECUTABLE = os.path.basename(os.getcwd()) + str(params['SPACE_DIM']) + 'D'
+    if os.path.isfile(NAME_EXECUTABLE) == False:
+        print(NAME_EXECUTABLE, 'does not exist.')
+        print('Aborting.')
+        exit()
+    params['NAME_EXECUTABLE'] = NAME_EXECUTABLE
 
     print('Done.')
 
@@ -99,9 +140,11 @@ def create_init_file():
     global NAME_INITFILE
     global T_INIT
     global T
+    global NAME_VARIABLE
     SPACE_DIM = params['SPACE_DIM']
     NAME_INITFILE = params['NAME_INITFILE']
     T_INIT = params['T_INIT']
+    NAME_VARIABLE = params['NAME_VARIABLE']
     print('Creating {0}.nc.'.format(NAME_INITFILE))
 
     if SPACE_DIM == 1:
@@ -120,19 +163,20 @@ def create_temperature_array_1D():
     global T
     RADIUS = params['DIAMETER']/2
     T_TUMOR = params['T_TUMOR']
+    TUMOR_CENTER = []
     # Get file/grid dimensions.
-    dim0 = params['N_NODES_DIM1']
+    dim0 = params['N_NODES'][0]
     # Resize temperature array.
     num_elem = dim0
     T = T_INIT * np.ones(num_elem).reshape(dim0)
     # Calculate location of tumor center.
-    TUMOR_CENTER = params['COORD_NODE_LAST_DIM1'] - params['DEPTH']
+    TUMOR_CENTER.append(params['COORD_NODE_LAST'][0] - params['DEPTH'])
     # Iterate through temperature array.
     for elem in range(0, T.shape[0]):
         # Calculate location of current node.
-        x = elem * params['GRIDSIZE_GLOBAL']
+        x = elem * params['GRIDSIZE'][0]
         # Calculate distance (squared) to tumor center.
-        distance = (x - TUMOR_CENTER) * (x - TUMOR_CENTER)
+        distance = (x - TUMOR_CENTER[0]) * (x - TUMOR_CENTER[0])
         # Check if current point is inside Tumor.
         # If yes, set temperature for this point to tumor temperature.
         if distance <= RADIUS*RADIUS:
@@ -140,12 +184,12 @@ def create_temperature_array_1D():
 
 def create_init_file_1D():
     # Get file/grid dimensions.
-    dim0 = params['N_NODES_DIM1']
+    dim0 = params['N_NODES'][0]
     # Create netCDF file.
     nc_file = nc.Dataset(NAME_INITFILE + '.nc', 'w', format='NETCDF3_CLASSIC')
     nNodes_0 = nc_file.createDimension('nNodes_0', dim0)
     time = nc_file.createDimension('time')
-    init_values = nc_file.createVariable('T', 'f8', ('time', 'nNodes_0'))
+    init_values = nc_file.createVariable(NAME_VARIABLE, 'f8', ('time', 'nNodes_0'))
     # Write NumPy Array to file.
     init_values[0,:] = T
     nc_file.close()
@@ -154,24 +198,25 @@ def create_temperature_array_2D():
     global T
     RADIUS = params['DIAMETER']/2
     T_TUMOR = params['T_TUMOR']
+    TUMOR_CENTER = []
     # Get file/grid dimensions.
-    dim0 = params['N_NODES_DIM1']
-    dim1 = params['N_NODES_DIM2']
+    dim0 = params['N_NODES'][0]
+    dim1 = params['N_NODES'][1]
     # Resize temperature array.
     num_elem = dim0 * dim1
     T = T_INIT * np.ones(num_elem).reshape(dim1, dim0)
     # Calculate location of tumor center.
-    TUMOR_CENTER_DIM1 = params['COORD_NODE_LAST_DIM1']/2.0
-    TUMOR_CENTER_DIM2 = params['COORD_NODE_LAST_DIM2'] - params['DEPTH']
+    TUMOR_CENTER.append(params['COORD_NODE_LAST'][0]/2.0)
+    TUMOR_CENTER.append(params['COORD_NODE_LAST'][1] - params['DEPTH'])
     # Iterate through temperature array.
     for elem_y in range(0, T.shape[1]):
         for elem_x in range(0, T.shape[0]):
             # Calculate location of current node.
-            x = elem_x * params['GRIDSIZE_GLOBAL']
-            y = elem_y * params['GRIDSIZE_GLOBAL']
+            x = elem_x * params['GRIDSIZE'][0]
+            y = elem_y * params['GRIDSIZE'][1]
             # Calculate distance (squared) to tumor center.
-            distance = ((x - TUMOR_CENTER_DIM1) * (x - TUMOR_CENTER_DIM1)) \
-                        + ((y - TUMOR_CENTER_DIM2) * (y - TUMOR_CENTER_DIM2))
+            distance = (x - TUMOR_CENTER[0]) * (x - TUMOR_CENTER[0])
+            distance += (y - TUMOR_CENTER[1]) * (y - TUMOR_CENTER[1])
             # Check if current point is inside Tumor.
             # If yes, set temperature for this point to tumor temperature.
             if distance <= RADIUS*RADIUS:
@@ -179,14 +224,14 @@ def create_temperature_array_2D():
 
 def create_init_file_2D():
     # Get file/grid dimensions.
-    dim0 = params['N_NODES_DIM1']
-    dim1 = params['N_NODES_DIM2']
+    dim0 = params['N_NODES'][0]
+    dim1 = params['N_NODES'][1]
     # Create netCDF file.
     nc_file = nc.Dataset(NAME_INITFILE + '.nc', 'w', format='NETCDF3_CLASSIC')
     nNodes_0 = nc_file.createDimension('nNodes_0', dim0)
     nNodes_1 = nc_file.createDimension('nNodes_1', dim1)
     time = nc_file.createDimension('time')
-    init_values = nc_file.createVariable('T', 'f8', ('time', 'nNodes_1', 'nNodes_0'))
+    init_values = nc_file.createVariable(NAME_VARIABLE, 'f8', ('time', 'nNodes_1', 'nNodes_0'))
     # Write NumPy Array to file.
     init_values[0,:,:] = T
     nc_file.close()
@@ -195,29 +240,30 @@ def create_temperature_array_3D():
     global T
     RADIUS = params['DIAMETER']/2
     T_TUMOR = params['T_TUMOR']
+    TUMOR_CENTER = []
     # Get file/grid dimensions.
-    dim0 = params['N_NODES_DIM1']
-    dim1 = params['N_NODES_DIM2']
-    dim2 = params['N_NODES_DIM3']
+    dim0 = params['N_NODES'][0]
+    dim1 = params['N_NODES'][1]
+    dim2 = params['N_NODES'][2]
     # Resize temperature array.
     num_elem = dim0 * dim1 * dim2
     T = T_INIT * np.ones(num_elem).reshape(dim2, dim1, dim0)
     # Calculate location of tumor center.
-    TUMOR_CENTER_DIM1 = params['COORD_NODE_LAST_DIM1']/2.0
-    TUMOR_CENTER_DIM2 = params['COORD_NODE_LAST_DIM2']/2.0
-    TUMOR_CENTER_DIM3 = params['COORD_NODE_LAST_DIM3'] - params['DEPTH']
+    TUMOR_CENTER.append(params['COORD_NODE_LAST'][0]/2.0)
+    TUMOR_CENTER.append(params['COORD_NODE_LAST'][1]/2.0)
+    TUMOR_CENTER.append(params['COORD_NODE_LAST'][2] - params['DEPTH'])
     # Iterate through temperature array.
     for elem_z in range(0, T.shape[2]):
         for elem_y in range(0, T.shape[1]):
             for elem_x in range(0, T.shape[0]):
                 # Calculate location of current node.
-                x = elem_x * params['GRIDSIZE_GLOBAL']
-                y = elem_y * params['GRIDSIZE_GLOBAL']
-                z = elem_z * params['GRIDSIZE_GLOBAL']
+                x = elem_x * params['GRIDSIZE'][0]
+                y = elem_y * params['GRIDSIZE'][1]
+                z = elem_z * params['GRIDSIZE'][2]
                 # Calculate distance (squared) to tumor center.
-                distance = ((x - TUMOR_CENTER_DIM1) * (x - TUMOR_CENTER_DIM1)) \
-                            + ((y - TUMOR_CENTER_DIM2) * (y - TUMOR_CENTER_DIM2)) \
-                            + ((z - TUMOR_CENTER_DIM3) * (z - TUMOR_CENTER_DIM3))
+                distance = (x - TUMOR_CENTER[0]) * (x - TUMOR_CENTER[0])
+                distance += (y - TUMOR_CENTER[1]) * (y - TUMOR_CENTER[1])
+                distance += (z - TUMOR_CENTER[2]) * (z - TUMOR_CENTER[2])
                 # Check if current point is inside Tumor.
                 # If yes, set temperature for this point to tumor temperature.
                 if distance <= RADIUS*RADIUS:
@@ -225,16 +271,16 @@ def create_temperature_array_3D():
 
 def create_init_file_3D():
     # Get file/grid dimensions.
-    dim0 = params['N_NODES_DIM1']
-    dim1 = params['N_NODES_DIM2']
-    dim2 = params['N_NODES_DIM3']
+    dim0 = params['N_NODES'][0]
+    dim1 = params['N_NODES'][1]
+    dim2 = params['N_NODES'][2]
     # Create netCDF file.
     nc_file = nc.Dataset(NAME_INITFILE + '.nc', 'w', format='NETCDF3_CLASSIC')
     nNodes_0 = nc_file.createDimension('nNodes_0', dim0)
     nNodes_1 = nc_file.createDimension('nNodes_1', dim1)
     nNodes_2 = nc_file.createDimension('nNodes_2', dim2)
     time = nc_file.createDimension('time')
-    init_values = nc_file.createVariable('T', 'f8', ('time', 'nNodes_2', 'nNodes_1', 'nNodes_0'))
+    init_values = nc_file.createVariable(NAME_VARIABLE, 'f8', ('time', 'nNodes_2', 'nNodes_1', 'nNodes_0'))
     # Write NumPy Array to file.
     init_values[0,:,:,:] = T
     nc_file.close()
@@ -243,39 +289,17 @@ def set_environment_variables():
     global params
     print('Setting environment variables.')
 
-    # Set all environment that can be set directly.
+    # Set all environment from dict.
     os.putenv('SCAFESRUN_N_TIMESTEPS', str(params['N_TIMESTEPS']))
     os.putenv('SCAFESRUN_N_SNAPSHOTS', str(params['N_SNAPSHOTS']))
     os.putenv('SCAFESRUN_START_TIME', str(params['START_TIME']))
     os.putenv('SCAFESRUN_END_TIME', str(params['END_TIME']))
     os.putenv('SCAFESRUN_NAME_CONFIGFILE', params['NAME_CONFIGFILE'])
     os.putenv('SCAFESRUN_SPACE_DIM', str(params['SPACE_DIM']))
-    # Build environment variables for coordinates.
-    COORD_NODE_FIRST = str(params['COORD_NODE_FIRST_DIM1'])
-    COORD_NODE_LAST = str(params['COORD_NODE_LAST_DIM1'])
-    N_NODES = str(params['N_NODES_DIM1'])
-    if params['SPACE_DIM'] > 1:
-        COORD_NODE_FIRST += 'x' + str(params['COORD_NODE_FIRST_DIM2'])
-        COORD_NODE_LAST += 'x' + str(params['COORD_NODE_LAST_DIM2'])
-        N_NODES += 'x' + str(params['N_NODES_DIM2'])
-    if params['SPACE_DIM'] > 2:
-        COORD_NODE_FIRST += 'x' + str(params['COORD_NODE_FIRST_DIM3'])
-        COORD_NODE_LAST += 'x' + str(params['COORD_NODE_LAST_DIM3'])
-        N_NODES += 'x' + str(params['N_NODES_DIM3'])
-    # Set environment variables for coordinates.
-    os.putenv('SCAFESRUN_COORD_NODE_FIRST', COORD_NODE_FIRST)
-    os.putenv('SCAFESRUN_COORD_NODE_LAST', COORD_NODE_LAST)
-    os.putenv('SCAFESRUN_N_NODES', N_NODES)
-    # Set name of folder as executable with dimension as suffix.
-    NAME_EXECUTABLE = os.path.basename(os.getcwd()) + str(params['SPACE_DIM']) + 'D'
-    # Check if executable exists and set environment variable if it does.
-    # Otherwise abort script.
-    if os.path.isfile(NAME_EXECUTABLE) == True:
-        os.putenv('SCAFESRUN_NAME_EXECUTABLE', NAME_EXECUTABLE)
-    else:
-        print(NAME_EXECUTABLE, 'does not exist.')
-        print('Aborting.')
-        exit()
+    os.putenv('SCAFESRUN_COORD_NODE_FIRST', str(params['COORD_NODE_FIRST_ENV']))
+    os.putenv('SCAFESRUN_COORD_NODE_LAST', str(params['COORD_NODE_LAST_ENV']))
+    os.putenv('SCAFESRUN_N_NODES', str(params['N_NODES_ENV']))
+    os.putenv('SCAFESRUN_NAME_EXECUTABLE', str(params['NAME_EXECUTABLE']))
     # Check if init file should be used and if it exists.
     if params['USE_INITFILE'] == True:
         if os.path.isfile(params['NAME_INITFILE'] + '.nc') == True:
@@ -284,10 +308,6 @@ def set_environment_variables():
             print('USE_INITFILE = True, but', params['NAME_INITFILE'] + '.nc', 'does not exist.')
             print('Aborting.')
             exit()
-    elif params['CREATE_INITFILE'] == True:
-        print('WARNING: CREATE_INITFILE = True, but USE_INITFILE = False.')
-    else:
-        pass
 
     print('Done.')
 
@@ -295,8 +315,7 @@ def start_simulation():
     global params
 
     # Set name of folder as executable with dimension as suffix
-    NAME_EXECUTABLE = os.path.basename(os.getcwd()) + str(params['SPACE_DIM']) + 'D'
-    print('Starting {0}.'.format(NAME_EXECUTABLE))
+    print('Starting {0}.'.format(params['NAME_EXECUTABLE']))
     print()
     # Call bash script to set more environment variables and
     # to start simulation.
@@ -328,6 +347,7 @@ def main():
         exit()
 
     parse_config_file()
+    check_variables()
     calc_variables()
     if params['CREATE_INITFILE'] == True:
         create_init_file()

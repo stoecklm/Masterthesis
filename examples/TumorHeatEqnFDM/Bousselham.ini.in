@@ -1,5 +1,5 @@
 [Dimension]
-SPACE_DIM = 2
+SPACE_DIM = 3
 
 [Parameters]
 # Values from Bousselham et al. (2017).
@@ -16,27 +16,25 @@ H = 10.0
 T_INF = 22.4
 Q_BC = 0.0
 DIAMETER = 0.01
-DEPTH = 0.01
+DEPTH = 0.008
 # Value from Das et al.: Numerical estimation... (2013).
 T_A = 37.0
-# Value from ?
+# Temperature of tumor is assumend to be the same as the healthy brain temperature.
 T_TUMOR = 37.0
 
 [Geometry]
-# in [m].
-GRIDSIZE_GLOBAL = 0.001
-COORD_NODE_FIRST_DIM1 = 0
-COORD_NODE_FIRST_DIM2 = 0
-COORD_NODE_FIRST_DIM3 = 0
-COORD_NODE_LAST_DIM1 = 0.06
-COORD_NODE_LAST_DIM2 = 0.03
-COORD_NODE_LAST_DIM3 = 0.03
+# [m].
+COORD_NODE_FIRST = 0x0x0
+COORD_NODE_LAST = 0.06x0.03x0.03
+# [-].
+N_NODES = 60x30x30
 
 [Time]
-# in [s].
+# [s].
 START_TIME = 0
-END_TIME = 1000
-DELTA_TIME = 1.0
+END_TIME = 2000
+# [-].
+N_TIMESTEPS = 10000
 
 [Input]
 # Name of file without file exentsion.
@@ -45,6 +43,9 @@ NAME_INITFILE = init
 # if you want to use a init file.
 USE_INITFILE = True
 CREATE_INITFILE = True
+# Name of variable in init file.
+# Must be name specified in main.cpp.
+NAME_VARIABLE = T
 
 [Output]
-N_SNAPSHOTS = 1
+N_SNAPSHOTS = 10000
