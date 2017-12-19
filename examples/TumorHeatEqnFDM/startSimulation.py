@@ -47,10 +47,18 @@ def parse_config_file():
     params['CREATE_INITFILE'] = config['Input'].getboolean('CREATE_INITFILE', fallback=False)
     params['NAME_VARIABLE'] = config['Input'].get('NAME_VARIABLE', fallback='U')
     # Get values from section 'Parameters'.
-    params['T_INIT'] = config['Parameters'].getfloat('T_I', fallback=0.0)
-    params['T_TUMOR'] = config['Parameters'].getfloat('T_TUMOR', fallback=0.0)
-    params['DIAMETER'] = config['Parameters'].getfloat('DIAMETER', fallback=0.0)
-    params['DEPTH'] = config['Parameters'].getfloat('DEPTH', fallback=0.0)
+    params['T_INIT'] = config['Parameters'].getfloat('T_I')
+    params['T_TUMOR'] = config['Parameters'].getfloat('T_TUMOR')
+    params['DIAMETER'] = config['Parameters'].getfloat('DIAMETER')
+    params['DEPTH'] = config['Parameters'].getfloat('DEPTH')
+    params['RHO'] = config['Parameters'].getfloat('RHO')
+    params['C'] = config['Parameters'].getfloat('C')
+    params['K'] = config['Parameters'].getfloat('K')
+    params['RHO_B'] = config['Parameters'].getfloat('RHO_B')
+    params['C_PB'] = config['Parameters'].getfloat('C_PB')
+    params['OMEGA_B_BRAIN'] = config['Parameters'].getfloat('OMEGA_B_BRAIN')
+    params['OMEGA_B_TUMOR'] = config['Parameters'].getfloat('OMEGA_B_TUMOR')
+    params['H'] = config['Parameters'].getfloat('H')
 
     print('Done.')
 
@@ -132,6 +140,46 @@ def check_variables():
         print('Aborting.')
         exit()
     params['NAME_EXECUTABLE'] = NAME_EXECUTABLE
+
+    print('Done.')
+
+def check_stability():
+    global params
+    print('Checking stability.')
+
+    RHO = params['RHO']
+    C = params['C']
+    K = params['K']
+    RHO_B = params['RHO_B']
+    C_PB = params['C_PB']
+    OMEGA_B_BRAIN = params['OMEGA_B_BRAIN']
+    OMEGA_B_TUMOR = params['OMEGA_B_TUMOR']
+    H = params['H']
+    GRIDSIZE = params['GRIDSIZE']
+    SPACE_DIM = params['SPACE_DIM']
+    DELTA_TIME = params['DELTA_TIME']
+    # Pennes Bioheat Equation.
+    tmp = 0
+    for dim in range(0, SPACE_DIM):
+        tmp += (2.0/(GRIDSIZE[dim]*GRIDSIZE[dim])) * (K/(RHO*C))
+    # Healthy brain region in inner nodes.
+    DELTA_TIME_BRAIN = tmp + ((RHO_B*C_PB)/(RHO*C)) * OMEGA_B_BRAIN
+    DELTA_TIME_BRAIN = 1.0/DELTA_TIME_BRAIN
+    # Tumor region in inner nodes.
+    DELTA_TIME_TUMOR = tmp + ((RHO_B*C_PB)/(RHO*C)) * OMEGA_B_TUMOR
+    DELTA_TIME_TUMOR = 1.0/DELTA_TIME_TUMOR
+    # Abort simulation if stability is not fulfilled.
+    if DELTA_TIME > DELTA_TIME_BRAIN:
+        print('Stability not fulfilled in healthy brain region.')
+        print('DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME, DELTA_TIME_BRAIN))
+        print('Aborting.')
+        exit()
+    # Abort simulation if stability is not fulfilled.
+    if DELTA_TIME > DELTA_TIME_TUMOR:
+        print('Stability not fulfilled in tumor region.')
+        print('DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME, DELTA_TIME_TUMOR))
+        print('Aborting.')
+        exit()
 
     print('Done.')
 
@@ -349,6 +397,7 @@ def main():
     parse_config_file()
     check_variables()
     calc_variables()
+    check_stability()
     if params['CREATE_INITFILE'] == True:
         create_init_file()
     set_environment_variables()

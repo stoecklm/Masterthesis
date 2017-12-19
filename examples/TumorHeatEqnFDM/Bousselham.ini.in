@@ -34,7 +34,7 @@ N_NODES = 60x30x30
 START_TIME = 0
 END_TIME = 2000
 # [-].
-N_TIMESTEPS = 10000
+N_TIMESTEPS = 2000
 
 [Input]
 # Name of file without file exentsion.
@@ -48,4 +48,4 @@ CREATE_INITFILE = True
 NAME_VARIABLE = T
 
 [Output]
-N_SNAPSHOTS = 10000
+N_SNAPSHOTS = 2000
