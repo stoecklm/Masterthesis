@@ -5949,23 +5949,30 @@ inline void Problem<OWNPRBLM, CT, DIM>::setVectDfDepToDfIndep(
     const int& /*timeIter*/
     )
 {
+//    Old version. 2017-12-21
+//    for (std::size_t jj = 0; jj < dfDep.size(); ++jj)
+//    {
+//#ifdef _OPENMP
+//#pragma omp parallel shared(dfDep, dfIndep)
+//        {
+//        #pragma omp for schedule(static)
+//#endif
+//        for (int ii = 0; ii < dfDep[jj].memAll().nNodesTotal(); ++ii)
+//        {
+//            int comp = 0;
+//            ScaFES_IntNtuple idxNode;
+//            dfDep[jj].memoryPos2IdxNode(idxNode, comp, ii);
+//            dfDep[jj](idxNode) = dfIndep[jj](idxNode);
+//        }
+//#ifdef _OPENMP
+//        }
+//#endif
+//    }
     for (std::size_t jj = 0; jj < dfDep.size(); ++jj)
     {
-#ifdef _OPENMP
-#pragma omp parallel shared(dfDep, dfIndep)
-        {
-        #pragma omp for schedule(static)
-#endif
-        for (int ii = 0; ii < dfDep[jj].memAll().nNodesTotal(); ++ii)
-        {
-            int comp = 0;
-            ScaFES_IntNtuple idxNode;
-            dfDep[jj].memoryPos2IdxNode(idxNode, comp, ii);
-            dfDep[jj](idxNode) = dfIndep[jj](idxNode);
-        }
-#ifdef _OPENMP
-        }
-#endif
+        // Faster alternative. [KF], 2017-12-21
+        // TODO: Has to be checked if it also works with ADOL-C enabled.
+        dfDep[jj].assignValues(dfIndep[jj]);
     }
 }
 /*----------------------------------------------------------------------------*/
