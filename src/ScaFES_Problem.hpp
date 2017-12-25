@@ -4186,6 +4186,9 @@ inline void Problem<OWNPRBLM, CT, DIM>::writeDfsToFile(const int& timeIter)
 template <class OWNPRBLM, typename CT, std::size_t DIM>
 inline void Problem<OWNPRBLM, CT, DIM>::initDfsFromFile(const int& timeIter)
 {
+    ScaFES::Timer timerSync;
+    ScaFES::Timer timerPhase;
+
     if (this->params().rankOutput() == this->myRank() &&
         (0 < this->params().indentDepth()))
     {
@@ -4194,6 +4197,8 @@ inline void Problem<OWNPRBLM, CT, DIM>::initDfsFromFile(const int& timeIter)
                   << mInitFile.nameDataFile() << " ..." << std::endl;
     }
     this->mParams.decreaseLevel();
+
+    timerPhase.restart();
 
     int nDataFieldsToInit = 0;
     for (std::size_t ii = 0; ii < this->isKnownDf().size(); ++ii)
@@ -4240,6 +4245,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::initDfsFromFile(const int& timeIter)
         }
         this->mInitFile.init(tmpElemData);
     }
+    this->mWallClockTimes["init"] += timerPhase.elapsed();
 
     this->mParams.increaseLevel();
     if (this->params().rankOutput() == this->myRank() &&
@@ -4250,6 +4256,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::initDfsFromFile(const int& timeIter)
                   << std::endl;
     }
 
+    timerSync.restart();
     /*------------------------------------------------------------------------*/
     for (std::size_t ii = 0; ii < mVectUnknownDfsDomNew.size(); ++ii)
     {
@@ -4285,6 +4292,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::initDfsFromFile(const int& timeIter)
         mVectGradUnknownDfsDomNew[ii].copyValuesFromReceiveBufferToMemGhost(timeIter);
     }
     /*------------------------------------------------------------------------*/
+    this->mWallClockTimes["sync"] += timerSync.elapsed();
 }
 
 /*----------------------------------------------------------------------------*/
