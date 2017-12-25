@@ -257,8 +257,8 @@ def create_temperature_array_2D():
     TUMOR_CENTER.append(params['COORD_NODE_LAST'][0]/2.0)
     TUMOR_CENTER.append(params['COORD_NODE_LAST'][1] - params['DEPTH'])
     # Iterate through temperature array.
-    for elem_y in range(0, T.shape[1]):
-        for elem_x in range(0, T.shape[0]):
+    for elem_y in range(0, T.shape[0]):
+        for elem_x in range(0, T.shape[1]):
             # Calculate location of current node.
             x = elem_x * params['GRIDSIZE'][0]
             y = elem_y * params['GRIDSIZE'][1]
@@ -301,9 +301,9 @@ def create_temperature_array_3D():
     TUMOR_CENTER.append(params['COORD_NODE_LAST'][1]/2.0)
     TUMOR_CENTER.append(params['COORD_NODE_LAST'][2] - params['DEPTH'])
     # Iterate through temperature array.
-    for elem_z in range(0, T.shape[2]):
+    for elem_z in range(0, T.shape[0]):
         for elem_y in range(0, T.shape[1]):
-            for elem_x in range(0, T.shape[0]):
+            for elem_x in range(0, T.shape[2]):
                 # Calculate location of current node.
                 x = elem_x * params['GRIDSIZE'][0]
                 y = elem_y * params['GRIDSIZE'][1]
