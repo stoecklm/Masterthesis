@@ -1,5 +1,4 @@
 import configparser
-import math
 import netCDF4 as nc
 import numpy as np
 import os
@@ -45,7 +44,9 @@ def parse_config_file():
     params['NAME_INITFILE'] = config['Input'].get('NAME_INITFILE', fallback='init')
     params['USE_INITFILE'] = config['Input'].getboolean('USE_INITFILE', fallback=False)
     params['CREATE_INITFILE'] = config['Input'].getboolean('CREATE_INITFILE', fallback=False)
-    params['NAME_VARIABLE'] = config['Input'].get('NAME_VARIABLE', fallback='U')
+    NAME_VARIABLES = config['Input'].get('NAME_VARIABLES', fallback='U')
+    NAME_VARIABLES = list(NAME_VARIABLES.split())
+    params['NAME_VARIABLES'] = NAME_VARIABLES
     # Get values from section 'Parameters'.
     params['T_INIT'] = config['Parameters'].getfloat('T_I')
     params['T_TUMOR'] = config['Parameters'].getfloat('T_TUMOR')
@@ -185,109 +186,93 @@ def check_stability():
 
 def create_init_file():
     global params
-    global NAME_INITFILE
-    global T_INIT
-    global T
-    global NAME_VARIABLE
     SPACE_DIM = params['SPACE_DIM']
     NAME_INITFILE = params['NAME_INITFILE']
-    T_INIT = params['T_INIT']
-    NAME_VARIABLE = params['NAME_VARIABLE']
+    NAME_VARIABLES = params['NAME_VARIABLES']
     print('Creating {0}.nc.'.format(NAME_INITFILE))
 
-    if SPACE_DIM == 1:
-        create_temperature_array_1D()
-        create_init_file_1D()
-    elif SPACE_DIM == 2:
-        create_temperature_array_2D()
-        create_init_file_2D()
-    else:
-        create_temperature_array_3D()
-        create_init_file_3D()
+    nc_file = nc.Dataset(NAME_INITFILE + '.nc', 'w', format='NETCDF3_CLASSIC')
+    time = nc_file.createDimension('time')
+    nNodes_0 = nc_file.createDimension('nNodes_0', params['N_NODES'][0])
 
+    if SPACE_DIM == 1:
+        create_value_array_1D(nc_file, params['T_INIT'], params['T_TUMOR'], NAME_VARIABLES[0])
+    elif SPACE_DIM == 2:
+        nNodes_1 = nc_file.createDimension('nNodes_1', params['N_NODES'][1])
+        create_value_array_2D(nc_file, params['T_INIT'], params['T_TUMOR'], NAME_VARIABLES[0])
+    else:
+        nNodes_1 = nc_file.createDimension('nNodes_1', params['N_NODES'][1])
+        nNodes_2 = nc_file.createDimension('nNodes_2', params['N_NODES'][2])
+        create_value_array_3D(nc_file, params['T_INIT'], params['T_TUMOR'], NAME_VARIABLES[0])
+
+    nc_file.close()
     print('Done.')
 
-def create_temperature_array_1D():
-    global T
+def create_value_array_1D(nc_file, BRAIN_VALUE, TUMOR_VALUE, NAME_VARIABLE):
     RADIUS = params['DIAMETER']/2
-    T_TUMOR = params['T_TUMOR']
     TUMOR_CENTER = []
     # Get file/grid dimensions.
     dim0 = params['N_NODES'][0]
     # Resize temperature array.
     num_elem = dim0
-    T = T_INIT * np.ones(num_elem).reshape(dim0)
+    values_array = BRAIN_VALUE * np.ones(num_elem).reshape(dim0)
     # Calculate location of tumor center.
     TUMOR_CENTER.append(params['COORD_NODE_LAST'][0] - params['DEPTH'])
-    # Iterate through temperature array.
-    for elem in range(0, T.shape[0]):
+    # Iterate through array.
+    for elem in range(0, values_array.shape[0]):
         # Calculate location of current node.
         x = elem * params['GRIDSIZE'][0]
         # Calculate distance (squared) to tumor center.
         distance = (x - TUMOR_CENTER[0]) * (x - TUMOR_CENTER[0])
-        # Check if current point is inside Tumor.
-        # If yes, set temperature for this point to tumor temperature.
+        # Check if current point is inside tumor.
+        # If yes, set value to tumor specific value
         if distance <= RADIUS*RADIUS:
-            T[elem] = T_TUMOR
+            values_array[elem] = TUMOR_VALUE
+    # Write NumPy array to netCDF file.
+    write_values_to_file_1D(nc_file, values_array, NAME_VARIABLE)
 
-def create_init_file_1D():
-    # Get file/grid dimensions.
-    dim0 = params['N_NODES'][0]
-    # Create netCDF file.
-    nc_file = nc.Dataset(NAME_INITFILE + '.nc', 'w', format='NETCDF3_CLASSIC')
-    nNodes_0 = nc_file.createDimension('nNodes_0', dim0)
-    time = nc_file.createDimension('time')
+def write_values_to_file_1D(nc_file, values_array, NAME_VARIABLE):
+    # Create netCDF variable.
     init_values = nc_file.createVariable(NAME_VARIABLE, 'f8', ('time', 'nNodes_0'))
     # Write NumPy Array to file.
-    init_values[0,:] = T
-    nc_file.close()
+    init_values[0,:] = values_array
 
-def create_temperature_array_2D():
-    global T
+def create_value_array_2D(nc_file, BRAIN_VALUE, TUMOR_VALUE, NAME_VARIABLE):
     RADIUS = params['DIAMETER']/2
-    T_TUMOR = params['T_TUMOR']
     TUMOR_CENTER = []
     # Get file/grid dimensions.
     dim0 = params['N_NODES'][0]
     dim1 = params['N_NODES'][1]
     # Resize temperature array.
     num_elem = dim0 * dim1
-    T = T_INIT * np.ones(num_elem).reshape(dim1, dim0)
+    values_array = BRAIN_VALUE * np.ones(num_elem).reshape(dim1, dim0)
     # Calculate location of tumor center.
     TUMOR_CENTER.append(params['COORD_NODE_LAST'][0]/2.0)
     TUMOR_CENTER.append(params['COORD_NODE_LAST'][1] - params['DEPTH'])
     # Iterate through temperature array.
-    for elem_y in range(0, T.shape[0]):
-        for elem_x in range(0, T.shape[1]):
+    for elem_y in range(0, values_array.shape[0]):
+        for elem_x in range(0, values_array.shape[1]):
             # Calculate location of current node.
             x = elem_x * params['GRIDSIZE'][0]
             y = elem_y * params['GRIDSIZE'][1]
             # Calculate distance (squared) to tumor center.
             distance = (x - TUMOR_CENTER[0]) * (x - TUMOR_CENTER[0])
             distance += (y - TUMOR_CENTER[1]) * (y - TUMOR_CENTER[1])
-            # Check if current point is inside Tumor.
-            # If yes, set temperature for this point to tumor temperature.
+            # Check if current point is inside tumor.
+            # If yes, set value to tumor specific value
             if distance <= RADIUS*RADIUS:
-                T[elem_y, elem_x] = T_TUMOR
+                values_array[elem_y, elem_x] = TUMOR_VALUE
+    # Write NumPy array to netCDF file.
+    write_values_to_file_2D(nc_file, values_array, NAME_VARIABLE)
 
-def create_init_file_2D():
-    # Get file/grid dimensions.
-    dim0 = params['N_NODES'][0]
-    dim1 = params['N_NODES'][1]
-    # Create netCDF file.
-    nc_file = nc.Dataset(NAME_INITFILE + '.nc', 'w', format='NETCDF3_CLASSIC')
-    nNodes_0 = nc_file.createDimension('nNodes_0', dim0)
-    nNodes_1 = nc_file.createDimension('nNodes_1', dim1)
-    time = nc_file.createDimension('time')
+def write_values_to_file_2D(nc_file, values_array, NAME_VARIABLE):
+    # Create netCDF variable.
     init_values = nc_file.createVariable(NAME_VARIABLE, 'f8', ('time', 'nNodes_1', 'nNodes_0'))
     # Write NumPy Array to file.
-    init_values[0,:,:] = T
-    nc_file.close()
+    init_values[0,:,:] = values_array
 
-def create_temperature_array_3D():
-    global T
+def create_value_array_3D(nc_file, BRAIN_VALUE, TUMOR_VALUE, NAME_VARIABLE):
     RADIUS = params['DIAMETER']/2
-    T_TUMOR = params['T_TUMOR']
     TUMOR_CENTER = []
     # Get file/grid dimensions.
     dim0 = params['N_NODES'][0]
@@ -295,15 +280,15 @@ def create_temperature_array_3D():
     dim2 = params['N_NODES'][2]
     # Resize temperature array.
     num_elem = dim0 * dim1 * dim2
-    T = T_INIT * np.ones(num_elem).reshape(dim2, dim1, dim0)
+    values_array = BRAIN_VALUE * np.ones(num_elem).reshape(dim2, dim1, dim0)
     # Calculate location of tumor center.
     TUMOR_CENTER.append(params['COORD_NODE_LAST'][0]/2.0)
     TUMOR_CENTER.append(params['COORD_NODE_LAST'][1]/2.0)
     TUMOR_CENTER.append(params['COORD_NODE_LAST'][2] - params['DEPTH'])
     # Iterate through temperature array.
-    for elem_z in range(0, T.shape[0]):
-        for elem_y in range(0, T.shape[1]):
-            for elem_x in range(0, T.shape[2]):
+    for elem_z in range(0, values_array.shape[0]):
+        for elem_y in range(0, values_array.shape[1]):
+            for elem_x in range(0, values_array.shape[2]):
                 # Calculate location of current node.
                 x = elem_x * params['GRIDSIZE'][0]
                 y = elem_y * params['GRIDSIZE'][1]
@@ -312,26 +297,18 @@ def create_temperature_array_3D():
                 distance = (x - TUMOR_CENTER[0]) * (x - TUMOR_CENTER[0])
                 distance += (y - TUMOR_CENTER[1]) * (y - TUMOR_CENTER[1])
                 distance += (z - TUMOR_CENTER[2]) * (z - TUMOR_CENTER[2])
-                # Check if current point is inside Tumor.
-                # If yes, set temperature for this point to tumor temperature.
+                # Check if current point is inside tumor.
+                # If yes, set value to tumor specific value
                 if distance <= RADIUS*RADIUS:
-                    T[elem_z, elem_y, elem_x] = T_TUMOR
+                    values_array[elem_z, elem_y, elem_x] = TUMOR_VALUE
+    # Write NumPy array to netCDF file.
+    write_values_to_file_3D(nc_file, values_array, NAME_VARIABLE)
 
-def create_init_file_3D():
-    # Get file/grid dimensions.
-    dim0 = params['N_NODES'][0]
-    dim1 = params['N_NODES'][1]
-    dim2 = params['N_NODES'][2]
-    # Create netCDF file.
-    nc_file = nc.Dataset(NAME_INITFILE + '.nc', 'w', format='NETCDF3_CLASSIC')
-    nNodes_0 = nc_file.createDimension('nNodes_0', dim0)
-    nNodes_1 = nc_file.createDimension('nNodes_1', dim1)
-    nNodes_2 = nc_file.createDimension('nNodes_2', dim2)
-    time = nc_file.createDimension('time')
+def write_values_to_file_3D(nc_file, values_array, NAME_VARIABLE):
+    # Create netCDF variable.
     init_values = nc_file.createVariable(NAME_VARIABLE, 'f8', ('time', 'nNodes_2', 'nNodes_1', 'nNodes_0'))
     # Write NumPy Array to file.
-    init_values[0,:,:,:] = T
-    nc_file.close()
+    init_values[0,:,:,:] = values_array
 
 def set_environment_variables():
     global params
