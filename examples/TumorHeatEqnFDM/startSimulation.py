@@ -215,16 +215,14 @@ def create_init_file():
 
     nc_file = nc.Dataset(NAME_INITFILE + '.nc', 'w', format='NETCDF3_CLASSIC')
     time = nc_file.createDimension('time')
-    nNodes_0 = nc_file.createDimension('nNodes_0', params['N_NODES'][0])
+    for dim in range(0, SPACE_DIM):
+        nNodes = nc_file.createDimension('nNodes_' + str(dim), params['N_NODES'][dim])
 
     if SPACE_DIM == 1:
         create_value_array_1D(nc_file, params['T_INIT'], params['T_TUMOR'], NAME_VARIABLES[0])
     elif SPACE_DIM == 2:
-        nNodes_1 = nc_file.createDimension('nNodes_1', params['N_NODES'][1])
         create_value_array_2D(nc_file, params['T_INIT'], params['T_TUMOR'], NAME_VARIABLES[0])
     else:
-        nNodes_1 = nc_file.createDimension('nNodes_1', params['N_NODES'][1])
-        nNodes_2 = nc_file.createDimension('nNodes_2', params['N_NODES'][2])
         create_value_array_3D(nc_file, params['T_INIT'], params['T_TUMOR'], NAME_VARIABLES[0])
 
     nc_file.close()
@@ -251,13 +249,7 @@ def create_value_array_1D(nc_file, BRAIN_VALUE, TUMOR_VALUE, NAME_VARIABLE):
         if distance <= RADIUS*RADIUS:
             values_array[elem] = TUMOR_VALUE
     # Write NumPy array to netCDF file.
-    write_values_to_file_1D(nc_file, values_array, NAME_VARIABLE)
-
-def write_values_to_file_1D(nc_file, values_array, NAME_VARIABLE):
-    # Create netCDF variable.
-    init_values = nc_file.createVariable(NAME_VARIABLE, 'f8', ('time', 'nNodes_0'))
-    # Write NumPy Array to file.
-    init_values[0,:] = values_array
+    write_values_to_file(nc_file, values_array, NAME_VARIABLE)
 
 def create_value_array_2D(nc_file, BRAIN_VALUE, TUMOR_VALUE, NAME_VARIABLE):
     RADIUS = params['DIAMETER']/2
@@ -285,13 +277,7 @@ def create_value_array_2D(nc_file, BRAIN_VALUE, TUMOR_VALUE, NAME_VARIABLE):
             if distance <= RADIUS*RADIUS:
                 values_array[elem_y, elem_x] = TUMOR_VALUE
     # Write NumPy array to netCDF file.
-    write_values_to_file_2D(nc_file, values_array, NAME_VARIABLE)
-
-def write_values_to_file_2D(nc_file, values_array, NAME_VARIABLE):
-    # Create netCDF variable.
-    init_values = nc_file.createVariable(NAME_VARIABLE, 'f8', ('time', 'nNodes_1', 'nNodes_0'))
-    # Write NumPy Array to file.
-    init_values[0,:,:] = values_array
+    write_values_to_file(nc_file, values_array, NAME_VARIABLE)
 
 def create_value_array_3D(nc_file, BRAIN_VALUE, TUMOR_VALUE, NAME_VARIABLE):
     RADIUS = params['DIAMETER']/2
@@ -324,13 +310,17 @@ def create_value_array_3D(nc_file, BRAIN_VALUE, TUMOR_VALUE, NAME_VARIABLE):
                 if distance <= RADIUS*RADIUS:
                     values_array[elem_z, elem_y, elem_x] = TUMOR_VALUE
     # Write NumPy array to netCDF file.
-    write_values_to_file_3D(nc_file, values_array, NAME_VARIABLE)
+    write_values_to_file(nc_file, values_array, NAME_VARIABLE)
 
-def write_values_to_file_3D(nc_file, values_array, NAME_VARIABLE):
+def write_values_to_file(nc_file, values_array, NAME_VARIABLE):
     # Create netCDF variable.
-    init_values = nc_file.createVariable(NAME_VARIABLE, 'f8', ('time', 'nNodes_2', 'nNodes_1', 'nNodes_0'))
+    nNodes = []
+    nNodes.append('time')
+    for dim in range(len(values_array.shape), 0, -1):
+        nNodes.append('nNodes_' + str(dim-1))
+    init_values = nc_file.createVariable(NAME_VARIABLE, 'f8', nNodes)
     # Write NumPy Array to file.
-    init_values[0,:,:,:] = values_array
+    init_values[0,] = values_array
 
 def set_environment_variables():
     global params
