@@ -178,7 +178,6 @@ def check_stability():
     DELTA_TIME_TUMOR_CONV = tmp + 2.0*(1.0/GRIDSIZE[SPACE_DIM-1])*(H/(RHO*C))
     DELTA_TIME_TUMOR_CONV += ((RHO_B*C_PB)/(RHO*C)) * OMEGA_B_TUMOR
     DELTA_TIME_TUMOR_CONV = 1.0/DELTA_TIME_TUMOR_CONV
-
     # Abort simulation if stability is not fulfilled.
     if DELTA_TIME > DELTA_TIME_BRAIN:
         print('Stability not fulfilled in healthy brain region.')
@@ -220,12 +219,15 @@ def create_init_file():
 
     if SPACE_DIM == 1:
         create_value_array_1D(nc_file, params['T_INIT'], params['T_TUMOR'], NAME_VARIABLES[0])
+        create_value_array_1D(nc_file, 1.0, -1.0, 'Region')
     elif SPACE_DIM == 2:
         create_value_array_2D(nc_file, params['T_INIT'], params['T_TUMOR'], NAME_VARIABLES[0])
+        create_value_array_2D(nc_file, 1.0, -1.0, 'Region')
     else:
         create_value_array_3D(nc_file, params['T_INIT'], params['T_TUMOR'], NAME_VARIABLES[0])
-
+        create_value_array_3D(nc_file, 1.0, -1.0, 'Region')
     nc_file.close()
+
     print('Done.')
 
 def create_value_array_1D(nc_file, BRAIN_VALUE, TUMOR_VALUE, NAME_VARIABLE):

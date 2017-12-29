@@ -29,9 +29,6 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
     using PTree = boost::property_tree::ptree;
     const PTree ptree;
 
-    /** Enum to call knownDfs by variable name instead of index. */
-    enum knownDf {omega = 0, T = 1};
-
   public:
 
     /* Based on Bousselham et al. (2017). */
@@ -46,8 +43,11 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
     /** constant K. Thermal conductivity). */
     const double K; /* W/(m K) */
 
-    /** constant Q. Metabolism heat generation. */
-    const double Q; /* W/(m^3) */
+    /** constant Q_brain. Metabolism heat generation of the brain. */
+    const double Q_BRAIN; /* W/(m^3) */
+
+    /** constant Q_tumor. Metabolism heat generation of the tumor. */
+    const double Q_TUMOR; /* W/(m^3) */
 
     /** constant rho_b. Density of the blood. */
     const double RHO_B; /* kg/m^3 */
@@ -130,7 +130,8 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
         RHO(ptree.get<CT>("Parameters.RHO")),
         C(ptree.get<CT>("Parameters.C")),
         K(ptree.get<CT>("Parameters.K")),
-        Q(ptree.get<CT>("Parameters.Q")),
+        Q_BRAIN(ptree.get<CT>("Parameters.Q_BRAIN")),
+        Q_TUMOR(ptree.get<CT>("Parameters.Q_TUMOR")),
         RHO_B(ptree.get<CT>("Parameters.RHO_B")),
         C_PB(ptree.get<CT>("Parameters.C_PB")),
         OMEGA_B_BRAIN(ptree.get<CT>("Parameters.OMEGA_B_BRAIN")),
@@ -179,39 +180,17 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
         }
 
     /** Evaluates all fields at one given global inner grid node.
-     *  @param vNew Set of all fields.
-     *  @param idxNode Index of given grid node.
      */
-    void evalInner(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
-                   ScaFES::Ntuple<int,DIM> const& idxNode,
+    void evalInner(std::vector< ScaFES::DataField<CT, DIM> >& /*vNew*/,
+                   ScaFES::Ntuple<int,DIM> const& /*idxNode*/,
                    int const& /*timestep*/) {
-        /* Get coordinates of current node. */
-        ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
-
-        /* Calculate distance to tumor center. */
-        double distance = 0.0;
-        for (std::size_t pp = 0; pp < DIM; ++pp) {
-            distance += (x[pp] - tumorCenter[pp]) * (x[pp] - tumorCenter[pp]);
-        }
-
-        /* Check if current point is inside tumor. */
-        if (distance <= (this->RADIUS*this->RADIUS)) {
-            /* Inside tumor. */
-            vNew[0](idxNode) = OMEGA_B_TUMOR;
-        } else {
-            /* Outside tumor, i.e. normal healthy brain tissue. */
-            vNew[0](idxNode) = OMEGA_B_BRAIN;
-        }
     }
 
     /** Evaluates all fields at one given global border grid node.
-     *  @param vNew Set of all fields.
-     *  @param idxNode Index of given grid node.
      */
-    void evalBorder(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
-                    ScaFES::Ntuple<int,DIM> const& idxNode,
-                    int const& timestep) {
-        this->template evalInner(vNew, idxNode, timestep);
+    void evalBorder(std::vector< ScaFES::DataField<CT, DIM> >& /*vNew*/,
+                    ScaFES::Ntuple<int,DIM> const& /*idxNode*/,
+                    int const& /*timestep*/) {
     }
 
     /** Initializes all unknown fields at one given global inner grid node.
@@ -225,6 +204,24 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
                    int const& /*timestep*/) {
         /* Init all nodes with the same temperature. */
         vNew[0](idxNode) = T_I;
+
+        /* Get coordinates of current node. */
+        ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
+
+        /* Calculate distance to tumor center. */
+        double distance = 0.0;
+        for (std::size_t pp = 0; pp < DIM; ++pp) {
+            distance += (x[pp] - tumorCenter[pp]) * (x[pp] - tumorCenter[pp]);
+        }
+
+        /* Check if current point is inside tumor. */
+        if (distance <= (this->RADIUS*this->RADIUS)) {
+            /* Inside tumor. */
+            vNew[1](idxNode) = -1.0;
+        } else {
+            /* Outside tumor, i.e. normal healthy brain tissue. */
+            vNew[1](idxNode) = 1.0;
+        }
     }
 
     /** Initializes all unknown fields at one given global border grid node.
@@ -251,6 +248,17 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
                      std::vector<ScaFES::DataField<TT,DIM>> const& vOld,
                      ScaFES::Ntuple<int,DIM> const& idxNode,
                      int const& /*timestep*/) {
+        double omega = 0.0;
+        double Q = 0.0;
+        /* Check if node is inside tumor or not.
+         * 1.0 means healthy brain region, -1.0 means tumor. */
+        if (vOld[1](idxNode) > 0.0) {
+            omega = OMEGA_B_BRAIN;
+            Q = Q_BRAIN;
+        } else {
+            omega = OMEGA_B_TUMOR;
+            Q = Q_TUMOR;
+        }
         /* Discrete Pennes Bioheat Equation for updating inner nodes. */
         vNew[0](idxNode) = vOld[0](idxNode);
         for (std::size_t pp = 0; pp < DIM; ++pp) {
@@ -260,9 +268,7 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
                                    - 2.0 * vOld[0](idxNode))
                                 / (this->gridsize(pp) * this->gridsize(pp));
         }
-        /* knownDfOld(0) = perfusion rate omega. */
-        vNew[0](idxNode) += this->tau() * ((RHO_B*C_PB)/(RHO*C))
-                            * this->knownDfOld(omega, idxNode)
+        vNew[0](idxNode) += this->tau() * ((RHO_B*C_PB)/(RHO*C)) * omega
                             * (T_A - vOld[0](idxNode));
         vNew[0](idxNode) += this->tau() * (1.0/(RHO*C)) * Q;
     }
@@ -277,8 +283,17 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
                       std::vector<ScaFES::DataField<TT,DIM>>const& vOld,
                       ScaFES::Ntuple<int,DIM> const& idxNode,
                       int const& /*timestep*/) {
+        double omega = 0.0;
+        double Q = 0.0;
+        if (vOld[1](idxNode) > 0.0) {
+            omega = OMEGA_B_BRAIN;
+            Q = Q_BRAIN;
+        } else {
+            omega = OMEGA_B_TUMOR;
+            Q = Q_TUMOR;
+        }
+        /* Discrete Pennes Bioheat Equation modified for updating border nodes. */
         vNew[0](idxNode) = vOld[0](idxNode);
-
         for (std::size_t pp = 0; pp < DIM; ++pp) {
             /* Last node/edge/surface in highest dimension will be convection
              * boundary condition. */
@@ -329,9 +344,7 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
         }
 
         /* These terms are independet of the boundary condition. */
-        /* knownDfOld(0) = perfusion rate omega. */
-        vNew[0](idxNode) += this->tau() * ((RHO_B*C_PB)/(RHO*C))
-                            * this->knownDfOld(omega, idxNode)
+        vNew[0](idxNode) += this->tau() * ((RHO_B*C_PB)/(RHO*C)) * omega
                             * (T_A - vOld[0](idxNode));
         vNew[0](idxNode) += this->tau() * (1.0/(RHO*C)) * Q;
     }

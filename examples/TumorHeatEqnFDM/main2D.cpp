@@ -14,27 +14,34 @@ const int DIM = 2;
 int main(int argc, char *argv[]) {
     ScaFES::Parameters paramsCl(argc, argv);
     ScaFES::GridGlobal<DIM> gg(paramsCl);
-    std::vector<std::string> nameDatafield(2);
-    nameDatafield[0] = "omega";   /* blood perfusion rate. */
-    nameDatafield[1] = "T";       /* Temperature.          */
-    std::vector<int> stencilWidth(2);
+    std::vector<std::string> nameDatafield(3);
+    nameDatafield[0] = "dummy";  /* Will not be used.                          */
+    nameDatafield[1] = "T";      /* Temperature.                               */
+    nameDatafield[2] = "Region"; /* Used to specify if node is brain or tumor. */
+    std::vector<int> stencilWidth(3);
     stencilWidth[0] = 0;
     stencilWidth[1] = 1;
-    std::vector<bool> isKnownDf(2);
+    stencilWidth[2] = 0;
+    std::vector<bool> isKnownDf(3);
     isKnownDf[0] = true;
     isKnownDf[1] = false;
-    std::vector<int> nLayers(2);
+    isKnownDf[2] = false;
+    std::vector<int> nLayers(3);
     nLayers[0] = 0;
     nLayers[1] = 0;
-    std::vector<double> defaultValue(2);
+    nLayers[2] = 0;
+    std::vector<double> defaultValue(3);
     defaultValue[0] = 0.0;
     defaultValue[1] = 0.0;
-    std::vector<ScaFES::WriteHowOften> writeToFile(2);
+    defaultValue[2] = 0.0;
+    std::vector<ScaFES::WriteHowOften> writeToFile(3);
     writeToFile[0] = ScaFES::WriteHowOften::NEVER;
     writeToFile[1] = ScaFES::WriteHowOften::LIKE_GIVEN_AT_CL;
-    std::vector<bool> computeError(2);
+    writeToFile[2] = ScaFES::WriteHowOften::NEVER;
+    std::vector<bool> computeError(3);
     computeError[0] = false;
     computeError[1] = false;
+    computeError[2] = false;
     std::vector<double> geomparamsInit;
 
     boost::property_tree::ptree pt;
