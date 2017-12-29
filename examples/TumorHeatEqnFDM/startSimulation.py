@@ -169,6 +169,16 @@ def check_stability():
     # Tumor region in inner nodes.
     DELTA_TIME_TUMOR = tmp + ((RHO_B*C_PB)/(RHO*C)) * OMEGA_B_TUMOR
     DELTA_TIME_TUMOR = 1.0/DELTA_TIME_TUMOR
+    # Healthy brain region at border with convection.
+    DELTA_TIME_BRAIN_CONV = tmp + 2.0*(1.0/GRIDSIZE[SPACE_DIM-1])*(H/(RHO*C))
+    DELTA_TIME_BRAIN_CONV += ((RHO_B*C_PB)/(RHO*C)) * OMEGA_B_BRAIN
+    DELTA_TIME_BRAIN_CONV = 1.0/DELTA_TIME_BRAIN_CONV
+    # Tumor brain region at border with convection.
+    # Will probably not be the case, but test it anyway.
+    DELTA_TIME_TUMOR_CONV = tmp + 2.0*(1.0/GRIDSIZE[SPACE_DIM-1])*(H/(RHO*C))
+    DELTA_TIME_TUMOR_CONV += ((RHO_B*C_PB)/(RHO*C)) * OMEGA_B_TUMOR
+    DELTA_TIME_TUMOR_CONV = 1.0/DELTA_TIME_TUMOR_CONV
+
     # Abort simulation if stability is not fulfilled.
     if DELTA_TIME > DELTA_TIME_BRAIN:
         print('Stability not fulfilled in healthy brain region.')
@@ -179,6 +189,18 @@ def check_stability():
     if DELTA_TIME > DELTA_TIME_TUMOR:
         print('Stability not fulfilled in tumor region.')
         print('DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME, DELTA_TIME_TUMOR))
+        print('Aborting.')
+        exit()
+    # Abort simulation if stability is not fulfilled.
+    if DELTA_TIME > DELTA_TIME_BRAIN_CONV:
+        print('Stability not fulfilled in healty brain region at border with convection.')
+        print('DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME, DELTA_TIME_BRAIN_CONV))
+        print('Aborting.')
+        exit()
+    # Abort simulation if stability is not fulfilled.
+    if DELTA_TIME > DELTA_TIME_TUMOR_CONV:
+        print('Stability not fulfilled in tumor region at border with convection.')
+        print('DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME, DELTA_TIME_TUMOR_CONV))
         print('Aborting.')
         exit()
 
