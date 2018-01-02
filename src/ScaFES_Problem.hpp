@@ -4170,7 +4170,16 @@ inline void Problem<OWNPRBLM, CT, DIM>::writeDfsToFile(const int& timeIter)
             }
         }
 
-        this->mCommonFile.write(tmpElemData, writeData, timeIter);
+        /* Only call write function if at least one data field shall be written
+         * in this timestep. */
+        for (int ii = 0; ii < nDataFieldsToWrite; ++ii)
+        {
+            if (writeData.at(ii) == true)
+            {
+                this->mCommonFile.write(tmpElemData, writeData, timeIter);
+                break;
+            }
+        }
     }
 
     this->mParams.increaseLevel();
