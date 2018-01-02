@@ -605,6 +605,12 @@ AC_CONFIG_FILES(examples/TumorHeatEqnFDM/Makefile)
 AC_CONFIG_FILES([examples/TumorHeatEqnFDM/RUN_HELPER.sh],
        [chmod +x examples/TumorHeatEqnFDM/RUN_HELPER.sh])
 AC_CONFIG_FILES(examples/TumorHeatEqnFDM/Parameters.ini)
+AC_CONFIG_FILES(examples/TumorHeatEqnFDM/cases/Bousselham-Figure-5A.ini)
+AC_CONFIG_FILES(examples/TumorHeatEqnFDM/cases/Bousselham-Figure-5B.ini)
+AC_CONFIG_FILES(examples/TumorHeatEqnFDM/cases/Bousselham-Figure-5C.ini)
+AC_CONFIG_FILES(examples/TumorHeatEqnFDM/cases/Bousselham-Figure-7A.ini)
+AC_CONFIG_FILES(examples/TumorHeatEqnFDM/cases/Bousselham-Figure-7B.ini)
+AC_CONFIG_FILES(examples/TumorHeatEqnFDM/cases/Bousselham-Figure-7C.ini)
 AC_CONFIG_LINKS([examples/TumorHeatEqnFDM/startSimulation.py:examples/TumorHeatEqnFDM/startSimulation.py])
 
 AC_CONFIG_FILES(examples/ZhangExampleFDM/Makefile)

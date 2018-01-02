@@ -1,0 +1,50 @@
+[Dimension]
+SPACE_DIM = 3
+
+[Parameters]
+# Values from Bousselham et al. (2017).
+RHO = 1040.0
+C = 3650.0
+K = 0.6
+RHO_B = 1052.0
+C_PB = 3800.0
+H = 10.0
+T_INF = 22.4
+Q_BC = 0.0
+DIAMETER = 0.015
+DEPTH = 0.018
+T_A = 37.0
+T_I = 37.0
+T_TUMOR = 37.0
+OMEGA_B_BRAIN = 0.004
+OMEGA_B_TUMOR = 0.0007
+Q_BRAIN = 25000.0
+Q_TUMOR = 25000.0
+
+[Geometry]
+# [m].
+COORD_NODE_FIRST = 0x0x0
+COORD_NODE_LAST = 0.06x0.03x0.03
+# [-].
+N_NODES = 60x30x30
+
+[Time]
+# [s].
+START_TIME = 0
+END_TIME = 1800
+# [-].
+N_TIMESTEPS = 9000
+
+[Input]
+# Name of file without file exentsion.
+NAME_INITFILE = init
+# Set USE_INITFILE to True even if CREATE_INITFILE is True,
+# if you want to use a init file.
+USE_INITFILE = True
+CREATE_INITFILE = True
+# Name of variables in init file.
+# Must be the name specified in main.cpp.
+NAME_VARIABLES = T Region
+
+[Output]
+N_SNAPSHOTS = 9000

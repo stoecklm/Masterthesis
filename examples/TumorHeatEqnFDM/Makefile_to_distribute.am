@@ -68,4 +68,10 @@ EXTRA_DIST += results/scafes-scalingtests.plt \
         results/ZIH_TAURUS-scaling_strong.dat \
         results/ZIH_TAURUS-scaling_weak.plt \
         results/README
-EXTRA_DIST += Bousselham.ini
+EXTRA_DIST += Parameters.ini
+EXTRA_DIST += cases/Bousselham-Figure-5A.ini
+EXTRA_DIST += cases/Bousselham-Figure-5B.ini
+EXTRA_DIST += cases/Bousselham-Figure-5C.ini
+EXTRA_DIST += cases/Bousselham-Figure-7A.ini
+EXTRA_DIST += cases/Bousselham-Figure-7B.ini
+EXTRA_DIST += cases/Bousselham-Figure-7C.ini
