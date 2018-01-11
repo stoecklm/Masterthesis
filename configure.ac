@@ -686,6 +686,8 @@ AC_CONFIG_FILES(examples/TumorHeatEqnFDM/cases/Bousselham-Figure-5C.ini)
 AC_CONFIG_FILES(examples/TumorHeatEqnFDM/cases/Bousselham-Figure-7A.ini)
 AC_CONFIG_FILES(examples/TumorHeatEqnFDM/cases/Bousselham-Figure-7B.ini)
 AC_CONFIG_FILES(examples/TumorHeatEqnFDM/cases/Bousselham-Figure-7C.ini)
+AC_CONFIG_LINKS([examples/TumorHeatEqnFDM/calcDiff.py:examples/TumorHeatEqnFDM/calcDiff.py])
+AC_CONFIG_LINKS([examples/TumorHeatEqnFDM/getSurface.py:examples/TumorHeatEqnFDM/getSurface.py])
 AC_CONFIG_LINKS([examples/TumorHeatEqnFDM/startSimulation.py:examples/TumorHeatEqnFDM/startSimulation.py])
 
 AC_CONFIG_FILES(examples/ZhangExampleFDM/Makefile)
