@@ -35,60 +35,60 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
 
     /************************************************************************/
     /** constant rho. Density. */
-    const double RHO; /* kg/m^3 */
+    const CT RHO; /* kg/m^3 */
 
     /** constant C. Specific heat capacity. */
-    const double C; /* J/(kg K) */
+    const CT C; /* J/(kg K) */
 
     /** constant K. Thermal conductivity). */
-    const double K; /* W/(m K) */
+    const CT K; /* W/(m K) */
 
     /** constant Q_brain. Metabolism heat generation of the brain. */
-    const double Q_BRAIN; /* W/(m^3) */
+    const CT Q_BRAIN; /* W/(m^3) */
 
     /** constant Q_tumor. Metabolism heat generation of the tumor. */
-    const double Q_TUMOR; /* W/(m^3) */
+    const CT Q_TUMOR; /* W/(m^3) */
 
     /** constant rho_b. Density of the blood. */
-    const double RHO_B; /* kg/m^3 */
+    const CT RHO_B; /* kg/m^3 */
 
     /** constant C_Pb. Specific heat of the blood. */
-    const double C_PB; /* J/(kg K) */
+    const CT C_PB; /* J/(kg K) */
 
     /** constant omega_b. Blood perfusion rate (normal brain tissue). */
-    const double OMEGA_B_BRAIN; /* 1/s */
+    const CT OMEGA_B_BRAIN; /* 1/s */
 
     /** constant omega_b. Blood perfusion rate (Astrocytoma brain tumor). */
-    const double OMEGA_B_TUMOR; /* 1/s */
+    const CT OMEGA_B_TUMOR; /* 1/s */
 
     /** constant T_i. Initial condition for T. */
-    const double T_I; /* K */
+    const CT T_I; /* K */
 
     /** constant h. Ambient convetion. */
-    const double H; /* W/(m^2 K) */
+    const CT H; /* W/(m^2 K) */
 
     /** constant T_inf. Air temperature. */
-    const double T_INF; /* K */
+    const CT T_INF; /* K */
 
     /** constant q_bc. Heat flux at surface. */
-    const double Q_BC; /* W/(m^2) */
+    const CT Q_BC; /* W/(m^2) */
 
     /** constant diameter. diameter of the tumor. */
-    const double DIAMETER; /* m */
+    const CT DIAMETER; /* m */
 
     /** constant depth. depth of the tumor. */
-    const double DEPTH; /* m */
+    const CT DEPTH; /* m */
 
     /* constant T_a. Temperature of artery. */
-    const double T_A; /* K */
+    const CT T_A; /* K */
 
     /************************************************************************/
     /* Auxiliary values. */
     /* Radius of tumor. */
-    double RADIUS;
+    CT RADIUS;
 
     /* Center of tumor. */
-    ScaFES::Ntuple<double,DIM> tumorCenter;
+    ScaFES::Ntuple<CT,DIM> tumorCenter;
 
     /************************************************************************/
 
@@ -209,7 +209,7 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
         ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
 
         /* Calculate distance to tumor center. */
-        double distance = 0.0;
+        CT distance = 0.0;
         for (std::size_t pp = 0; pp < DIM; ++pp) {
             distance += (x[pp] - tumorCenter[pp]) * (x[pp] - tumorCenter[pp]);
         }
@@ -248,8 +248,8 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
                      std::vector<ScaFES::DataField<TT,DIM>> const& vOld,
                      ScaFES::Ntuple<int,DIM> const& idxNode,
                      int const& /*timestep*/) {
-        double omega = 0.0;
-        double Q = 0.0;
+        CT omega = 0.0;
+        CT Q = 0.0;
         /* Check if node is inside tumor or not.
          * 1.0 means healthy brain region, -1.0 means tumor. */
         if (vOld[1](idxNode) > 0.0) {
@@ -283,8 +283,8 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
                       std::vector<ScaFES::DataField<TT,DIM>>const& vOld,
                       ScaFES::Ntuple<int,DIM> const& idxNode,
                       int const& /*timestep*/) {
-        double omega = 0.0;
-        double Q = 0.0;
+        CT omega = 0.0;
+        CT Q = 0.0;
         if (vOld[1](idxNode) > 0.0) {
             omega = OMEGA_B_BRAIN;
             Q = Q_BRAIN;
