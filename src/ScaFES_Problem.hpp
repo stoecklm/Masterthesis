@@ -5966,9 +5966,13 @@ inline void Problem<OWNPRBLM, CT, DIM>::setVectDfDepToDfIndep(
     const int& /*timeIter*/
     )
 {
-//    Old version. 2017-12-21
-//    for (std::size_t jj = 0; jj < dfDep.size(); ++jj)
-//    {
+    for (std::size_t jj = 0; jj < dfDep.size(); ++jj)
+    {
+        // Faster alternative. [KF], 2017-12-21
+        // TODO: Has to be checked if it also works with ADOL-C enabled.
+        dfDep[jj].assignValues(dfIndep[jj]);
+
+        // Old version. 2017-12-21
 //#ifdef _OPENMP
 //#pragma omp parallel shared(dfDep, dfIndep)
 //        {
@@ -5984,12 +5988,6 @@ inline void Problem<OWNPRBLM, CT, DIM>::setVectDfDepToDfIndep(
 //#ifdef _OPENMP
 //        }
 //#endif
-//    }
-    for (std::size_t jj = 0; jj < dfDep.size(); ++jj)
-    {
-        // Faster alternative. [KF], 2017-12-21
-        // TODO: Has to be checked if it also works with ADOL-C enabled.
-        dfDep[jj].assignValues(dfIndep[jj]);
     }
 }
 /*----------------------------------------------------------------------------*/
@@ -6000,6 +5998,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalZosForwardTypeOne(
     const int& /*timeIter*/
     )
 {
+#ifdef SCAFES_HAVE_ADOLC
     CT tmp;
     static_assert(std::is_same<decltype(tmp), double>::value,
                   "Only for CT=double!");
@@ -6014,7 +6013,6 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalZosForwardTypeOne(
     }
     this->mParams.decreaseLevel();
 
-#ifdef SCAFES_HAVE_ADOLC
     ScaFES::Timer timerPhase;
     timerPhase.restart();
 
@@ -6064,7 +6062,6 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalZosForwardTypeOne(
 #else
     std::ignore = dfDep;
     std::ignore = dfIndep;
-#endif // HAVE_ADOLC
 
     this->mParams.increaseLevel();
     if ((this->params().rankOutput() == this->myRank()) &&
@@ -6074,6 +6071,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalZosForwardTypeOne(
                   << "   Evaluated."
                   << std::endl;
     }
+#endif // HAVE_ADOLC
 }
 /*----------------------------------------------------------------------------*/
 template <class OWNPRBLM, typename CT, std::size_t DIM>
@@ -6083,6 +6081,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalZosForwardTypeTwo(
     const int& /*timeIter*/
     )
 {
+#ifdef SCAFES_HAVE_ADOLC
     CT tmp;
     static_assert(std::is_same<decltype(tmp), double>::value,
                   "Only for CT=double!");
@@ -6097,7 +6096,6 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalZosForwardTypeTwo(
     }
     this->mParams.decreaseLevel();
 
-#ifdef SCAFES_HAVE_ADOLC
     ScaFES::Timer timerPhase;
     timerPhase.restart();
 
@@ -6153,7 +6151,6 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalZosForwardTypeTwo(
 #else
     std::ignore = dfDep;
     std::ignore = dfIndep;
-#endif // HAVE_ADOLC
 
     this->mParams.increaseLevel();
     if ((this->params().rankOutput() == this->myRank()) &&
@@ -6163,6 +6160,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalZosForwardTypeTwo(
                   << "   Done."
                   << std::endl;
     }
+#endif // HAVE_ADOLC
 }
 /*----------------------------------------------------------------------------*/
 template <class OWNPRBLM, typename CT, std::size_t DIM>
@@ -6171,6 +6169,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalZosForwardTypeThree(
     const ScaFES_VectDf<CT>& dfIndep, const int& /*timeIter*/
     )
 {
+#ifdef SCAFES_HAVE_ADOLC
     CT tmp;
     static_assert(std::is_same<decltype(tmp), double>::value,
                   "Only for CT=double!");
@@ -6186,7 +6185,6 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalZosForwardTypeThree(
     }
     this->mParams.decreaseLevel();
 
-#ifdef SCAFES_HAVE_ADOLC
     ScaFES::Timer timerPhase;
     timerPhase.restart();
 
@@ -6225,11 +6223,6 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalZosForwardTypeThree(
     dfDep = vectDep[0];
 
     this->mWallClockTimes[whichPhase] += timerPhase.elapsed();
-#else
-    std::ignore = dfDep;
-    std::ignore = dfIndep;
-#endif
-
     this->mParams.increaseLevel();
     if ((this->params().rankOutput() == this->myRank()) &&
         (0 < this->params().indentDepth()))
@@ -6238,6 +6231,11 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalZosForwardTypeThree(
                   << "   Evaluated."
                   << std::endl;
     }
+#else
+    std::ignore = dfDep;
+    std::ignore = dfIndep;
+#endif
+
 }
 /*----------------------------------------------------------------------------*/
 template <class OWNPRBLM, typename CT, std::size_t DIM>
@@ -6248,6 +6246,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalFovForwardTypeOne(
     const int& /*timeIter*/
     )
 {
+#ifdef SCAFES_HAVE_ADOLC
     CT tmp;
     static_assert(std::is_same<decltype(tmp), double>::value,
                   "Only for CT=double!");
@@ -6262,7 +6261,6 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalFovForwardTypeOne(
     }
     this->mParams.decreaseLevel();
 
-#ifdef SCAFES_HAVE_ADOLC
     ScaFES::Timer timerPhase;
     timerPhase.restart();
 
@@ -6343,13 +6341,6 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalFovForwardTypeOne(
 #endif
 
     this->mWallClockTimes[whichPhase] += timerPhase.elapsed();
-#else
-    std::ignore = dfDep;
-    std::ignore = dfGradDep;
-    std::ignore = dfIndep;
-    std::ignore = dfGradIndep;
-#endif // HAVE_ADOLC
-
     /*------------------------------------------------------------------------*/
     // Rearrange back two-dimensional arrays (gradients)
     // to one-dimensional arrays.
@@ -6365,6 +6356,13 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalFovForwardTypeOne(
                   << "   Evaluated."
                   << std::endl;
     }
+#else
+    std::ignore = dfDep;
+    std::ignore = dfGradDep;
+    std::ignore = dfIndep;
+    std::ignore = dfGradIndep;
+#endif // HAVE_ADOLC
+
 }
 /*----------------------------------------------------------------------------*/
 template <class OWNPRBLM, typename CT, std::size_t DIM>
@@ -6375,6 +6373,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalFovForwardTypeTwo(
     const int& /*timeIter*/
     )
 {
+#ifdef SCAFES_HAVE_ADOLC
     CT tmp;
     static_assert(std::is_same<decltype(tmp), double>::value,
                   "Only for CT=double!");
@@ -6389,7 +6388,6 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalFovForwardTypeTwo(
     }
     this->mParams.decreaseLevel();
 
-#ifdef SCAFES_HAVE_ADOLC
     ScaFES::Timer timerPhase;
     timerPhase.restart();
 
@@ -6466,12 +6464,6 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalFovForwardTypeTwo(
 #endif
 
     this->mWallClockTimes[whichPhase] += timerPhase.elapsed();
-#else
-    std::ignore = dfDep;
-    std::ignore = dfGradDep;
-    std::ignore = dfIndep;
-    std::ignore = dfGradIndep;
-#endif // HAVE_ADOLC
 
     this->mParams.increaseLevel();
     if ((this->params().rankOutput() == this->myRank()) &&
@@ -6481,6 +6473,13 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalFovForwardTypeTwo(
                   << "   Done."
                   << std::endl;
     }
+#else
+    std::ignore = dfDep;
+    std::ignore = dfGradDep;
+    std::ignore = dfIndep;
+    std::ignore = dfGradIndep;
+#endif // HAVE_ADOLC
+
 }
 /*----------------------------------------------------------------------------*/
 template <class OWNPRBLM, typename CT, std::size_t DIM>
