@@ -369,8 +369,7 @@ def start_simulation():
 
 def main():
     global params
-    # Check if path to configfile is provided and
-    # if file exists.
+    # Check if path to configfile is provided and if file exists.
     if len(sys.argv) > 1:
         if os.path.isfile(sys.argv[1]) == True:
             params['NAME_CONFIGFILE'] = sys.argv[1]

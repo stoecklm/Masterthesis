@@ -7,18 +7,19 @@ def main():
         if os.path.isfile(sys.argv[1]) == True and os.path.isfile(sys.argv[2]) == True:
             filepath_1 = sys.argv[1]
             filepath_2 = sys.argv[2]
+        elif os.path.isfile(sys.argv[1]) == False and os.path.isfile(sys.argv[2]) == False:
+            print(sys.argv[1], 'does not exist.')
+            print(sys.argv[2], 'does not exist.')
+            print('Usage: python3', sys.argv[0], '<PATH/TO/FILE_1> <PATH/TO/FILE_2>')
+            print('Aborting.')
+            exit()
         elif os.path.isfile(sys.argv[1]) == False:
             print(sys.argv[1], 'does not exist.')
             print('Usage: python3', sys.argv[0], '<PATH/TO/FILE_1> <PATH/TO/FILE_2>')
             print('Aborting.')
             exit()
-        elif os.path.isfile(sys.argv[2]) == False:
+        else: #os.path.isfile(sys.argv[2]) == False:
             print(sys.argv[2], 'does not exist.')
-            print('Usage: python3', sys.argv[0], '<PATH/TO/FILE_1> <PATH/TO/FILE_2>')
-            print('Aborting.')
-            exit()
-        else:
-            print(sys.argv[1], 'and', sys.argv[2], 'does not exist.')
             print('Usage: python3', sys.argv[0], '<PATH/TO/FILE_1> <PATH/TO/FILE_2>')
             print('Aborting.')
             exit()
@@ -74,8 +75,8 @@ def main():
         diff_file_rel.write(string_rel)
 
     diff_mean = diff_sum/a_1.shape[0]
-    print('max(abs(diff)) is {0}.'.format(abs(diff_max)))
-    print('mean(abs(diff)) is {0}.'.format(diff_mean))
+    print('max(abs(diff)) = {0}.'.format(abs(diff_max)))
+    print('mean(abs(diff)) = {0}.'.format(diff_mean))
 
 if __name__ == '__main__':
     main()
