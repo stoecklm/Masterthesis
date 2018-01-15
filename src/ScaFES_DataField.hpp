@@ -439,6 +439,9 @@ public:
      * using the maximum norm. */
     double compErrLinf(const ScaFES::DataField<CT, DIM>& dfAna);
 
+    /** Computes if data field can be assumend as converged. */
+    bool checkConv(const ScaFES::DataField<CT, DIM>& dfOld);
+
     /** Overloads the output operator \c operator<<. */
     template <typename ST, std::size_t DD>
     friend std::ostream& operator<<(std::ostream& output,
@@ -1521,6 +1524,100 @@ double DataField<CT, DIM>::compErrLinf(const ScaFES::DataField<CT, DIM>& df)
                   << std::endl;
     }
     return errLinf;
+}
+/*----------------------------------------------------------------------------*/
+template <typename CT, std::size_t DIM>
+bool DataField<CT, DIM>::checkConv(const ScaFES::DataField<CT, DIM>& dfOld)
+{
+    if ((this->params()->rankOutput() == this->params()->rank()) &&
+        (0 < this->params()->indentDepth()))
+    {
+        std::cout << mParams->getPrefix()
+                  << " * Compute difference(" << name() << ", " << dfOld.name()
+                  << ")..." << std::endl;
+    }
+    this->mParams->decreaseLevel();
+    ScaFES_IntNtuple idxNode;
+    ScaFES_IntNtuple idxNodeFirstSub =
+        this->gridGlobal().partition(dfOld.params()->rank()).idxNodeFirstSub();
+    ScaFES_IntNtuple idxNodeLastSub =
+        this->gridGlobal().partition(dfOld.params()->rank()).idxNodeLastSub();
+
+    int comp = 0;
+    bool cont = false;
+    bool isIdxNodeAtMemNormal = true;
+
+    int nNodesTotal = this->memAll().nNodes().size();
+    int ii;
+    // * ii Iteration variable ---> private
+    // * idxNode WRITE access Corresponding global node number ---> private
+    // * df1 READ access --> shared
+    // * df2 READ access --> shared
+    // Parallelize the region, assign portions of the loop to each thread
+    // and compute for each thread a local maximum.
+    // At the end, compute the global maximum of all threads.
+
+    // #ifdef _OPENMP
+    // #pragma omp parallel for
+    //     schedule(static)
+    //     private(ii, idxNode, isIdxNodeAtMemNormal)
+    //     shared(df, nNodesTotal, idxNodeFirstSub, idxNodeLastSub)
+    //     reduction(max: errLinf)
+    // #endif
+    for (ii = 0; ii < nNodesTotal; ++ii)
+    {
+        this->memoryPos2IdxNode(idxNode, comp, ii);
+        isIdxNodeAtMemNormal = true;
+        for (std::size_t jj = 0; jj < DIM; ++jj)
+        {
+            if ((idxNodeFirstSub.elem(jj) > idxNode.elem(jj)) ||
+                (idxNodeLastSub.elem(jj) < idxNode.elem(jj)))
+            {
+                isIdxNodeAtMemNormal = false;
+            }
+        }
+
+        if (isIdxNodeAtMemNormal)
+        {
+            for (int kk = 0; kk < this->nColumns(); ++kk)
+            {
+                if (std::fabs(this->elemData(ii + kk) - dfOld(idxNode, kk) > 1.0e-5))
+                {
+                    cont = true;
+                }
+                /* For debugging purposes, only. */
+                /*
+                std::cout << mParams->getPrefix()
+                          << " * compare fields ( "
+                         << name() << " " << dfOld.name() << "): "
+                          << std::scientific << this->elemData(ii + kk)
+                          << "  " << dfOld(idxNode, kk)  << "  "
+                          << ::fabs(this->elemData(ii + kk) - dfOld(idxNode, kk))
+                          << std::fixed
+                          << std::endl;
+                */
+            }
+        }
+    }
+
+    if ((this->params()->rankOutput() == this->params()->rank()) &&
+        (0 < this->params()->indentDepth()))
+    {
+        std::cout << mParams->getPrefix()
+                  << " * Is (" << name() << ", " << dfOld.name()
+                  << ") converged?: " << !(cont) << std::fixed
+                  << std::endl;
+    }
+    this->mParams->increaseLevel();
+    if ((this->params()->rankOutput() == this->params()->rank()) &&
+        (0 < this->params()->indentDepth()))
+    {
+        std::cout << mParams->getPrefix()
+                  << "   Computed."
+                  << std::endl;
+    }
+
+    return cont;
 }
 /*----------------------------------------------------------------------------*/
 template <typename TT, std::size_t DIM>

@@ -308,6 +308,7 @@ public:
      * @param computeError Should the Linf error between the numerical
      *                     and exact solution be computed?
      * @param geomparamsInit Initial guess of geometrical parameters.
+     * @param checkConvergence Should convergence of data field be computed?
      */
     Problem(const ScaFES::Parameters & params, const ScaFES::GridGlobal<DIM>& gg,
             const bool& useLeapfrog,
@@ -319,7 +320,8 @@ public:
             const std::vector<ScaFES::WriteHowOften>& writeToFile =
                 std::vector<ScaFES::WriteHowOften>(),
             const std::vector<bool>& computeError = std::vector<bool>(),
-            const std::vector<CT>& geomparamsInit = std::vector<CT>());
+            const std::vector<CT>& geomparamsInit = std::vector<CT>(),
+            const std::vector<bool>& checkConvergence = std::vector<bool>());
 
     /** Creates compiler provided copy constructor. */
     Problem(const Problem<OWNPRBLM, CT, DIM>& /*ppp*/) = default;
@@ -648,6 +650,9 @@ protected:
 
     /** Compute errors. */
     void compErrOfUnknownDfs();
+
+    /** Check convergence. */
+    bool checkConvOfUnknownDfs();
 
     /** Write data fields to file. */
     void writeAllDfs(const int& timeIter);
@@ -1070,6 +1075,9 @@ protected:
     /** Flags for all data fields if error should be computed or not. */
     std::vector<bool> mComputeError;
 
+    /** Flags for all data fields if convergence should be computed or not. */
+    std::vector<bool> mCheckConvergence;
+
     /** Number of given parameters. */
     int mNparams;
 
@@ -1303,11 +1311,13 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
     const std::vector<int>& nLayers, const std::vector<CT>& defaultValue,
     const std::vector<ScaFES::WriteHowOften>& writeToFile,
     const std::vector<bool>& computeError,
-    const std::vector<CT>& geomparamsInit)
+    const std::vector<CT>& geomparamsInit,
+    const std::vector<bool>& checkConvergence)
 : mParams(params), mUseLeapfrogIntegration(useLeapfrog), mGG(gg),
   mNameDataField(nameDatafield), mStencilWidth(stencilWidth),
   mIsKnownDf(isKnownDf), mNlayers(nLayers), mDefaultValue(defaultValue),
   mWriteToFile(writeToFile), mComputeError(computeError),
+  mCheckConvergence(checkConvergence),
   mNparams(1) // = 1 because gradients are of type R^{m,nParams}.
   ,
   mComputeGradients(false), mUseAsynchronMode(false),
@@ -2513,6 +2523,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::iterateOverTime()
     VT_MARKER(mid, "Prblm_iterate_start");
 #endif
 
+    bool cont = true;
     for (currTimeIter = 0; currTimeIter <= this->nTimesteps(); ++currTimeIter)
     {
 
@@ -2564,6 +2575,10 @@ inline void Problem<OWNPRBLM, CT, DIM>::iterateOverTime()
         }
         this->writeAllDfs(currTimeIter);
         this->compErrOfUnknownDfs();
+        if (0 < currTimeIter)
+        {
+            cont = this->checkConvOfUnknownDfs();
+        }
         this->swapPointersOfKnownDfs();
         this->swapPointersOfUnknownDfs();
         // Update times of old / new data fields AFTER swapping.
@@ -2577,6 +2592,20 @@ inline void Problem<OWNPRBLM, CT, DIM>::iterateOverTime()
         {
             std::cout << this->mParams.getPrefix() << "   Processed."
                       << std::endl;
+        }
+        if (cont == false)
+        {
+            if ((this->params().rankOutput() == this->myRank()) &&
+                (0 < this->params().indentDepth()))
+            {
+                std::cout << this->mParams.getPrefix()
+                          << " * Convergence after " << currTimeIter
+                          << " of " << this->nTimesteps()
+                          << " timesteps." << std::endl;
+            }
+            this->writeAllDfs(this->nTimesteps());
+
+            break;
         }
     }
 
@@ -3440,6 +3469,81 @@ inline void Problem<OWNPRBLM, CT, DIM>::compErrOfUnknownDfs()
                                        << "   Computed."
                   << std::endl;
     }
+}
+/*----------------------------------------------------------------------------*/
+template <class OWNPRBLM, typename CT, std::size_t DIM>
+inline bool Problem<OWNPRBLM, CT, DIM>::checkConvOfUnknownDfs()
+{
+    ScaFES::Timer timerCheckConv;
+    if (this->params().rankOutput() == this->myRank() &&
+        (0 < this->params().indentDepth()))
+    {
+        std::cout << this->mParams.getPrefix()
+                  << " * Check convergence for all unknown data fields..."
+                  << std::endl;
+    }
+    this->mParams.decreaseLevel();
+
+    timerCheckConv.restart();
+
+    // Compute nodal convergence.
+    int idDf = 0;
+    std::vector<bool> cont(mCheckConvergence.size(), false);
+    for (std::size_t ii = 0; ii < this->mCheckConvergence.size(); ++ii)
+    {
+        if (0 == this->nLayers().at(ii))
+        {
+            if (!(this->isKnownDf().at(ii)))
+            {
+                if (this->mCheckConvergence.at(ii))
+                {
+                    cont[ii] = this->mVectUnknownDfsDomNew[idDf]
+                        .checkConv(this->mVectUnknownDfsDomOld[idDf]);
+                }
+                ++idDf;
+            }
+        }
+    }
+    if (0 < this->nUnknownBdryDfs())
+    {
+        idDf = 0;
+        for (std::size_t ii = 0; ii < this->mCheckConvergence.size(); ++ii)
+        {
+            if (0 < this->nLayers().at(ii))
+            {
+                if (!(this->isKnownDf().at(ii)))
+                {
+                    if (this->mCheckConvergence.at(ii))
+                    {
+                        cont[ii] = this->mVectUnknownDfsBdryNew[idDf]
+                            .checkConv(this->mVectUnknownDfsBdryOld[idDf]);
+                    }
+                    ++idDf;
+                }
+            }
+        }
+    }
+
+    this->mWallClockTimes["checkConv"] += timerCheckConv.elapsed();
+
+    this->mParams.increaseLevel();
+    if ((this->params().rankOutput() == this->myRank()) &&
+        (0 < this->params().indentDepth()))
+    {
+        std::cout << this->mParams.getPrefix()
+                                       << "   Checked."
+                  << std::endl;
+    }
+
+    for (std::size_t ii = 0; ii < this->mCheckConvergence.size(); ++ii)
+    {
+        if (cont[ii] == true)
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 /*******************************************************************************
