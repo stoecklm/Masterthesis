@@ -3535,6 +3535,10 @@ inline bool Problem<OWNPRBLM, CT, DIM>::checkConvOfUnknownDfs()
                   << std::endl;
     }
 
+    if (this->mCheckConvergence.size() == 0)
+    {
+        return true;
+    }
     for (std::size_t ii = 0; ii < this->mCheckConvergence.size(); ++ii)
     {
         if (cont[ii] == true)
