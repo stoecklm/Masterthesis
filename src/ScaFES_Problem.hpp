@@ -3488,7 +3488,7 @@ inline bool Problem<OWNPRBLM, CT, DIM>::checkConvOfUnknownDfs()
 
     // Compute nodal convergence.
     int idDf = 0;
-    std::vector<bool> cont(mCheckConvergence.size(), false);
+    std::vector<bool> contDom;
     for (std::size_t ii = 0; ii < this->mCheckConvergence.size(); ++ii)
     {
         if (0 == this->nLayers().at(ii))
@@ -3497,13 +3497,16 @@ inline bool Problem<OWNPRBLM, CT, DIM>::checkConvOfUnknownDfs()
             {
                 if (this->mCheckConvergence.at(ii))
                 {
-                    cont[ii] = this->mVectUnknownDfsDomNew[idDf]
-                        .checkConv(this->mVectUnknownDfsDomOld[idDf]);
+                    contDom.push_back(
+                        this->mVectUnknownDfsDomNew[idDf]
+                        .checkConv(this->mVectUnknownDfsDomOld[idDf])
+                    );
                 }
                 ++idDf;
             }
         }
     }
+    std::vector<bool> contBdry;
     if (0 < this->nUnknownBdryDfs())
     {
         idDf = 0;
@@ -3515,8 +3518,10 @@ inline bool Problem<OWNPRBLM, CT, DIM>::checkConvOfUnknownDfs()
                 {
                     if (this->mCheckConvergence.at(ii))
                     {
-                        cont[ii] = this->mVectUnknownDfsBdryNew[idDf]
-                            .checkConv(this->mVectUnknownDfsBdryOld[idDf]);
+                        contBdry.push_back(
+                            this->mVectUnknownDfsBdryNew[idDf]
+                            .checkConv(this->mVectUnknownDfsBdryOld[idDf])
+                        );
                     }
                     ++idDf;
                 }
@@ -3535,18 +3540,31 @@ inline bool Problem<OWNPRBLM, CT, DIM>::checkConvOfUnknownDfs()
                   << std::endl;
     }
 
-    if (this->mCheckConvergence.size() == 0)
+    /* If size of both vectors is zero,
+     * then there has been no test of convergence.
+     * Therefore continue iterating. */
+    if (contDom.size() == 0 && contBdry.size() == 0)
     {
         return true;
     }
-    for (std::size_t ii = 0; ii < this->mCheckConvergence.size(); ++ii)
+    /* Continue iterating if at least for one data field
+     * cont is true. */
+    for (std::size_t ii = 0; ii < contDom.size(); ++ii)
     {
-        if (cont[ii] == true)
+        if (contDom[ii] == true)
+        {
+            return true;
+        }
+    }
+    for (std::size_t ii = 0; ii < contBdry.size(); ++ii)
+    {
+        if (contBdry[ii] == true)
         {
             return true;
         }
     }
 
+    /* Stop iterating. */
     return false;
 }
 
