@@ -119,8 +119,11 @@
 # * Maximal run time in hh:mm:ss. <string>
 #   SCAFESRUN_MACHINE_TIME="";
 #
-#   Name of the init file (netCDF file) <string>
+# * Name of the init file (netCDF file) <string>
 #   SCAFESRUN_NAME_INITFILE="";
+#
+# * Threshold for convergence check <double>
+#   SCAFESRUN_THRESHOLD="";
 #
 # ScaFES
 # Copyright (c) 2011-2015, ZIH, TU Dresden, Federal Republic of Germany.
@@ -410,10 +413,17 @@ if [ "x$SCAFESRUN_MACHINE_TIME" == "x" ] ; then
 fi
 
 #------------------------------------------------------------------------------#
+if [ "x$SCAFESRUN_THRESHOLD" == "x" ] ; then
+    SCAFESRUN_THRESHOLD="0.00001";
+    echo "* WARNING: Use default value SCAFESRUN_THRESHOLD=$SCAFESRUN_THRESHOLD"
+fi
+
+#------------------------------------------------------------------------------#
 if [ "x$SCAFESRUN_SOFTWARE_VERSION" == "x" ] ; then
     SCAFESRUN_SOFTWARE_VERSION="trunk";
     echo "* WARNING: Use default value SCAFESRUN_SOFTWARE_VERSION=$SCAFESRUN_SOFTWARE_VERSION"
 fi
+
 #------------------------------------------------------------------------------#
 # From here on, all variables should be declared.
 set -u
@@ -456,6 +466,7 @@ declare    -r local nameReservation=${SCAFESRUN_MACHINE_NAME_RESERVATION};
 declare    -r local memoryPerCore=${SCAFESRUN_MACHINE_MEMORY_PER_CORE};
 declare    local jobexestring="";
 declare    -r local nameInitfile=${SCAFESRUN_NAME_INITFILE};
+declare    -r local valueThreshold=${SCAFESRUN_THRESHOLD};
 #------------------------------------------------------------------------------#
 # Compute value of dependent variable.
 declare -i local nCoresTotalMAX=${nNodesMachineMAX};
@@ -654,6 +665,7 @@ for idxTestMpi in `seq 0 $endTestMpi`; do
                     --coordNodeLast=$currCoordNodeLast \
                     --starttime=$currStarttime \
                     --endtime=$currEndtime \
+                    --threshold=$valueThreshold \
                     --nTimesteps=$currNtimesteps \
                     --nSnapshots=$currNsnapshots \
                     ${optionKindfile} \

@@ -1581,7 +1581,8 @@ bool DataField<CT, DIM>::checkConv(const ScaFES::DataField<CT, DIM>& dfOld)
         {
             for (int kk = 0; kk < this->nColumns(); ++kk)
             {
-                if (std::fabs(this->elemData(ii + kk) - dfOld(idxNode, kk)) > 1.0e-5)
+                if (std::fabs(this->elemData(ii + kk) - dfOld(idxNode, kk))
+                    > this->mParams->threshold())
                 {
                     cont = true;
                 }

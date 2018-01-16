@@ -168,6 +168,9 @@ public:
     /** Returns time step width. */
     const double& tau() const;
 
+    /** Returns threshold for convergence check. */
+    const double& threshold() const;
+
     /** Returns the number of snapshots. */
     const int& nSnapshots() const;
 
@@ -338,6 +341,9 @@ private:
     /** Time step width. */
     double mTau;
 
+    /** Threshold for convergence check. */
+    double mThreshold;
+
     /** Number of snapshots: Write data each m timesteps. */
     int mNsnapshots;
 
@@ -413,6 +419,7 @@ inline Parameters::Parameters(int argc, char* argv[])
 , mTimeIntervalEnd(1.0)
 , mNtimesteps(1)
 , mTau((mTimeIntervalEnd-mTimeIntervalStart)/mNtimesteps)
+, mThreshold(0.00001)
 , mNsnapshots(1)
 , mNlayersAtBorder(1)
 , mWriteDataFile(false)
@@ -468,6 +475,8 @@ inline Parameters::Parameters(int argc, char* argv[])
             "nTimesteps", po::value<int>(),
             "Sets the number of time steps (=#{time intervals} (default=0).")(
             "tau", po::value<double>(), "Sets the time step width.")(
+            "threshold", po::value<double>(),
+            "Sets the threshold for convergence check.")(
             "nSnapshots", po::value<int>(), "Sets how many times the data "
                                             "fields are written to output "
                                             "(default=1).")(
@@ -772,6 +781,25 @@ inline Parameters::Parameters(int argc, char* argv[])
         }
 
         /*--------------------------------------------------------------------*/
+        if (vm.count("threshold"))
+        {
+            this->mThreshold = vm["threshold"].as<double>();
+
+            if (0.0 > this->threshold())
+            {
+                std::cerr << "\nWARNING: Threshold < 0.0."
+                          << std::endl;
+                this->mThreshold = std::fabs(this->threshold());
+                std::cerr << "threshold = fabs(threshold)."
+                          << "\n" << std::endl;
+            }
+        }
+        else
+        {
+            std::cerr << "\nREMARK: Use --threshold=<real value>.\n\n";
+        }
+
+        /*--------------------------------------------------------------------*/
         if (vm.count("nSnapshots"))
         {
             this->mNsnapshots = vm["nSnapshots"].as<int>();
@@ -1029,6 +1057,7 @@ inline Parameters::Parameters(const Parameters& rhs)
 , mTimeIntervalEnd(rhs.timeIntervalEnd())
 , mNtimesteps(rhs.nTimesteps())
 , mTau(rhs.tau())
+, mThreshold(rhs.threshold())
 , mNsnapshots(rhs.nSnapshots())
 , mNlayersAtBorder(rhs.nLayersAtBorder())
 , mWriteDataFile(rhs.writeDataFile())
@@ -1067,6 +1096,7 @@ inline Parameters::Parameters(const Parameters& rhs)
 , mTimeIntervalEnd(rhs.timeIntervalEnd())
 , mNtimesteps(rhs.nTimesteps())
 , mTau(rhs.tau())
+, mThreshold(rhs.threshold())
 , mNsnapshots(rhs.nSnapshots())
 , mNlayersAtBorder(rhs.nLayersAtBorder())
 , mWriteDataFile(rhs.writeDataFile())
@@ -1189,6 +1219,11 @@ inline const int& Parameters::nTimesteps() const
 inline const double& Parameters::tau() const
 {
     return this->mTau;
+}
+/*----------------------------------------------------------------------------*/
+inline const double& Parameters::threshold() const
+{
+    return this->mThreshold;
 }
 /*----------------------------------------------------------------------------*/
 inline const int& Parameters::nSnapshots() const
@@ -1363,6 +1398,10 @@ inline bool Parameters::operator==(const Parameters& rhs) const
         isEqual = false;
     }
     if (this->tau() != rhs.tau())
+    {
+        isEqual = false;
+    }
+    if (this->threshold() != rhs.threshold())
     {
         isEqual = false;
     }
@@ -1604,6 +1643,7 @@ void Parameters::serialize(Archive& ar, const unsigned int version)
         ar&(this->mTimeIntervalEnd);
         ar&(this->mNtimesteps);
         ar&(this->mTau);
+        ar&(this->mThreshold);
         ar&(this->mNsnapshots);
         ar&(this->mNlayersAtBorder);
         ar&(this->mWriteDataFile);
@@ -1646,6 +1686,7 @@ inline void swap(Parameters& first, Parameters& second)
     std::swap(first.mTimeIntervalEnd, second.mTimeIntervalEnd);
     std::swap(first.mNtimesteps, second.mNtimesteps);
     std::swap(first.mTau, second.mTau);
+    std::swap(first.mThreshold, second.mThreshold);
     std::swap(first.mNsnapshots, second.mNsnapshots);
     std::swap(first.mNlayersAtBorder, second.mNlayersAtBorder);
     std::swap(first.mWriteDataFile, second.mWriteDataFile);
