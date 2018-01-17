@@ -1601,6 +1601,17 @@ bool DataField<CT, DIM>::checkConv(const ScaFES::DataField<CT, DIM>& dfOld)
         }
     }
 
+/* If at least one process/partition needs to continue,
+ * then all other processes/partitions must continue, too.
+ * Tell other processes if they need to continue by calling MPI_Allreduce.
+ * Not necesseray if no MPI is used. */
+#ifdef SCAFES_HAVE_MPI
+        int in = cont;
+        int out;
+        MPI_Allreduce(&in, &out, 1, MPI_INT, MPI_MAX, mParams->myWorld().myWorld());
+        cont = out;
+#endif
+
     if ((this->params()->rankOutput() == this->params()->rank()) &&
         (0 < this->params()->indentDepth()))
     {
