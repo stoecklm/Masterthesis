@@ -47,6 +47,7 @@ def parse_config_file():
     NAME_VARIABLES = config['Input'].get('NAME_VARIABLES', fallback='U')
     NAME_VARIABLES = list(NAME_VARIABLES.split())
     params['NAME_VARIABLES'] = NAME_VARIABLES
+    params['THRESHOLD'] = config['Input'].getfloat('THRESHOLD', fallback=0.00001)
     # Get values from section 'Parameters'.
     params['T_INIT'] = config['Parameters'].getfloat('T_I')
     params['T_TUMOR'] = config['Parameters'].getfloat('T_TUMOR')
@@ -124,6 +125,11 @@ def check_variables():
         print('WARNING: N_SNAPSHOTS was bigger than N_TIMESTEPS.')
         params['N_SNAPSHOTS'] = params['N_TIMESTEPS']
         print('N_SNAPSHOTS was set to N_TIMESTEPS.')
+    # Check if threshold is positive.
+    if params['THRESHOLD'] < 0.0:
+        print('WARNING: THRESHOLD < 0.0.')
+        params['THRESHOLD'] = abs(params['THRESHOLD'])
+        print('THRESHOLD was set to abs(THRESHOLD).')
     # Check if combinations of USE_INITFILE and CREATE_INITFILE makes sense.
     if params['USE_INITFILE'] == True and params['CREATE_INITFILE'] == False:
         if os.path.isfile(params['NAME_INITFILE'] + '.nc') == False:
@@ -339,6 +345,7 @@ def set_environment_variables():
     os.putenv('SCAFESRUN_COORD_NODE_LAST', str(params['COORD_NODE_LAST_ENV']))
     os.putenv('SCAFESRUN_N_NODES', str(params['N_NODES_ENV']))
     os.putenv('SCAFESRUN_NAME_EXECUTABLE', str(params['NAME_EXECUTABLE']))
+    os.putenv('SCAFESRUN_THRESHOLD', str(params['THRESHOLD']))
     # Check if init file should be used and if it exists.
     if params['USE_INITFILE'] == True:
         if os.path.isfile(params['NAME_INITFILE'] + '.nc') == True:

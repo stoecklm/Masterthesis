@@ -120,12 +120,14 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
                     std::vector<ScaFES::WriteHowOften> const& writeToFile
                       = std::vector<ScaFES::WriteHowOften>(),
                     std::vector<bool> const& computeError = std::vector<bool>(),
-                    std::vector<CT> const& geomparamsInit = std::vector<CT>() )
+                    std::vector<CT> const& geomparamsInit = std::vector<CT>(),
+                    std::vector<bool> const& checkConvergence = std::vector<bool>() )
         : ScaFES::Problem<TumorHeatEqnFDM<CT, DIM>, CT, DIM>(params, gg, useLeapfrog,
                                                              nameDatafield, stencilWidth,
                                                              isKnownDf, nLayers,
                                                              defaultValue, writeToFile,
-                                                             computeError, geomparamsInit),
+                                                             computeError, geomparamsInit,
+                                                             checkConvergence),
         ptree(ptree_),
         RHO(ptree.get<CT>("Parameters.RHO")),
         C(ptree.get<CT>("Parameters.C")),

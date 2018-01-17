@@ -45,6 +45,8 @@ CREATE_INITFILE = True
 # Name of variables in init file.
 # Must be the name specified in main.cpp.
 NAME_VARIABLES = T Region
+# Threshold for check of convergence.
+THRESHOLD = 1.0e-5
 
 [Output]
 N_SNAPSHOTS = 9000

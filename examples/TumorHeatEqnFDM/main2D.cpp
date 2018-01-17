@@ -43,6 +43,10 @@ int main(int argc, char *argv[]) {
     computeError[1] = false;
     computeError[2] = false;
     std::vector<double> geomparamsInit;
+    std::vector<bool> checkConvergence(3);
+    checkConvergence[0] = false;
+    checkConvergence[1] = true;
+    checkConvergence[2] = false;
 
     boost::property_tree::ptree pt;
     boost::property_tree::ini_parser::read_ini(paramsCl.nameConfigFile(), pt);
@@ -50,7 +54,8 @@ int main(int argc, char *argv[]) {
     TumorHeatEqnFDM<double, DIM> ppp(paramsCl, gg, false, nameDatafield,
                                      stencilWidth, isKnownDf, pt, nLayers,
                                      defaultValue, writeToFile, computeError,
-                                     geomparamsInit);
+                                     geomparamsInit, checkConvergence);
+
     ppp.iterateOverTime();
 
     return 0;
