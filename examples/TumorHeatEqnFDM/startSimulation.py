@@ -1,5 +1,4 @@
 import configparser
-import netCDF4 as nc
 import numpy as np
 import os
 import subprocess
@@ -37,7 +36,7 @@ def parse_config_file():
     # Get values from section 'Time'.
     params['START_TIME'] = config['Time'].getint('START_TIME', fallback=0)
     params['END_TIME']= config['Time'].getint('END_TIME', fallback=1)
-    params['N_TIMESTEPS'] = config['Time'].getint('N_TIMESTEPS', fallback=1)
+    params['N_TIMESTEPS'] = config['Time'].getint('N_TIMESTEPS', fallback=0)
     # Get values from section 'Output'.
     params['N_SNAPSHOTS'] = config['Output'].getint('N_SNAPSHOTS')
     # Get values from section 'Input'.
@@ -61,21 +60,6 @@ def parse_config_file():
     params['OMEGA_B_BRAIN'] = config['Parameters'].getfloat('OMEGA_B_BRAIN')
     params['OMEGA_B_TUMOR'] = config['Parameters'].getfloat('OMEGA_B_TUMOR')
     params['H'] = config['Parameters'].getfloat('H')
-
-    print('Done.')
-
-def calc_variables():
-    global params
-    print('Calculating variables.')
-
-    # Calculate gridsize in each dimension.
-    GRIDSIZE = []
-    for dim in range(0, params['SPACE_DIM']):
-        GRIDSIZE.append((params['COORD_NODE_LAST'][dim] - params['COORD_NODE_FIRST'][dim])/(params['N_NODES'][dim]-1))
-    params['GRIDSIZE'] = GRIDSIZE
-    # Calculate delta time.
-    DELTA_TIME = (params['END_TIME'] - params['START_TIME'])/params['N_TIMESTEPS']
-    params['DELTA_TIME'] = DELTA_TIME
 
     print('Done.')
 
@@ -120,11 +104,6 @@ def check_variables():
         print('END_TIME must be greater than START_TIME.')
         print('Aborting.')
         exit()
-    # Check if number of snapshots is possible.
-    if params['N_SNAPSHOTS'] > params['N_TIMESTEPS']:
-        print('WARNING: N_SNAPSHOTS was bigger than N_TIMESTEPS.')
-        params['N_SNAPSHOTS'] = params['N_TIMESTEPS']
-        print('N_SNAPSHOTS was set to N_TIMESTEPS.')
     # Check if threshold is positive.
     if params['THRESHOLD'] < 0.0:
         print('WARNING: THRESHOLD < 0.0.')
@@ -147,6 +126,72 @@ def check_variables():
         print('Aborting.')
         exit()
     params['NAME_EXECUTABLE'] = NAME_EXECUTABLE
+
+    print('Done.')
+
+def calc_variables():
+    global params
+    print('Calculating variables.')
+
+    # Calculate gridsize in each dimension.
+    GRIDSIZE = []
+    for dim in range(0, params['SPACE_DIM']):
+        GRIDSIZE.append((params['COORD_NODE_LAST'][dim] - params['COORD_NODE_FIRST'][dim])/(params['N_NODES'][dim]-1))
+    params['GRIDSIZE'] = GRIDSIZE
+    # Calculate delta time.
+    if params['N_TIMESTEPS'] < 1:
+        print('WARNING: N_TIMESTEPS not specified.')
+        print('Calculate N_TIMESTEPS from stability criterion.')
+        RHO = params['RHO']
+        C = params['C']
+        K = params['K']
+        RHO_B = params['RHO_B']
+        C_PB = params['C_PB']
+        OMEGA_B_BRAIN = params['OMEGA_B_BRAIN']
+        OMEGA_B_TUMOR = params['OMEGA_B_TUMOR']
+        H = params['H']
+        GRIDSIZE = params['GRIDSIZE']
+        SPACE_DIM = params['SPACE_DIM']
+        DELTA_TIME_MIN = 0
+        # Pennes Bioheat Equation.
+        tmp = 0
+        for dim in range(0, SPACE_DIM):
+            tmp += (2.0/(GRIDSIZE[dim]*GRIDSIZE[dim])) * (K/(RHO*C))
+        # Healthy brain region in inner nodes.
+        DELTA_TIME_BRAIN = tmp + ((RHO_B*C_PB)/(RHO*C)) * OMEGA_B_BRAIN
+        DELTA_TIME_BRAIN = 1.0/DELTA_TIME_BRAIN
+        DELTA_TIME_MIN = DELTA_TIME_BRAIN
+        # Tumor region in inner nodes.
+        DELTA_TIME_TUMOR = tmp + ((RHO_B*C_PB)/(RHO*C)) * OMEGA_B_TUMOR
+        DELTA_TIME_TUMOR = 1.0/DELTA_TIME_TUMOR
+        if DELTA_TIME_TUMOR < DELTA_TIME_MIN:
+            DELTA_TIME_MIN = DELTA_TIME_TUMOR
+        # Healthy brain region at border with convection.
+        DELTA_TIME_BRAIN_CONV = tmp + 2.0*(1.0/GRIDSIZE[SPACE_DIM-1])*(H/(RHO*C))
+        DELTA_TIME_BRAIN_CONV += ((RHO_B*C_PB)/(RHO*C)) * OMEGA_B_BRAIN
+        DELTA_TIME_BRAIN_CONV = 1.0/DELTA_TIME_BRAIN_CONV
+        if DELTA_TIME_BRAIN_CONV < DELTA_TIME_MIN:
+            DELTA_TIME_MIN = DELTA_TIME_BRAIN_CONV
+        # Tumor brain region at border with convection.
+        # Will probably not be the case, but test it anyway.
+        DELTA_TIME_TUMOR_CONV = tmp + 2.0*(1.0/GRIDSIZE[SPACE_DIM-1])*(H/(RHO*C))
+        DELTA_TIME_TUMOR_CONV += ((RHO_B*C_PB)/(RHO*C)) * OMEGA_B_TUMOR
+        DELTA_TIME_TUMOR_CONV = 1.0/DELTA_TIME_TUMOR_CONV
+        if DELTA_TIME_TUMOR_CONV < DELTA_TIME_MIN:
+            DELTA_TIME_MIN = DELTA_TIME_TUMOR_CONV
+        # Calculate timesteps from minimum if delta time.
+        # Add five percent for safety reasons.
+        params['N_TIMESTEPS'] = int(((params['END_TIME'] - params['START_TIME'])/DELTA_TIME_MIN)*1.05)
+        DELTA_TIME = DELTA_TIME_MIN
+
+    # Final calculation for delta time.
+    params['DELTA_TIME'] = (params['END_TIME'] - params['START_TIME'])/params['N_TIMESTEPS']
+
+    # Check if number of snapshots is possible.
+    if params['N_SNAPSHOTS'] > params['N_TIMESTEPS']:
+        print('WARNING: N_SNAPSHOTS was bigger than N_TIMESTEPS.')
+        params['N_SNAPSHOTS'] = params['N_TIMESTEPS']
+        print('N_SNAPSHOTS was set to N_TIMESTEPS.')
 
     print('Done.')
 
@@ -212,6 +257,7 @@ def check_stability():
     print('Done.')
 
 def create_init_file():
+    import netCDF4 as nc
     global params
     SPACE_DIM = params['SPACE_DIM']
     NAME_INITFILE = params['NAME_INITFILE']
@@ -382,11 +428,10 @@ def main():
             params['NAME_CONFIGFILE'] = sys.argv[1]
         else:
             print(sys.argv[1], 'does not exist.')
-            print('Usage: python3', sys.argv[0], '<PATH/TO/CONFIGFILE>')
-            print('Aborting.')
-            exit()
     else:
         print('No command line argument for configfile provided.')
+
+    if params['NAME_CONFIGFILE'] == '':
         print('Usage: python3', sys.argv[0], '<PATH/TO/CONFIGFILE>')
         print('Aborting.')
         exit()
