@@ -4,22 +4,31 @@ import os
 import sys
 
 def main():
+    # Check if path to netCDF file (i.e. results) is provided,
+    # if file exists and if file has .nc extension.
     if len(sys.argv) > 1:
         if os.path.isfile(sys.argv[1]) == True:
-            filepath = sys.argv[1]
-        else: #os.path.isfile(sys.argv[1]) == False:
+            if os.path.splitext(sys.argv[1])[1] == '.nc':
+                filepath = sys.argv[1]
+            else:
+                print(sys.argv[1], 'does not have .nc extension.')
+                print('Usage: python3', sys.argv[0], '<PATH/TO/FILE>')
+                print('Aborting.')
+                exit()
+        else:
             print(sys.argv[1], 'does not exist.')
-            print('Usage: python3', sys.argv[0], '<PATH/TO/FILE_1>')
+            print('Usage: python3', sys.argv[0], '<PATH/TO/FILE>')
             print('Aborting.')
             exit()
     else:
-        print('No command line arguments for files provided.')
-        print('Usage: python3', sys.argv[0], '<PATH/TO/FILE_1>')
+        print('No command line argument for netCDF file provided.')
+        print('Usage: python3', sys.argv[0], '<PATH/TO/FILE>')
         print('Aborting.')
         exit()
 
-    nc_file = nc.Dataset(filepath)
+    print('Read data from {0}.'.format(filepath))
 
+    nc_file = nc.Dataset(filepath)
     dim0 = nc_file.dimensions['nNodes_0'].size
     dim1 = nc_file.dimensions['nNodes_1'].size
     dim2 = nc_file.dimensions['nNodes_2'].size
@@ -38,6 +47,8 @@ def main():
     eps_start = 1.0
     eps_end = 1.0e-15
     eps_curr = eps_start
+
+    print('Check convergence.')
 
     for step in range(time-1):
         a_old[:,:,:] = TNewDom[step:(step+1),:,:,]
