@@ -1,10 +1,10 @@
 import netCDF4 as nc
 import numpy as np
 import os
-import subprocess
 import sys
 
 def main():
+    filepath = ''
     # Check if path to netCDF file (i.e. results) is provided,
     # if file exists and if file has .nc extension.
     if len(sys.argv) > 1:
@@ -13,16 +13,12 @@ def main():
                 filepath = sys.argv[1]
             else:
                 print(sys.argv[1], 'does not have .nc extension.')
-                print('Usage: python3', sys.argv[0], '<PATH/TO/FILE>')
-                print('Aborting.')
-                exit()
         else:
             print(sys.argv[1], 'does not exist.')
-            print('Usage: python3', sys.argv[0], '<PATH/TO/FILE>')
-            print('Aborting.')
-            exit()
     else:
         print('No command line argument for netCDF file provided.')
+
+    if filepath == '':
         print('Usage: python3', sys.argv[0], '<PATH/TO/FILE>')
         print('Aborting.')
         exit()
