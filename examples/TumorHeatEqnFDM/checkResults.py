@@ -4,40 +4,29 @@ import os
 import sys
 
 def main():
+    filepath = []
+    # Check if paths to netCDF files (i.e. results) are provided,
+    # if files exist and if files have .nc extension.
     if len(sys.argv) > 2:
-        if os.path.isfile(sys.argv[1]) == True and os.path.isfile(sys.argv[2]) == True:
-            filepath_1 = sys.argv[1]
-            filepath_2 = sys.argv[2]
-        elif os.path.isfile(sys.argv[1]) == False and os.path.isfile(sys.argv[2]) == False:
-            print(sys.argv[1], 'does not exist.')
-            print(sys.argv[2], 'does not exist.')
-            print('Usage: python3', sys.argv[0], '<PATH/TO/FILE_1> <PATH/TO/FILE_2>')
-            print('Aborting.')
-            exit()
-        elif os.path.isfile(sys.argv[1]) == False:
-            print(sys.argv[1], 'does not exist.')
-            print('Usage: python3', sys.argv[0], '<PATH/TO/FILE_1> <PATH/TO/FILE_2>')
-            print('Aborting.')
-            exit()
-        else: #os.path.isfile(sys.argv[2]) == False:
-            print(sys.argv[2], 'does not exist.')
-            print('Usage: python3', sys.argv[0], '<PATH/TO/FILE_1> <PATH/TO/FILE_2>')
-            print('Aborting.')
-            exit()
-    elif len(sys.argv) == 2:
-        print('Only one command line argument for files provided.')
-        print('Usage: python3', sys.argv[0], '<PATH/TO/FILE_1> <PATH/TO/FILE_2>')
-        print('Aborting.')
-        exit()
+        for elem in range(1, 3):
+            if os.path.isfile(sys.argv[elem]) == True:
+                if os.path.splitext(sys.argv[elem])[1] == '.nc':
+                    filepath.append(sys.argv[elem])
+                else:
+                    print(sys.argv[elem], 'does not have .nc extension.')
+            else:
+                print(sys.argv[elem], 'does not exist.')
     else:
-        print('No command line arguments for files provided.')
+        print('Not enough command line arguments for netCDF files provided.')
+
+    if len(filepath) < 2:
         print('Usage: python3', sys.argv[0], '<PATH/TO/FILE_1> <PATH/TO/FILE_2>')
         print('Aborting.')
         exit()
 
-    nc_file_1 = nc.Dataset(filepath_1)
-    nc_file_2 = nc.Dataset(filepath_2)
+    print('Read data from {0}.'.format(filepath[0]))
 
+    nc_file_1 = nc.Dataset(filepath[0])
     dim0 = nc_file_1.dimensions['nNodes_0'].size
     dim1 = nc_file_1.dimensions['nNodes_1'].size
     dim2 = nc_file_1.dimensions['nNodes_2'].size
@@ -47,6 +36,9 @@ def main():
     a_1 = np.zeros((dim2, dim1, dim0))
     a_1[:,:,:] = TNewDom[(time-1):time,:,:,]
 
+    print('Read data from {0}.'.format(filepath[1]))
+
+    nc_file_2 = nc.Dataset(filepath[1])
     dim0 = nc_file_2.dimensions['nNodes_0'].size
     dim1 = nc_file_2.dimensions['nNodes_1'].size
     dim2 = nc_file_2.dimensions['nNodes_2'].size
@@ -69,6 +61,8 @@ def main():
 
     nc_file_1.close()
     nc_file_2.close()
+
+    print('Done.')
 
 if __name__ == '__main__':
     main()
