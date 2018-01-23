@@ -52,12 +52,12 @@ exampledir = $(exec_prefix)/examples/TumorHeatEqnFDM
 example_PROGRAMS =
 example_SCRIPTS = RUN_HELPER.sh
 example_SCRIPTS += Parameters.ini
-example_SCRIPTS += cases/Bousselham-Figure-5A.ini
-example_SCRIPTS += cases/Bousselham-Figure-5B.ini
-example_SCRIPTS += cases/Bousselham-Figure-5C.ini
-example_SCRIPTS += cases/Bousselham-Figure-7A.ini
-example_SCRIPTS += cases/Bousselham-Figure-7B.ini
-example_SCRIPTS += cases/Bousselham-Figure-7C.ini
+example_SCRIPTS += cases/Bousselham/Figure-5A.ini
+example_SCRIPTS += cases/Bousselham/Figure-5B.ini
+example_SCRIPTS += cases/Bousselham/Figure-5C.ini
+example_SCRIPTS += cases/Bousselham/Figure-7A.ini
+example_SCRIPTS += cases/Bousselham/Figure-7B.ini
+example_SCRIPTS += cases/Bousselham/Figure-7C.ini
 bin_PROGRAMS =
 include_HEADERS =
 noinst_PROGRAMS =
@@ -96,12 +96,12 @@ EXTRA_DIST += results/scafes-scalingtests.plt \
         results/ZIH_TAURUS-scaling_weak.plt \
         results/README
 EXTRA_DIST += Parameters.ini
-EXTRA_DIST += cases/Bousselham-Figure-5A.ini
-EXTRA_DIST += cases/Bousselham-Figure-5B.ini
-EXTRA_DIST += cases/Bousselham-Figure-5C.ini
-EXTRA_DIST += cases/Bousselham-Figure-7A.ini
-EXTRA_DIST += cases/Bousselham-Figure-7B.ini
-EXTRA_DIST += cases/Bousselham-Figure-7C.ini
+EXTRA_DIST += cases/Bousselham/Figure-5A.ini
+EXTRA_DIST += cases/Bousselham/Figure-5B.ini
+EXTRA_DIST += cases/Bousselham/Figure-5C.ini
+EXTRA_DIST += cases/Bousselham/Figure-7A.ini
+EXTRA_DIST += cases/Bousselham/Figure-7B.ini
+EXTRA_DIST += cases/Bousselham/Figure-7C.ini
 
 
 #------------------------------------------------------------------------------#
