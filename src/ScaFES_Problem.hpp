@@ -402,6 +402,14 @@ public:
      */
     const CT& knownDfOld(const int& idx, const ScaFES_IntNtuple& idxNode) const;
 
+    /** Returns the number of iteration when convergence should be check
+      * for the first time.
+      */
+    const int& checkConvFirstAtIter() const;
+
+    /** Returns the number of iterations between two convergence checks. */
+    const int& checkConvAtEveryNIter() const;
+
     /*--------------------------------------------------------------------------
     | WORK METHODS.
     --------------------------------------------------------------------------*/
@@ -652,7 +660,7 @@ protected:
     void compErrOfUnknownDfs();
 
     /** Check convergence. */
-    bool checkConvOfUnknownDfs();
+    bool checkConvOfUnknownDfs(const int& timeIter);
 
     /** Write data fields to file. */
     void writeAllDfs(const int& timeIter);
@@ -2496,6 +2504,18 @@ Problem<OWNPRBLM, CT, DIM>::knownDfOld(const int& idx,
 {
     return this->mVectKnownDfsDomOld[idx](idxNode);
 }
+/*----------------------------------------------------------------------------*/
+template <class OWNPRBLM, typename CT, std::size_t DIM>
+inline const int& Problem<OWNPRBLM, CT, DIM>::checkConvFirstAtIter() const
+{
+    return this->params().checkConvFirstAtIter();
+}
+/*----------------------------------------------------------------------------*/
+template <class OWNPRBLM, typename CT, std::size_t DIM>
+inline const int& Problem<OWNPRBLM, CT, DIM>::checkConvAtEveryNIter() const
+{
+    return this->params().checkConvAtEveryNIter();
+}
 
 /*******************************************************************************
  * WORK METHODS.
@@ -2575,10 +2595,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::iterateOverTime()
         }
         this->writeAllDfs(currTimeIter);
         this->compErrOfUnknownDfs();
-        if (0 < currTimeIter)
-        {
-            cont = this->checkConvOfUnknownDfs();
-        }
+        cont = this->checkConvOfUnknownDfs(currTimeIter);
         this->swapPointersOfKnownDfs();
         this->swapPointersOfUnknownDfs();
         // Update times of old / new data fields AFTER swapping.
@@ -3472,7 +3489,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::compErrOfUnknownDfs()
 }
 /*----------------------------------------------------------------------------*/
 template <class OWNPRBLM, typename CT, std::size_t DIM>
-inline bool Problem<OWNPRBLM, CT, DIM>::checkConvOfUnknownDfs()
+inline bool Problem<OWNPRBLM, CT, DIM>::checkConvOfUnknownDfs(const int& timeIter)
 {
     ScaFES::Timer timerCheckConv;
     if (this->params().rankOutput() == this->myRank() &&
@@ -3486,6 +3503,23 @@ inline bool Problem<OWNPRBLM, CT, DIM>::checkConvOfUnknownDfs()
 
     timerCheckConv.restart();
 
+    std::vector<bool> checkCurrIter;
+    checkCurrIter.reserve(this->mCheckConvergence.size());
+    for (std::size_t ii = 0; ii < this->mCheckConvergence.size(); ++ii)
+    {
+        if (this->mCheckConvergence.at(ii) == true &&
+            timeIter >= this->checkConvFirstAtIter() &&
+            (timeIter - this->checkConvFirstAtIter()) % this->checkConvAtEveryNIter() == 0)
+        {
+            checkCurrIter.push_back(true);
+        }
+        else
+        {
+            checkCurrIter.push_back(false);
+        }
+    }
+
+
     // Compute nodal convergence.
     int idDf = 0;
     std::vector<bool> contDom;
@@ -3495,7 +3529,7 @@ inline bool Problem<OWNPRBLM, CT, DIM>::checkConvOfUnknownDfs()
         {
             if (!(this->isKnownDf().at(ii)))
             {
-                if (this->mCheckConvergence.at(ii))
+                if (checkCurrIter[ii])
                 {
                     contDom.push_back(
                         this->mVectUnknownDfsDomNew[idDf]
@@ -3516,7 +3550,7 @@ inline bool Problem<OWNPRBLM, CT, DIM>::checkConvOfUnknownDfs()
             {
                 if (!(this->isKnownDf().at(ii)))
                 {
-                    if (this->mCheckConvergence.at(ii))
+                    if (checkCurrIter[ii])
                     {
                         contBdry.push_back(
                             this->mVectUnknownDfsBdryNew[idDf]

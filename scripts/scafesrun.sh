@@ -119,11 +119,18 @@
 # * Maximal run time in hh:mm:ss. <string>
 #   SCAFESRUN_MACHINE_TIME="";
 #
-# * Name of the init file (netCDF file) <string>
+# * Name of the init file (netCDF file). <string>
 #   SCAFESRUN_NAME_INITFILE="";
 #
-# * Threshold for convergence check <double>
+# * Threshold for convergence check. <double>
 #   SCAFESRUN_THRESHOLD="";
+#
+# * Number of iteration when convergence should be checked
+#   for the first time. <int>
+#   SCAFESRUN_CHECK_CONV_FIRST_AT_ITER="";
+#
+# * Number of iterations between two convergence checks. <int>
+#   SCAFESRUN_CHECK_CONV_AT_EVERY_N_ITER="";
 #
 # ScaFES
 # Copyright (c) 2011-2015, ZIH, TU Dresden, Federal Republic of Germany.
@@ -417,6 +424,17 @@ if [ "x$SCAFESRUN_THRESHOLD" == "x" ] ; then
     SCAFESRUN_THRESHOLD="0.00001";
     echo "* WARNING: Use default value SCAFESRUN_THRESHOLD=$SCAFESRUN_THRESHOLD"
 fi
+#------------------------------------------------------------------------------#
+if [ "x$SCAFESRUN_CHECK_CONV_FIRST_AT_ITER" == "x" ] ; then
+    SCAFESRUN_CHECK_CONV_FIRST_AT_ITER="1";
+    echo "* WARNING: Use default value SCAFESRUN_CHECK_CONV_FIRST_AT_ITER=$SCAFESRUN_CHECK_CONV_FIRST_AT_ITER"
+fi
+
+#------------------------------------------------------------------------------#
+if [ "x$SCAFESRUN_CHECK_CONV_AT_EVERY_N_ITER" == "x" ] ; then
+    SCAFESRUN_CHECK_CONV_AT_EVERY_N_ITER="1";
+    echo "* WARNING: Use default value SCAFESRUN_CHECK_CONV_AT_EVERY_N_ITER=$SCAFESRUN_CHECK_CONV_AT_EVERY_N_ITER"
+fi
 
 #------------------------------------------------------------------------------#
 if [ "x$SCAFESRUN_SOFTWARE_VERSION" == "x" ] ; then
@@ -467,6 +485,8 @@ declare    -r local memoryPerCore=${SCAFESRUN_MACHINE_MEMORY_PER_CORE};
 declare    local jobexestring="";
 declare    -r local nameInitfile=${SCAFESRUN_NAME_INITFILE};
 declare    -r local valueThreshold=${SCAFESRUN_THRESHOLD};
+declare -i -r local valueCheckConvFirstAtIter=${SCAFESRUN_CHECK_CONV_FIRST_AT_ITER};
+declare -i -r local valueCheckConvAtEveryNIter=${SCAFESRUN_CHECK_CONV_AT_EVERY_N_ITER};
 #------------------------------------------------------------------------------#
 # Compute value of dependent variable.
 declare -i local nCoresTotalMAX=${nNodesMachineMAX};
@@ -665,8 +685,10 @@ for idxTestMpi in `seq 0 $endTestMpi`; do
                     --coordNodeLast=$currCoordNodeLast \
                     --starttime=$currStarttime \
                     --endtime=$currEndtime \
-                    --threshold=$valueThreshold \
                     --nTimesteps=$currNtimesteps \
+                    --threshold=$valueThreshold \
+                    --checkConvFirstAtIter=$valueCheckConvFirstAtIter \
+                    --checkConvAtEveryNIter=$valueCheckConvAtEveryNIter \
                     --nSnapshots=$currNsnapshots \
                     ${optionKindfile} \
                     --writeKindFile=$boolWriteKindfile \

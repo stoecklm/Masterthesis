@@ -171,6 +171,13 @@ public:
     /** Returns threshold for convergence check. */
     const double& threshold() const;
 
+    /** Returns the number of iteration when convergence should be checked
+      * for the first time. */
+    const int& checkConvFirstAtIter() const;
+
+    /** Returns the number of iterations between two convergence checks. */
+    const int& checkConvAtEveryNIter() const;
+
     /** Returns the number of snapshots. */
     const int& nSnapshots() const;
 
@@ -344,6 +351,13 @@ private:
     /** Threshold for convergence check. */
     double mThreshold;
 
+    /** Number of iteration when convergence should be checked
+      * for the first time. */
+    int mCheckConvFirstAtIter;
+
+    /** Number of iterations between two convergence checks. */
+    int mCheckConvAtEveryNIter;
+
     /** Number of snapshots: Write data each m timesteps. */
     int mNsnapshots;
 
@@ -420,6 +434,8 @@ inline Parameters::Parameters(int argc, char* argv[])
 , mNtimesteps(1)
 , mTau((mTimeIntervalEnd-mTimeIntervalStart)/mNtimesteps)
 , mThreshold(0.00001)
+, mCheckConvFirstAtIter(1)
+, mCheckConvAtEveryNIter(1)
 , mNsnapshots(1)
 , mNlayersAtBorder(1)
 , mWriteDataFile(false)
@@ -477,6 +493,11 @@ inline Parameters::Parameters(int argc, char* argv[])
             "tau", po::value<double>(), "Sets the time step width.")(
             "threshold", po::value<double>(),
             "Sets the threshold for convergence check.")(
+            "checkConvFirstAtIter", po::value<int>(),
+            "Sets the number of iteration when convergence "
+            "should be checked for the first time.")(
+            "checkConvAtEveryNIter", po::value<int>(),
+            "Sets the number of iterations between two convergence checks.")(
             "nSnapshots", po::value<int>(), "Sets how many times the data "
                                             "fields are written to output "
                                             "(default=1).")(
@@ -798,6 +819,43 @@ inline Parameters::Parameters(int argc, char* argv[])
         {
             std::cerr << "\nREMARK: Use --threshold=<real value>.\n\n";
         }
+        /*--------------------------------------------------------------------*/
+        if (vm.count("checkConvFirstAtIter"))
+        {
+            this->mCheckConvFirstAtIter = vm["checkConvFirstAtIter"].as<int>();
+
+            if (1 > this->checkConvFirstAtIter())
+            {
+                std::cerr << "\nWARNING: CheckConvFirstAtIter < 1."
+                          << std::endl;
+                this->mCheckConvFirstAtIter = 1;
+                std::cerr << "checkConvFirstAtIter = 1."
+                          << "\n" << std::endl;
+            }
+        }
+        else
+        {
+            std::cerr << "\nREMARK: Use --checkConvFirstAtIter=<int>.\n\n";
+        }
+
+        /*--------------------------------------------------------------------*/
+        if (vm.count("checkConvAtEveryNIter"))
+        {
+            this->mCheckConvAtEveryNIter = vm["checkConvAtEveryNIter"].as<int>();
+
+            if (1 > this->checkConvAtEveryNIter())
+            {
+                std::cerr << "\nWARNING: CheckConvAtEveryNIter < 1."
+                          << std::endl;
+                this->mCheckConvAtEveryNIter = 1;
+                std::cerr << "checkConvAtEveryNIter = 1."
+                          << "\n" << std::endl;
+            }
+        }
+        else
+        {
+            std::cerr << "\nREMARK: Use --checkConvAtEveryNIter=<int>.\n\n";
+        }
 
         /*--------------------------------------------------------------------*/
         if (vm.count("nSnapshots"))
@@ -1058,6 +1116,8 @@ inline Parameters::Parameters(const Parameters& rhs)
 , mNtimesteps(rhs.nTimesteps())
 , mTau(rhs.tau())
 , mThreshold(rhs.threshold())
+, mCheckConvFirstAtIter(rhs.checkConvFirstAtIter())
+, mCheckConvAtEveryNIter(rhs.checkConvAtEveryNIter())
 , mNsnapshots(rhs.nSnapshots())
 , mNlayersAtBorder(rhs.nLayersAtBorder())
 , mWriteDataFile(rhs.writeDataFile())
@@ -1097,6 +1157,8 @@ inline Parameters::Parameters(const Parameters& rhs)
 , mNtimesteps(rhs.nTimesteps())
 , mTau(rhs.tau())
 , mThreshold(rhs.threshold())
+, mCheckConvFirstAtIter(rhs.checkConvFirstAtIter())
+, mCheckConvAtEveryNIter(rhs.checkConvAtEveryNIter())
 , mNsnapshots(rhs.nSnapshots())
 , mNlayersAtBorder(rhs.nLayersAtBorder())
 , mWriteDataFile(rhs.writeDataFile())
@@ -1224,6 +1286,16 @@ inline const double& Parameters::tau() const
 inline const double& Parameters::threshold() const
 {
     return this->mThreshold;
+}
+/*----------------------------------------------------------------------------*/
+inline const int& Parameters::checkConvFirstAtIter() const
+{
+    return this->mCheckConvFirstAtIter;
+}
+/*----------------------------------------------------------------------------*/
+inline const int& Parameters::checkConvAtEveryNIter() const
+{
+    return this->mCheckConvAtEveryNIter;
 }
 /*----------------------------------------------------------------------------*/
 inline const int& Parameters::nSnapshots() const
@@ -1402,6 +1474,14 @@ inline bool Parameters::operator==(const Parameters& rhs) const
         isEqual = false;
     }
     if (this->threshold() != rhs.threshold())
+    {
+        isEqual = false;
+    }
+    if (this->checkConvFirstAtIter() != rhs.checkConvFirstAtIter())
+    {
+        isEqual = false;
+    }
+    if (this->checkConvAtEveryNIter() != rhs.checkConvAtEveryNIter())
     {
         isEqual = false;
     }
@@ -1644,6 +1724,8 @@ void Parameters::serialize(Archive& ar, const unsigned int version)
         ar&(this->mNtimesteps);
         ar&(this->mTau);
         ar&(this->mThreshold);
+        ar&(this->mCheckConvFirstAtIter);
+        ar&(this->mCheckConvAtEveryNIter);
         ar&(this->mNsnapshots);
         ar&(this->mNlayersAtBorder);
         ar&(this->mWriteDataFile);
@@ -1687,6 +1769,8 @@ inline void swap(Parameters& first, Parameters& second)
     std::swap(first.mNtimesteps, second.mNtimesteps);
     std::swap(first.mTau, second.mTau);
     std::swap(first.mThreshold, second.mThreshold);
+    std::swap(first.mCheckConvFirstAtIter, second.mCheckConvFirstAtIter);
+    std::swap(first.mCheckConvAtEveryNIter, second.mCheckConvAtEveryNIter);
     std::swap(first.mNsnapshots, second.mNsnapshots);
     std::swap(first.mNlayersAtBorder, second.mNlayersAtBorder);
     std::swap(first.mWriteDataFile, second.mWriteDataFile);
