@@ -1,0 +1,27 @@
+reset
+
+set term postscript eps color
+
+set xlabel "x"
+set ylabel "y"
+set zlabel "Surface Temperature [deg C]" rotate by 90 offset -3
+
+set xyplane 0
+
+print "Save plot to ".ARG2."_pm3d.eps"
+
+set pm3d
+unset surface
+set palette defined ( 0 "#000090",\
+1 "#000fff",\
+2 "#0090ff",\
+3 "#0fffee",\
+4 "#90ff70",\
+5 "#ffee00",\
+6 "#ff7000",\
+7 "#ee0000",\
+8 "#7f0000")
+set out ARG2."_pm3d.eps"
+splot ARG1 title ""
+
+exit

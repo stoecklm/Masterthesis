@@ -1,0 +1,45 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+    echo "No path to netCDF file supplied."
+    echo "Aborting."
+    exit
+fi
+
+inputFile=$1
+
+if [ ! -f $inputFile ]; then
+    echo "$inputFile does not exist."
+    echo "Aborting."
+    exit
+fi
+
+if [ ! -f getSurface.py ]; then
+    echo "getSurface.py does not exist."
+    echo "Aborting."
+    exit
+fi
+
+python3 getSurface.py $inputFile
+
+inputFile="${inputFile%%.*}";
+outputFile="${inputFile}_surface"
+inputFile="${inputFile}_surface.dat"
+
+if [ ! -f $inputFile ]; then
+    echo "$inputFile does not exist."
+    echo "Aborting."
+    exit
+fi
+
+if [ ! -f plotSurface.plt ]; then
+    echo "plotSurface.plt does not exist."
+    echo "Aborting."
+    exit
+fi
+
+gnuplot -c plotSurface.plt $inputFile $outputFile
+
+echo "Done."
+
+exit

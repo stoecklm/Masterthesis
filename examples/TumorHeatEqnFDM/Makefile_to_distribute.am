@@ -68,6 +68,8 @@ EXTRA_DIST += results/scafes-scalingtests.plt \
         results/ZIH_TAURUS-scaling_strong.dat \
         results/ZIH_TAURUS-scaling_weak.plt \
         results/README
+EXTRA_DIST += plotSurface.plt.in
+EXTRA_DIST += plotSurface.sh.in
 EXTRA_DIST += Parameters.ini
 EXTRA_DIST += cases/Bousselham/Figure-5A.ini
 EXTRA_DIST += cases/Bousselham/Figure-5B.ini

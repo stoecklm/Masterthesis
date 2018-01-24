@@ -51,6 +51,8 @@ DEPENDENCIES_COMMON= $(top_builddir)/src/libscafes.la
 exampledir = $(exec_prefix)/examples/TumorHeatEqnFDM
 example_PROGRAMS =
 example_SCRIPTS = RUN_HELPER.sh
+example_SCRIPTS += plotSurface.plt.in
+example_SCRIPTS += plotSurface.sh.in
 example_SCRIPTS += Parameters.ini
 example_SCRIPTS += cases/Bousselham/Figure-5A.ini
 example_SCRIPTS += cases/Bousselham/Figure-5B.ini
@@ -111,6 +113,8 @@ EXTRA_DIST += results/scafes-scalingtests.plt \
         results/ZIH_TAURUS-scaling_strong.dat \
         results/ZIH_TAURUS-scaling_weak.plt \
         results/README
+EXTRA_DIST += plotSurface.plt.in
+EXTRA_DIST += plotSurface.sh.in
 EXTRA_DIST += Parameters.ini
 EXTRA_DIST += cases/Bousselham/Figure-5A.ini
 EXTRA_DIST += cases/Bousselham/Figure-5B.ini
