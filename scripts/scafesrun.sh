@@ -488,6 +488,8 @@ declare    -r local valueThreshold=${SCAFESRUN_THRESHOLD};
 declare -i -r local valueCheckConvFirstAtIter=${SCAFESRUN_CHECK_CONV_FIRST_AT_ITER};
 declare -i -r local valueCheckConvAtEveryNIter=${SCAFESRUN_CHECK_CONV_AT_EVERY_N_ITER};
 declare       local stringNameConfigFile=""
+declare       local hyphenNameConfigFile=""
+declare       local underscoreNameConfigFile=""
 #------------------------------------------------------------------------------#
 # Compute value of dependent variable.
 declare -i local nCoresTotalMAX=${nNodesMachineMAX};
@@ -511,7 +513,10 @@ if [ "x$nameConfigfile" == "x" ] ; then
 else
     optionConfigfile="--configfile=$nameConfigfile";
     stringNameConfigFile="${nameConfigfile##*/}";
-    stringNameConfigFile="_${stringNameConfigFile%%.*}";
+    stringNameConfigFile="${stringNameConfigFile%%.*}";
+    stringNameConfigFile="${stringNameConfigFile%%_*}";
+    hyphenNameConfigFile="-${stringNameConfigFile}";
+    underscoreNameConfigFile="_${stringNameConfigFile}";
 fi
 #------------------------------------------------------------------------------#
 if [ "x$nameInitfile" == "x" ] ; then
@@ -588,7 +593,7 @@ for idxTestMpi in `seq 0 $endTestMpi`; do
             currNnodes="${SCAFESRUN_N_NODES}";
             currCoordNodeFirst="${SCAFESRUN_COORD_NODE_FIRST}";
             currCoordNodeLast="${SCAFESRUN_COORD_NODE_LAST}";
-            namePartfile="${currNameProblem}${stringNameConfigFile}";
+            namePartfile="${currNameProblem}${underscoreNameConfigFile}";
             namePartfile="${namePartfile}_${currNprocessesMpi}";
             namePartfile="${namePartfile}_${currNthreadsOpenMp}_${currNnodes}";
             nameDatafile=${namePartfile};
@@ -598,6 +603,7 @@ for idxTestMpi in `seq 0 $endTestMpi`; do
             str_currNthreadsOpenMp=$(printf "%.5d" $currNthreadsOpenMp);
             str_nTimesteps=$(printf "%.6d" $currNtimesteps);
             basefile="${resDir}/${currNameProblem}"
+            basefile="$basefile${hyphenNameConfigFile}"
             basefile="$basefile-${nameMachine}"
             basefile="$basefile-${softwareVersion}"
             basefile="$basefile-mpi${str_currNprocessesMpi}"
