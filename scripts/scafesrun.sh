@@ -487,6 +487,7 @@ declare    -r local nameInitfile=${SCAFESRUN_NAME_INITFILE};
 declare    -r local valueThreshold=${SCAFESRUN_THRESHOLD};
 declare -i -r local valueCheckConvFirstAtIter=${SCAFESRUN_CHECK_CONV_FIRST_AT_ITER};
 declare -i -r local valueCheckConvAtEveryNIter=${SCAFESRUN_CHECK_CONV_AT_EVERY_N_ITER};
+declare       local stringNameConfigFile=""
 #------------------------------------------------------------------------------#
 # Compute value of dependent variable.
 declare -i local nCoresTotalMAX=${nNodesMachineMAX};
@@ -509,6 +510,8 @@ if [ "x$nameConfigfile" == "x" ] ; then
     optionConfigfile="";
 else
     optionConfigfile="--configfile=$nameConfigfile";
+    stringNameConfigFile="${nameConfigfile##*/}";
+    stringNameConfigFile="_${stringNameConfigFile%%.*}";
 fi
 #------------------------------------------------------------------------------#
 if [ "x$nameInitfile" == "x" ] ; then
@@ -585,7 +588,8 @@ for idxTestMpi in `seq 0 $endTestMpi`; do
             currNnodes="${SCAFESRUN_N_NODES}";
             currCoordNodeFirst="${SCAFESRUN_COORD_NODE_FIRST}";
             currCoordNodeLast="${SCAFESRUN_COORD_NODE_LAST}";
-            namePartfile="${currNameProblem}_${currNprocessesMpi}";
+            namePartfile="${currNameProblem}${stringNameConfigFile}";
+            namePartfile="${namePartfile}_${currNprocessesMpi}";
             namePartfile="${namePartfile}_${currNthreadsOpenMp}_${currNnodes}";
             nameDatafile=${namePartfile};
 
