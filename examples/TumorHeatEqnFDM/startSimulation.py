@@ -47,6 +47,8 @@ def parse_config_file():
     NAME_VARIABLES = list(NAME_VARIABLES.split())
     params['NAME_VARIABLES'] = NAME_VARIABLES
     params['THRESHOLD'] = config['Input'].getfloat('THRESHOLD', fallback=0.00001)
+    params['CHECK_CONV_FIRST_AT_ITER'] = config['Input'].getfloat('CHECK_CONV_FIRST_AT_ITER', fallback=1)
+    params['CHECK_CONV_AT_EVERY_N_ITER'] = config['Input'].getfloat('CHECK_CONV_AT_EVERY_N_ITER', fallback=1)
     # Get values from section 'Parameters'.
     params['T_INIT'] = config['Parameters'].getfloat('T_I')
     params['T_TUMOR'] = config['Parameters'].getfloat('T_TUMOR')
@@ -119,6 +121,21 @@ def check_variables():
         print('WARNING: CREATE_INITFILE = True, but USE_INITFILE = False.')
     else:
         pass
+    # Check CHECK_CONV parameters.
+    if params['CHECK_CONV_FIRST_AT_ITER'] < 0:
+        print('WARNING: CHECK_CONV_FIRST_AT_ITER < 0.')
+        params['CHECK_CONV_FIRST_AT_ITER'] = abs(params['CHECK_CONV_FIRST_AT_ITER'])
+        print('CHECK_CONV_FIRST_AT_ITER set to abs(CHECK_CONV_FIRST_AT_ITER).')
+    if params['CHECK_CONV_AT_EVERY_N_ITER'] < 0:
+        print('WARNING: CHECK_CONV_AT_EVERY_N_ITER < 0.')
+        params['CHECK_CONV_AT_EVERY_N_ITER'] = abs(params['CHECK_CONV_AT_EVERY_N_ITER'])
+        print('CHECK_CONV_AT_EVERY_N_ITER set to abs(CHECK_CONV_AT_EVERY_N_ITER).')
+    if params['CHECK_CONV_FIRST_AT_ITER'] < 1:
+        print('WARNING: CHECK_CONV_FIRST_AT_ITER < 1.')
+        print('CHECK_CONV_FIRST_AT_ITER is assumend to be a ratio.')
+    if params['CHECK_CONV_AT_EVERY_N_ITER'] < 1:
+        print('WARNING: CHECK_CONV_AT_EVERY_N_ITER < 1.')
+        print('CHECK_CONV_AT_EVERY_N_ITER is assumend to be a ratio.')
     # Check if executable exists.
     NAME_EXECUTABLE = os.path.basename(os.getcwd()) + str(params['SPACE_DIM']) + 'D'
     if os.path.isfile(NAME_EXECUTABLE) == False:
@@ -186,6 +203,14 @@ def calc_variables():
 
     # Final calculation for delta time.
     params['DELTA_TIME'] = (params['END_TIME'] - params['START_TIME'])/params['N_TIMESTEPS']
+
+    # Calc CHECK_CONV parameters if they are a ratio.
+    if params['CHECK_CONV_FIRST_AT_ITER'] < 1:
+        params['CHECK_CONV_FIRST_AT_ITER'] = params['CHECK_CONV_FIRST_AT_ITER'] * params['N_TIMESTEPS']
+    params['CHECK_CONV_FIRST_AT_ITER'] = int(params['CHECK_CONV_FIRST_AT_ITER'])
+    if params['CHECK_CONV_AT_EVERY_N_ITER'] < 1:
+        params['CHECK_CONV_AT_EVERY_N_ITER'] = params['CHECK_CONV_AT_EVERY_N_ITER'] * params['N_TIMESTEPS']
+    params['CHECK_CONV_AT_EVERY_N_ITER'] = int(params['CHECK_CONV_AT_EVERY_N_ITER'])
 
     # Check if number of snapshots is possible.
     if params['N_SNAPSHOTS'] > params['N_TIMESTEPS']:
@@ -392,6 +417,8 @@ def set_environment_variables():
     os.putenv('SCAFESRUN_N_NODES', str(params['N_NODES_ENV']))
     os.putenv('SCAFESRUN_NAME_EXECUTABLE', str(params['NAME_EXECUTABLE']))
     os.putenv('SCAFESRUN_THRESHOLD', str(params['THRESHOLD']))
+    os.putenv('SCAFESRUN_CHECK_CONV_FIRST_AT_ITER', str(params['CHECK_CONV_FIRST_AT_ITER']))
+    os.putenv('SCAFESRUN_CHECK_CONV_AT_EVERY_N_ITER', str(params['CHECK_CONV_AT_EVERY_N_ITER']))
     # Check if init file should be used and if it exists.
     if params['USE_INITFILE'] == True:
         if os.path.isfile(params['NAME_INITFILE'] + '.nc') == True:
