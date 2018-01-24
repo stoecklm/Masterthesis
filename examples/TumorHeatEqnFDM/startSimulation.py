@@ -73,69 +73,69 @@ def check_variables():
     # some functions and variables only work for dimension 1, 2 or 3.
     SPACE_DIM = params['SPACE_DIM']
     if SPACE_DIM < 1 or SPACE_DIM > 3:
-        print('SPACE_DIM is {0}.'.format(SPACE_DIM))
-        print('SPACE_DIM must be 1, 2 or 3.')
+        print('* ERROR: SPACE_DIM is {0}.'.format(SPACE_DIM))
+        print('  SPACE_DIM must be 1, 2 or 3.')
         print('Aborting.')
         exit()
     # Check if there are enough coordinates for first node.
     DIM_COORD_NODE_FIRST = len(params['COORD_NODE_FIRST'])
     if DIM_COORD_NODE_FIRST != SPACE_DIM:
-        print('Dimension of COORD_NODE_FIRST has to be {0}.'.format(SPACE_DIM))
-        print('Dimension of COORD_NODE_FIRST is {0}.'.format(DIM_COORD_NODE_FIRST))
+        print('* ERROR: Dimension of COORD_NODE_FIRST has to be {0}.'.format(SPACE_DIM))
+        print('  Dimension of COORD_NODE_FIRST is {0}.'.format(DIM_COORD_NODE_FIRST))
         print('Aborting.')
         exit()
     # Check if there are enough coordinates for last node.
     DIM_COORD_NODE_LAST = len(params['COORD_NODE_LAST'])
     if DIM_COORD_NODE_LAST != SPACE_DIM:
-        print('Dimension of COORD_NODE_LAST has to be {0}.'.format(SPACE_DIM))
-        print('Dimension of COORD_NODE_LAST is {0}.'.format(DIM_COORD_NODE_LAST))
+        print('* ERROR: Dimension of COORD_NODE_LAST has to be {0}.'.format(SPACE_DIM))
+        print('  Dimension of COORD_NODE_LAST is {0}.'.format(DIM_COORD_NODE_LAST))
         print('Aborting.')
         exit()
     # Check if there are enough number of nodes.
     DIM_N_NODES = len(params['N_NODES'])
     if DIM_N_NODES != SPACE_DIM:
-        print('Dimension of N_NODES has to be {0}.'.format(SPACE_DIM))
-        print('Dimension of N_NODES is {0}.'.format(DIM_N_NODES))
+        print('* ERROR: Dimension of N_NODES has to be {0}.'.format(SPACE_DIM))
+        print('  Dimension of N_NODES is {0}.'.format(DIM_N_NODES))
         print('Aborting.')
         exit()
     # Check if END_TIME is after START_TIME.
     START_TIME = params['START_TIME']
     END_TIME = params['END_TIME']
     if END_TIME < START_TIME:
-        print('END_TIME is smaller than START_TIME.')
-        print('END_TIME must be greater than START_TIME.')
+        print('* ERROR: END_TIME is smaller than START_TIME.')
+        print('  END_TIME must be greater than START_TIME.')
         print('Aborting.')
         exit()
     # Check if threshold is positive.
     if params['THRESHOLD'] < 0.0:
-        print('WARNING: THRESHOLD < 0.0.')
+        print('* WARNING: THRESHOLD < 0.0.')
         params['THRESHOLD'] = abs(params['THRESHOLD'])
-        print('THRESHOLD was set to abs(THRESHOLD).')
+        print('  THRESHOLD was set to abs(THRESHOLD).')
     # Check if combinations of USE_INITFILE and CREATE_INITFILE makes sense.
     if params['USE_INITFILE'] == True and params['CREATE_INITFILE'] == False:
         if os.path.isfile(params['NAME_INITFILE'] + '.nc') == False:
-            print('USE_INITFILE = True and CREATE_INITFILE = False, but', params['NAME_INITFILE'] + '.nc', 'does not exist.')
+            print('* ERROR: USE_INITFILE = True and CREATE_INITFILE = False, but', params['NAME_INITFILE'] + '.nc', 'does not exist.')
             print('Aborting.')
             exit()
     if params['USE_INITFILE'] == False and params['CREATE_INITFILE'] == True:
-        print('WARNING: CREATE_INITFILE = True, but USE_INITFILE = False.')
+        print('* WARNING: CREATE_INITFILE = True, but USE_INITFILE = False.')
     else:
         pass
     # Check CHECK_CONV parameters.
     if params['CHECK_CONV_FIRST_AT_ITER'] < 0:
-        print('WARNING: CHECK_CONV_FIRST_AT_ITER < 0.')
+        print('* WARNING: CHECK_CONV_FIRST_AT_ITER < 0.')
         params['CHECK_CONV_FIRST_AT_ITER'] = abs(params['CHECK_CONV_FIRST_AT_ITER'])
-        print('CHECK_CONV_FIRST_AT_ITER set to abs(CHECK_CONV_FIRST_AT_ITER).')
+        print('  CHECK_CONV_FIRST_AT_ITER set to abs(CHECK_CONV_FIRST_AT_ITER).')
     if params['CHECK_CONV_AT_EVERY_N_ITER'] < 0:
-        print('WARNING: CHECK_CONV_AT_EVERY_N_ITER < 0.')
+        print('* WARNING: CHECK_CONV_AT_EVERY_N_ITER < 0.')
         params['CHECK_CONV_AT_EVERY_N_ITER'] = abs(params['CHECK_CONV_AT_EVERY_N_ITER'])
-        print('CHECK_CONV_AT_EVERY_N_ITER set to abs(CHECK_CONV_AT_EVERY_N_ITER).')
+        print('  CHECK_CONV_AT_EVERY_N_ITER set to abs(CHECK_CONV_AT_EVERY_N_ITER).')
     if params['CHECK_CONV_FIRST_AT_ITER'] < 1:
-        print('WARNING: CHECK_CONV_FIRST_AT_ITER < 1.')
-        print('CHECK_CONV_FIRST_AT_ITER is assumend to be a ratio.')
+        print('* WARNING: CHECK_CONV_FIRST_AT_ITER < 1.')
+        print('  CHECK_CONV_FIRST_AT_ITER is assumend to be a ratio.')
     if params['CHECK_CONV_AT_EVERY_N_ITER'] < 1:
-        print('WARNING: CHECK_CONV_AT_EVERY_N_ITER < 1.')
-        print('CHECK_CONV_AT_EVERY_N_ITER is assumend to be a ratio.')
+        print('* WARNING: CHECK_CONV_AT_EVERY_N_ITER < 1.')
+        print('  CHECK_CONV_AT_EVERY_N_ITER is assumend to be a ratio.')
     # Check if executable exists.
     NAME_EXECUTABLE = os.path.basename(os.getcwd()) + str(params['SPACE_DIM']) + 'D'
     if os.path.isfile(NAME_EXECUTABLE) == False:
@@ -157,8 +157,8 @@ def calc_variables():
     params['GRIDSIZE'] = GRIDSIZE
     # Calculate delta time.
     if params['N_TIMESTEPS'] < 1:
-        print('WARNING: N_TIMESTEPS not specified.')
-        print('Calculate N_TIMESTEPS from stability criterion.')
+        print('* WARNING: N_TIMESTEPS not specified.')
+        print('  Calculate N_TIMESTEPS from stability criterion.')
         RHO = params['RHO']
         C = params['C']
         K = params['K']
@@ -214,9 +214,9 @@ def calc_variables():
 
     # Check if number of snapshots is possible.
     if params['N_SNAPSHOTS'] > params['N_TIMESTEPS']:
-        print('WARNING: N_SNAPSHOTS was bigger than N_TIMESTEPS.')
+        print('* WARNING: N_SNAPSHOTS was bigger than N_TIMESTEPS.')
         params['N_SNAPSHOTS'] = params['N_TIMESTEPS']
-        print('N_SNAPSHOTS was set to N_TIMESTEPS.')
+        print('  N_SNAPSHOTS was set to N_TIMESTEPS.')
 
     print('Done.')
 
@@ -256,26 +256,26 @@ def check_stability():
     DELTA_TIME_TUMOR_CONV = 1.0/DELTA_TIME_TUMOR_CONV
     # Abort simulation if stability is not fulfilled.
     if DELTA_TIME > DELTA_TIME_BRAIN:
-        print('Stability not fulfilled in healthy brain region.')
-        print('DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME, DELTA_TIME_BRAIN))
+        print('* ERROR: Stability not fulfilled in healthy brain region.')
+        print('  DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME, DELTA_TIME_BRAIN))
         print('Aborting.')
         exit()
     # Abort simulation if stability is not fulfilled.
     if DELTA_TIME > DELTA_TIME_TUMOR:
-        print('Stability not fulfilled in tumor region.')
-        print('DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME, DELTA_TIME_TUMOR))
+        print('* ERROR: Stability not fulfilled in tumor region.')
+        print('  DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME, DELTA_TIME_TUMOR))
         print('Aborting.')
         exit()
     # Abort simulation if stability is not fulfilled.
     if DELTA_TIME > DELTA_TIME_BRAIN_CONV:
-        print('Stability not fulfilled in healty brain region at border with convection.')
-        print('DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME, DELTA_TIME_BRAIN_CONV))
+        print('* ERROR: Stability not fulfilled in healty brain region at border with convection.')
+        print('  DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME, DELTA_TIME_BRAIN_CONV))
         print('Aborting.')
         exit()
     # Abort simulation if stability is not fulfilled.
     if DELTA_TIME > DELTA_TIME_TUMOR_CONV:
-        print('Stability not fulfilled in tumor region at border with convection.')
-        print('DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME, DELTA_TIME_TUMOR_CONV))
+        print('* ERROR: Stability not fulfilled in tumor region at border with convection.')
+        print('  DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME, DELTA_TIME_TUMOR_CONV))
         print('Aborting.')
         exit()
 
@@ -424,7 +424,7 @@ def set_environment_variables():
         if os.path.isfile(params['NAME_INITFILE'] + '.nc') == True:
             os.putenv('SCAFESRUN_NAME_INITFILE', params['NAME_INITFILE'])
         else:
-            print('USE_INITFILE = True, but', params['NAME_INITFILE'] + '.nc', 'does not exist.')
+            print('* ERROR: USE_INITFILE = True, but', params['NAME_INITFILE'] + '.nc', 'does not exist.')
             print('Aborting.')
             exit()
 
@@ -444,7 +444,7 @@ def start_simulation():
     if returncode == 0:
         print('Done.')
     else:
-        print('Simulation returned error code {0}.'.format(returncode))
+        print('* ERROR: Simulation returned error code {0}.'.format(returncode))
 
 
 def main():
@@ -454,9 +454,9 @@ def main():
         if os.path.isfile(sys.argv[1]) == True:
             params['NAME_CONFIGFILE'] = sys.argv[1]
         else:
-            print(sys.argv[1], 'does not exist.')
+            print('* ERROR:', sys.argv[1], 'does not exist.')
     else:
-        print('No command line argument for configfile provided.')
+        print('* ERROR: No command line argument for configfile provided.')
 
     if params['NAME_CONFIGFILE'] == '':
         print('Usage: python3', sys.argv[0], '<PATH/TO/CONFIGFILE>')
