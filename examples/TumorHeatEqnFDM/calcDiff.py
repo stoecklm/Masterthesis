@@ -2,46 +2,46 @@ import numpy as np
 import os
 import sys
 
-def two_netcdf_files(filepath):
+def two_netcdf_files_surface(filepath, a_1, a_2, dim0, dim1, dim2, time):
     import netCDF4 as nc
-    print('Read data from {0}.'.format(filepath[0]))
-
-    nc_file_1 = nc.Dataset(filepath[0])
-    dim0 = nc_file_1.dimensions['nNodes_0'].size
-    dim1 = nc_file_1.dimensions['nNodes_1'].size
-    dim2 = nc_file_1.dimensions['nNodes_2'].size
-    time = nc_file_1.dimensions['time'].size
-    TNewDom = nc_file_1.variables['TNewDom']
-
-    a_1 = np.zeros((dim2, dim1, dim0))
-    a_1[:,:,:] = TNewDom[(time-1):time,:,:,]
-
-    nc_file_1.close()
-
-    print('Read data from {0}.'.format(filepath[1]))
-
-    nc_file_2 = nc.Dataset(filepath[1])
-    dim0 = nc_file_2.dimensions['nNodes_0'].size
-    dim1 = nc_file_2.dimensions['nNodes_1'].size
-    dim2 = nc_file_2.dimensions['nNodes_2'].size
-    time = nc_file_2.dimensions['time'].size
-    TNewDom = nc_file_2.variables['TNewDom']
-
-    a_2 = np.zeros((dim2, dim1, dim0))
-    a_2[:,:,:] = TNewDom[(time-1):time,:,:,]
-
-    nc_file_2.close()
-
-    if a_1.shape[0] != a_2.shape[0] or \
-       a_1.shape[1] != a_2.shape[1] or \
-       a_1.shape[2] != a_2.shape[2]:
-        print('Shape of files is not equal.')
-        print('Aborting.')
-        exit()
-
     filepath = os.path.splitext(filepath[0])[0] + '_' \
                + os.path.basename(os.path.splitext(filepath[1])[0]) \
-               + '_diff.nc'
+               + '_diff_surface.nc'
+    print('Write surface data to {0}.'.format(filepath))
+
+    nc_file = nc.Dataset(filepath, 'w', format='NETCDF3_CLASSIC')
+    nNodes = nc_file.createDimension('nNodes_0', dim0)
+    nNodes = nc_file.createDimension('nNodes_1', dim1)
+    time = nc_file.createDimension('time')
+    diff = nc_file.createVariable('TDiff', 'f8', ('time', 'nNodes_1', 'nNodes_0'))
+    a_3 = np.subtract(a_1[a_1.shape[0]-1,:,:], a_2[a_2.shape[0]-1,:,:])
+    diff[0,] = a_3
+
+    nc_file.close()
+
+    max_diff = np.amax(np.absolute(a_3))
+    sum_diff = np.mean(np.absolute(a_3))
+    print('Surface:  max(abs(diff)) = {0}.'.format(max_diff))
+    print('Surface: mean(abs(diff)) = {0}.'.format(sum_diff))
+
+    filepath = os.path.splitext(filepath)[0]
+    filepath += '.dat'
+    text_file = open(filepath, 'w')
+
+    print('Write surface data to {0}.'.format(filepath))
+
+    for elem_y in range(0, a_3.shape[0]):
+        for elem_x in range(0, a_3.shape[1]):
+            text_file.write('{0} {1} {2}\n'.format(str(elem_x), str(elem_y), str(a_3[elem_y, elem_x])))
+        text_file.write('\n')
+
+    text_file.close()
+
+def two_netcdf_files_volume(filepath, a_1, a_2, dim0, dim1, dim2, time):
+    import netCDF4 as nc
+    filepath = os.path.splitext(filepath[0])[0] + '_' \
+               + os.path.basename(os.path.splitext(filepath[1])[0]) \
+               + '_diff_volume.nc'
     print('Write volume data to {0}.'.format(filepath))
 
     nc_file = nc.Dataset(filepath, 'w', format='NETCDF3_CLASSIC')
@@ -79,6 +79,53 @@ def two_netcdf_files(filepath):
         text_file.write('\n')
 
     text_file.close()
+
+def two_netcdf_files(filepath):
+    import netCDF4 as nc
+    print('Read data from {0}.'.format(filepath[0]))
+
+    nc_file_1 = nc.Dataset(filepath[0])
+    dim0 = nc_file_1.dimensions['nNodes_0'].size
+    dim1 = nc_file_1.dimensions['nNodes_1'].size
+    dim2 = nc_file_1.dimensions['nNodes_2'].size
+    time = nc_file_1.dimensions['time'].size
+    TNewDom = nc_file_1.variables['TNewDom']
+
+    a_1 = np.zeros((dim2, dim1, dim0))
+    a_1[:,:,:] = TNewDom[(time-1):time,:,:,]
+
+    nc_file_1.close()
+
+    print('Read data from {0}.'.format(filepath[1]))
+
+    nc_file_2 = nc.Dataset(filepath[1])
+    dim0 = nc_file_2.dimensions['nNodes_0'].size
+    dim1 = nc_file_2.dimensions['nNodes_1'].size
+    dim2 = nc_file_2.dimensions['nNodes_2'].size
+    time = nc_file_2.dimensions['time'].size
+    TNewDom = nc_file_2.variables['TNewDom']
+
+    a_2 = np.zeros((dim2, dim1, dim0))
+    a_2[:,:,:] = TNewDom[(time-1):time,:,:,]
+
+    nc_file_2.close()
+
+    if a_1.shape[0] == a_2.shape[0] and \
+       a_1.shape[1] == a_2.shape[1] and \
+       a_1.shape[2] == a_2.shape[2]:
+        print('All shapes of files are equal.')
+        print('Calc diff for volume and surface.')
+        two_netcdf_files_volume(filepath, a_1, a_2, dim0, dim1, dim2, time)
+    elif a_1.shape[0] != a_2.shape[0] and \
+         a_1.shape[1] == a_2.shape[1] and \
+         a_1.shape[2] == a_2.shape[2]:
+        print('Shape in z dimension of files is not equal.')
+        print('Calc diff for surface.')
+        two_netcdf_files_surface(filepath, a_1, a_2, dim0, dim1, dim2, time)
+    else:
+        print('Shape of files is not equal.')
+        print('Aborting.')
+        exit()
 
 def two_dat_files(filepath):
     print('Read data from {0}.'.format(filepath[0]))
