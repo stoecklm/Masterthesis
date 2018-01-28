@@ -1,5 +1,5 @@
 /* ScaFES
- * Copyright (c) 2011-2017, ZIH, TU Dresden, Federal Republic of Germany.
+ * Copyright (c) 2011-2018, ZIH, TU Dresden, Federal Republic of Germany.
  * For details, see the files COPYING and LICENSE in the base directory
  * of the package.
  */
@@ -4239,6 +4239,12 @@ inline void Problem<OWNPRBLM, CT, DIM>::writeDfsToFile(const int& timeIter)
                 {
                 case ScaFES::WriteHowOften::AT_START:
                     if (0 == timeIter)
+                    {
+                        writeData.at(kk) = true;
+                    }
+                    break;
+                case ScaFES::WriteHowOften::AT_END:
+                    if (this->params().nTimesteps() == timeIter)
                     {
                         writeData.at(kk) = true;
                     }

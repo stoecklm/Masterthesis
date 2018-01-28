@@ -1,5 +1,5 @@
 /* ScaFES
- * Copyright (c) 2011-2015, ZIH, TU Dresden, Federal Republic of Germany.
+ * Copyright (c) 2011-2015, 2017-2018, ZIH, TU Dresden, Federal Republic of Germany.
  * For details, see the files COPYING and LICENSE in the base directory
  * of the package.
  */
@@ -1985,6 +1985,12 @@ void DataField<TT, DIM>::write(const int& timeIter)
         break;
     case WriteHowOften::AT_START:
         if (0 == timeIter)
+        {
+            writeData.at(0) = true;
+        }
+        break;
+    case WriteHowOften::AT_END:
+        if (this->params()->nTimesteps() == timeIter)
         {
             writeData.at(0) = true;
         }

@@ -1,5 +1,5 @@
 /* ScaFES
- * Copyright (c) 2011-2016, ZIH, TU Dresden, Federal Republic of Germany.
+ * Copyright (c) 2011-2018, ZIH, TU Dresden, Federal Republic of Germany.
  * For details, see the files COPYING and LICENSE in the base directory
  * of the package.
  */
@@ -328,7 +328,8 @@
         a) LIKE_GIVEN_AT_CL
         b) ALWAYS
         c) AT_START
-        c) AT_START_AND_END
+        d) AT_END
+        e) AT_START_AND_END
 
 
 \section netcdf_noatalltimesteps NetCDF is activated via "--enable-netcdf", NetCDF data file has been written, but the data fields have not been written to the file at ALL time steps.
@@ -408,6 +409,7 @@
         NEVER
         ALWAYS
         AT_START (initialization)
+        AT_END (finialization)
         AT_START_AND_END (initialization and finialization)
 
  - If the option <tt>LIKE_GIVEN_AT_CL</tt> was chosen, either set
