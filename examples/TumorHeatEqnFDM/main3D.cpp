@@ -1,5 +1,5 @@
 /* ScaFES
- * Copyright (c) 2017, ZIH, TU Dresden, Federal Republic of Germany.
+ * Copyright (c) 2017-2018, ZIH, TU Dresden, Federal Republic of Germany.
  * For details, see the files COPYING and LICENSE in the base directory
  * of the package.
  */
@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
     defaultValue[2] = 0.0;
     std::vector<ScaFES::WriteHowOften> writeToFile(3);
     writeToFile[0] = ScaFES::WriteHowOften::NEVER;
-    writeToFile[1] = ScaFES::WriteHowOften::LIKE_GIVEN_AT_CL;
+    writeToFile[1] = ScaFES::WriteHowOften::AT_END;
     writeToFile[2] = ScaFES::WriteHowOften::NEVER;
     std::vector<bool> computeError(3);
     computeError[0] = false;
