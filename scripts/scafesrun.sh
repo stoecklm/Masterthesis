@@ -844,7 +844,7 @@ for idxTestMpi in `seq 0 $endTestMpi`; do
                 ;;
             #------------------------------------------------------------------#
             SLURM )
-                ## --reservation=${nameReservation}
+                export OMP_NUM_THREADS=$currNthreadsOpenMp;
                 jobexestring="srun -v -v \
                     --nodes=${nNodesMachine} \
                     --ntasks=${currNprocessesMpi} \
