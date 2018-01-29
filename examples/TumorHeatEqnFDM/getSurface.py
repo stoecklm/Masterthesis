@@ -24,14 +24,14 @@ def main():
         exit()
 
     print('Read data from {0}.'.format(filepath))
-
+    # Open netCDF file and read data from it.
     nc_file = nc.Dataset(filepath)
     dim0 = nc_file.dimensions['nNodes_0'].size
     dim1 = nc_file.dimensions['nNodes_1'].size
     dim2 = nc_file.dimensions['nNodes_2'].size
     time = nc_file.dimensions['time'].size
     T = nc_file.variables['TNewDom']
-
+    # Create numpy array and save surface data from netCDF file to it.
     a = np.zeros((dim1, dim0))
     a[:,:] = T[(time-1):time,(dim2-1),:,:]
 
@@ -44,10 +44,13 @@ def main():
 
     print('Write surface data to {0}.'.format(filepath))
 
+    # Iterate through all elements of the surface.
     for elem_y in range(0, a.shape[0]):
         for elem_x in range(0, a.shape[1]):
             text_file.write('{0} {1} {2}\n'.format(str(elem_x), str(elem_y), str(a[elem_y, elem_x])))
         text_file.write('\n')
+
+    text_file.close()
 
     print('Done.')
 

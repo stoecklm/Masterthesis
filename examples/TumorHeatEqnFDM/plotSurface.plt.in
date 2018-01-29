@@ -1,3 +1,10 @@
+#!/usr/bin/env gnuplot
+
+# This script is called via plotSurface.sh by
+# gnuplot -c plotSurface.plt $inputFile $outputFile
+# ARG1 = $inputFile
+# ARG2 = $outputFile
+
 reset
 
 set term postscript eps color
