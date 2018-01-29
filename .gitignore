@@ -1,17 +1,12 @@
-# Ignore macOS specific files
-.DS_Store
-
-# Ignore vim swap files
-*.swp
-
-# Ignore build folders
+# Ignore build folders.
 build*
 
-# Ignore project specific files
+# Ignore project specific files.
 Makefile.in
 aclocal.m4
 autom4te.cache/
 config.h.in
+config.h.in~
 config/ar-lib
 config/compile
 config/config.guess
