@@ -1,5 +1,5 @@
 /* ScaFES
- * Copyright (c) 2011-2015, ZIH, TU Dresden, Federal Republic of Germany.
+ * Copyright (c) 2011-2018, ZIH, TU Dresden, Federal Republic of Germany.
  * For details, see the files COPYING and LICENSE in the base directory
  * of the package.
  */
@@ -201,9 +201,9 @@ class HeatEqnFDM : public ScaFES::Problem<HeatEqnFDM<CT,DIM>, CT, DIM> {
                             + this->tau() * this->knownDf(0, idxNode);
         for (std::size_t pp = 0; pp < DIM; ++pp) {
             vNew[0](idxNode) += this->tau() * (
-                 2.0 * vOld[0](idxNode)
-                     - vOld[0](this->connect(idxNode, 2*pp))
-                     - vOld[0](this->connect(idxNode, 2*pp+1)) )
+                vOld[0](this->connect(idxNode, 2*pp))
+                + vOld[0](this->connect(idxNode, 2*pp+1)) )
+                - 2.0 * vOld[0](idxNode)
                      / (this->gridsize(pp) * this->gridsize(pp));
         }
     }
