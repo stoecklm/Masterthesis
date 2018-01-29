@@ -133,7 +133,7 @@
 #   SCAFESRUN_CHECK_CONV_AT_EVERY_N_ITER="";
 #
 # ScaFES
-# Copyright (c) 2011-2015, ZIH, TU Dresden, Federal Republic of Germany.
+# Copyright (c) 2011-2018, ZIH, TU Dresden, Federal Republic of Germany.
 # For details, see the files COPYING and LICENSE in the base directory
 # of the package.
 
