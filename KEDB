@@ -2346,3 +2346,73 @@ Also add
 export SCAFESRUN_PARTITION_GRID="1"
 
 to RUN.sh.in.
+
+
+################################################################################
+Problem:
+=======
+[MS, 29/01/2018]
+"Grid dimensions does not fit to given grid." will be written to *.err file
+if data is read from a init file (i.e. netCDF file).
+Grid dimensions seem to fit since ScaFES will run without errors.
+Error/remark is written by following functions:
+- DataFile<TT, DIM>::read(std::vector<TT*>& elemData, int const& /*timestep*/)
+- DataFile<TT, DIM>::init(std::vector<TT*>& elemData)
+from ScaFES_DataFileApi.hpp.
+
+Reason:
+=========
+memNormal().at(0).nNodes().elem(ii) != static_cast<int>(nElems[ii]) is true.
+memNormal().at(0).nNodes(0.elem(ii) is +2 compared to static_cast<int>(nElems[ii]).
+
+Solution:
+=========
+pending
+
+
+################################################################################
+Problem:
+=======
+[MS, 29/01/2018]
+ScaFES will abort if only one DataField will be created by main.cpp and
+this vector also has the setting computeError[0] = false.
+
+Message from *.out file:
+
+ScaFES : Rank=0:            * Update times of all known data fields...
+-------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+-------------------------------------------------------
+
+Message from *.err file:
+
+--------------------------------------------------------------------------
+mpirun noticed that process rank 0 with PID 0 on node edr11814 exited on signal 11
+--------------------------------------------------------------------------
+
+Reason:
+=========
+unknown
+
+Workaround:
+=========
+set computeError[0] = true
+or add another known DataField with
+isKnownDf[0] = true;
+
+
+################################################################################
+Problem:
+=======
+[MS, 29/01/2018]
+If SCAFESRUN_N_PARTITIONS="2x2x1" is used, the results are wrong/different than
+using SCAFESRUN_N_PARTITIONS="4x1x1".
+
+Reason:
+=========
+unknown
+
+Workaround:
+=========
+Only use something like SCAFESRUN_N_PARTITIONS="4x1x1".
