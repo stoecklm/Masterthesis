@@ -198,7 +198,7 @@ def calc_variables():
             DELTA_TIME_MIN = DELTA_TIME_TUMOR_CONV
         # Calculate timesteps from minimum if delta time.
         # Add five percent for safety reasons.
-        params['N_TIMESTEPS'] = int(((params['END_TIME'] - params['START_TIME'])/DELTA_TIME_MIN)*1.05)
+        params['N_TIMESTEPS'] = int(((params['END_TIME'] - params['START_TIME'])/DELTA_TIME_MIN)*1.05) + 1
         DELTA_TIME = DELTA_TIME_MIN
 
     # Final calculation for delta time.
