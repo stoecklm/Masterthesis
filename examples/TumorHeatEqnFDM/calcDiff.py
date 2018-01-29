@@ -1,20 +1,63 @@
 import numpy as np
 import os
+from scipy.interpolate import griddata
 import sys
 
-def two_netcdf_files_surface(filepath, a_1, a_2, dim0, dim1, dim2, time):
+def two_netcdf_files_surface(filepath, a_1, a_2):
     import netCDF4 as nc
     filepath = os.path.splitext(filepath[0])[0] + '_' \
                + os.path.basename(os.path.splitext(filepath[1])[0]) \
                + '_diff_surface.nc'
     print('Write surface data to {0}.'.format(filepath))
+    if a_1.shape[2] == a_2.shape[2] and \
+       a_1.shape[1] == a_2.shape[1]:
+        dim0_sparse = a_1.shape[2]
+        dim1_sparse = a_1.shape[1]
+        a_3 = np.subtract(a_1[a_1.shape[0]-1,:,:], a_2[a_2.shape[0]-1,:,:])
+    elif a_1.shape[2] != a_2.shape[2] and \
+         a_1.shape[1] != a_2.shape[1]:
+        print('* WARNING: Shape in x dim and y dim is not equal.')
+        print('  Using downsampling and cubic interpolation to calc diff between results.')
+        if a_1.shape[1] < a_2.shape[1]:
+            # a_1 = sparse
+            # a_2 = dense
+            dim0_sparse = a_1.shape[2]
+            dim1_sparse = a_1.shape[1]
+            dim0_dense = a_2.shape[2]
+            dim1_dense = a_2.shape[1]
+        else:
+            # a_1 = dense
+            # a_2 = sparse
+            dim0_sparse = a_2.shape[2]
+            dim1_sparse = a_2.shape[1]
+            dim0_dense = a_1.shape[2]
+            dim1_dense = a_1.shape[1]
+
+        x_sparse, y_sparse = np.meshgrid(np.linspace(0, dim0_sparse-1, dim0_sparse), \
+                                         np.linspace(0, dim0_sparse-1, dim1_sparse))
+        x_dense, y_dense = np.meshgrid(np.linspace(0, dim0_sparse-1, dim0_dense), \
+                                       np.linspace(0, dim0_sparse-1, dim1_dense))
+        if a_1.shape[1] < a_2.shape[1]:
+            # a_1 = sparse
+            # a_2 = dense
+            a_sparse = griddata(np.array([x_dense.ravel(), y_dense.ravel()]).T, \
+                                a_2[a_2.shape[0]-1,:,:].ravel(), \
+                                (x_sparse, y_sparse), method='cubic')
+            a_3 = np.subtract(a_1[a_1.shape[0]-1,:,:], a_sparse[:,:])
+        else:
+            # a_1 = dense
+            # a_2 = sparse
+            a_sparse = griddata(np.array([x_dense.ravel(), y_dense.ravel()]).T, \
+                                a_1[a_1.shape[0]-1,:,:].ravel(), \
+                                (x_sparse, y_sparse), method='cubic')
+            a_3 = np.subtract(a_sparse[:,:], a_2[a_2.shape[0]-1,:,:])
 
     nc_file = nc.Dataset(filepath, 'w', format='NETCDF3_CLASSIC')
-    nNodes = nc_file.createDimension('nNodes_0', dim0)
-    nNodes = nc_file.createDimension('nNodes_1', dim1)
+    nNodes = nc_file.createDimension('nNodes_0', dim0_sparse)
+    nNodes = nc_file.createDimension('nNodes_1', dim1_sparse)
     time = nc_file.createDimension('time')
     diff = nc_file.createVariable('TDiff', 'f8', ('time', 'nNodes_1', 'nNodes_0'))
-    a_3 = np.subtract(a_1[a_1.shape[0]-1,:,:], a_2[a_2.shape[0]-1,:,:])
+
     diff[0,] = a_3
 
     nc_file.close()
@@ -37,7 +80,7 @@ def two_netcdf_files_surface(filepath, a_1, a_2, dim0, dim1, dim2, time):
 
     text_file.close()
 
-def two_netcdf_files_volume(filepath, a_1, a_2, dim0, dim1, dim2, time):
+def two_netcdf_files_volume(filepath, a_1, a_2, dim0, dim1, dim2):
     import netCDF4 as nc
     filepath = os.path.splitext(filepath[0])[0] + '_' \
                + os.path.basename(os.path.splitext(filepath[1])[0]) \
@@ -114,16 +157,22 @@ def two_netcdf_files(filepath):
        a_1.shape[1] == a_2.shape[1] and \
        a_1.shape[2] == a_2.shape[2]:
         print('All shapes of files are equal.')
-        print('Calc diff for volume and surface.')
-        two_netcdf_files_volume(filepath, a_1, a_2, dim0, dim1, dim2, time)
-    elif a_1.shape[0] != a_2.shape[0] and \
-         a_1.shape[1] == a_2.shape[1] and \
-         a_1.shape[2] == a_2.shape[2]:
-        print('Shape in z dimension of files is not equal.')
-        print('Calc diff for surface.')
-        two_netcdf_files_surface(filepath, a_1, a_2, dim0, dim1, dim2, time)
+        print('Calc diff of volume and surface.')
+        two_netcdf_files_volume(filepath, a_1, a_2, dim0, dim1, dim2)
+    elif a_1.shape[1] <= a_2.shape[1] and \
+         a_1.shape[2] <= a_2.shape[2]:
+        print('Not all shapes of files are equal.')
+        print('Calc diff only of surface.')
+        two_netcdf_files_surface(filepath, a_1, a_2)
+    elif a_1.shape[1] >= a_2.shape[1] and \
+         a_1.shape[2] >= a_2.shape[2]:
+        print('Not all shapes of files are equal.')
+        print('Calc diff only of surface.')
+        two_netcdf_files_surface(filepath, a_1, a_2)
     else:
-        print('Shape of files is not equal.')
+        print('One dim of surface of file 1 is bigger than same dim of surface of file 2.')
+        print('The other dim of surface of file 1 is smaller than same dim of surface of file 2.')
+        print('Cannot work with shape of files.')
         print('Aborting.')
         exit()
 
