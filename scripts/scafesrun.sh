@@ -101,6 +101,9 @@
 # * Number of nodes of the machine. <int>
 #   SCAFESRUN_MACHINE_N_NODES="1";
 #
+# * Number of tasks per node on the machine. <int>
+#   SCAFESRUN_MACHINE_N_TASKS_PER_NODE="1";
+#
 # * Number of cores per node of the machine. <int>
 #   SCAFESRUN_MACHINE_N_CORES_PER_NODE="1";
 #
@@ -283,6 +286,17 @@ fi
 if [ "x$SCAFESRUN_MACHINE_N_NODES" == "x" ] ; then
     SCAFESRUN_MACHINE_N_NODES="1";
     echo "* WARNING: Use default value SCAFESRUN_MACHINE_N_NODES=$SCAFESRUN_MACHINE_N_NODES"
+fi
+
+#------------------------------------------------------------------------------#
+if [ "x$SCAFESRUN_MACHINE_N_TASKS_PER_NODE" == "x" ] ; then
+    if [ "x$SCAFESRUN_RUN_MODE" == "xSLURM" ] ; then
+        echo "* ERROR: SCAFESRUN_MACHINE_N_TASKS_PER_NODE was not set."
+        exit 22;
+    else
+        SCAFESRUN_MACHINE_N_TASKS_PER_NODE="1";
+        echo "* WARNING: Use default value SCAFESRUN_MACHINE_N_TASKS_PER_NODE=$SCAFESRUN_MACHINE_N_TASKS_PER_NODE";
+    fi
 fi
 
 #------------------------------------------------------------------------------#
@@ -471,6 +485,7 @@ declare    -r local runMode=$SCAFESRUN_RUN_MODE;
 declare    -r local outputlevel=$SCAFESRUN_OUTPUT_LEVEL;
 declare -i -r local oneAsInteger=1;
 declare -i local nNodesMachineMAX=$SCAFESRUN_MACHINE_N_NODES;
+declare -i local nTasksPerNode=$SCAFESRUN_MACHINE_N_TASKS_PER_NODE;
 declare -i local nCoresPerNodeMAX=$SCAFESRUN_MACHINE_N_CORES_PER_NODE;
 declare    local nameMachine=${SCAFESRUN_MACHINE_NAME};
 declare    -r local softwareVersion=${SCAFESRUN_SOFTWARE_VERSION};
@@ -624,16 +639,25 @@ for idxTestMpi in `seq 0 $endTestMpi`; do
             errorfile="$basefile.err"
 
             #------------------------------------------------------------------#
-            if ( expr ${currNprocessesMpi} \< ${nNodesMachineMAX} > /dev/null ) ; then
+            if ( expr ${currNprocessesMpi} \< ${nTasksPerNode} > /dev/null ) ; then
                 nNodesMachine=1;
             else
-                nNodesMachine=$((currNprocessesMpi/nNodesMachineMAX));
+                nNodesMachine=$((currNprocessesMpi/nTasksPerNode));
+                if [ ${currNprocessesMpi} -gt $((nNodesMachine*nTasksPerNode ))  ]; then
+                    echo "* WARNING: currNprocessesMpi < nNodesMachine * nTasksPerNode."
+                    nNodesMachine=$((nNodesMachine + 1))
+                    echo "  Setting nNodesMachine = nNodesMachine + 1."
+                fi
             fi
 
             declare -i local nCoresTotal=$((currNprocessesMpi*currNthreadsOpenMp));
             if [ ${nCoresTotal} -gt ${nCoresTotalMAX} ]; then
                 echo "* WARNING: nCoresTotal > nCoresTotalMAX. Continue loop."
                 continue;
+            fi
+            if [ ${nNodesMachine} -gt ${nNodesMachineMAX} ]; then
+                echo "* ERROR: nNodesMachine > nNodesMachineMAX."
+                exit 1
             fi
 
             #------------------------------------------------------------------#
@@ -848,6 +872,7 @@ for idxTestMpi in `seq 0 $endTestMpi`; do
                 jobexestring="srun -v -v \
                     --nodes=${nNodesMachine} \
                     --ntasks=${currNprocessesMpi} \
+                    --ntasks-per-node=${nTasksPerNode} \
                     --reservation=${nameReservation} \
                     --time=${SCAFESRUN_MACHINE_TIME} \
                     -o ${outputfile}.slurm.out \
