@@ -1,5 +1,5 @@
 /* ScaFES
- * Copyright (c) 2017, ZIH, TU Dresden, Federal Republic of Germany.
+ * Copyright (c) 2017-2018, ZIH, TU Dresden, Federal Republic of Germany.
  * For details, see the files COPYING and LICENSE in the base directory
  * of the package.
  */
@@ -7,7 +7,8 @@
 /**
  *  @file HeatEqnFDM.hpp
  *
- *  @brief Implementation of n-dimensional heat equation problem on unit hybercube.
+ *  @brief Test implementation of n-dimensional heat equation problem on unit
+ *         hybercube.
  */
 
 #ifndef HEATEQNFDM_HPP_

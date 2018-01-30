@@ -1,5 +1,5 @@
 /* ScaFES
- * Copyright (c) 2017, ZIH, TU Dresden, Federal Republic of Germany.
+ * Copyright (c) 2017-2018, ZIH, TU Dresden, Federal Republic of Germany.
  * For details, see the files COPYING and LICENSE in the base directory
  * of the package.
  */
@@ -7,7 +7,8 @@
 /**
  *  @file InitFile.hpp
  *
- *  @brief Implementation of n-dimensional heat equation problem on unit hybercube.
+ *  @brief Test implementation of n-dimensional heat equation problem on unit
+ *         hybercube in combination with init data from netCDF file.
  */
 
 #include "ScaFES.hpp"
@@ -124,6 +125,7 @@ class InitFile : public ScaFES::Problem<InitFile<CT,DIM>, CT, DIM> {
      * @param nameDatafield Name of the fields.
      * @param stencilWidth Stencil width of the fields.
      * @param isKnownDf Is the data field are known or unknown one?
+     * @param ptree_ Config file parser.
      * @param nLayers Number of layers at the global boundary.
      * @param defaultValue Default value of fields.
      * @param writeToFile How often should the data field be written to file.

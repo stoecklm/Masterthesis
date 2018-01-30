@@ -7,7 +7,8 @@
 /**
  *  @file TumorHeatEqnFDM.hpp
  *
- *  @brief Implementation of a n-dimensional Pennes bioheat equation problem.
+ *  @brief Implementation of a n-dimensional Pennes bioheat equation problem
+ *         with tumor model inside the grid.
  */
 
 #include <iostream>

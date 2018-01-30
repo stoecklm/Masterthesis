@@ -7,7 +7,8 @@
 /**
  *  @file PennesBioheatEqnFDM.hpp
  *
- *  @brief Implementation of n-dimensional heat equation problem on unit hybercube.
+ *  @brief Test implementation of n-dimensional Pennes bioheat equation problem
+ *         on unit hybercube.
  */
 
 #ifndef PENNESBIOHEATEQNFDM_HPP_

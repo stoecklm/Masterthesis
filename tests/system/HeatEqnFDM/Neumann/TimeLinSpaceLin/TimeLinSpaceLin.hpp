@@ -1,5 +1,5 @@
 /* ScaFES
- * Copyright (c) 2017, ZIH, TU Dresden, Federal Republic of Germany.
+ * Copyright (c) 2017-2018, ZIH, TU Dresden, Federal Republic of Germany.
  * For details, see the files COPYING and LICENSE in the base directory
  * of the package.
  */
@@ -140,6 +140,7 @@ class TimeLinSpaceLin : public Neumann<CT,DIM, TimeLinSpaceLin<CT,DIM> > {
 
     /** Initializes all unknown fields at one given global inner grid node.
      *  @param vNew Set of all unknown fields (return value).
+     *  @param idxNode Index of given grid node.
      *  @param timestep Given time step.
      */
     template<typename TT>
