@@ -1,5 +1,5 @@
 /* ScaFES
- * Copyright (c) 2017, ZIH, TU Dresden, Federal Republic of Germany.
+ * Copyright (c) 2017-2018, ZIH, TU Dresden, Federal Republic of Germany.
  * For details, see the files COPYING and LICENSE in the base directory
  * of the package.
  */
@@ -206,6 +206,7 @@ class ZhangExampleFDM : public ScaFES::Problem<ZhangExampleFDM<CT,DIM>, CT, DIM>
     /** Evaluates all fields at one given global inner grid node.
      *  @param vNew Set of all fields.
      *  @param idxNode Index of given grid node.
+     *  @param timestep Given time step.
      */
     void evalInner(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
                    ScaFES::Ntuple<int,DIM> const& idxNode,
@@ -300,6 +301,7 @@ class ZhangExampleFDM : public ScaFES::Problem<ZhangExampleFDM<CT,DIM>, CT, DIM>
 
     /** Updates all unknown fields at one given global border grid node.
      *  @param vNew Set of all unknown fields at new time step (return value).
+     *  @param vOld Set of all given fields.
      *  @param idxNode Index of given grid node.
      */
     template<typename TT>

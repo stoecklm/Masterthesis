@@ -101,12 +101,14 @@ class TumorHeatEqnFDM : public ScaFES::Problem<TumorHeatEqnFDM<CT,DIM>, CT, DIM>
      * @param nameDatafield Name of the fields.
      * @param stencilWidth Stencil width of the fields.
      * @param isKnownDf Is the data field are known or unknown one?
+     * @param ptree_ Config file parser.
      * @param nLayers Number of layers at the global boundary.
      * @param defaultValue Default value of fields.
      * @param writeToFile How often should the data field be written to file.
      * @param computeError Should the Linf error between the numerical
      *                     and exact solution be computed?
      * @param geomparamsInit Initial guess of geometrical parameters.
+     * @param checkConvergence Should convergence be checked?
      */
     TumorHeatEqnFDM(ScaFES::Parameters const& params,
                     ScaFES::GridGlobal<DIM> const& gg,

@@ -1,6 +1,6 @@
 
 /* ScaFES
- * Copyright (c) 2016, ZIH, TU Dresden, Federal Republic of Germany.
+ * Copyright (c) 2016-2018, ZIH, TU Dresden, Federal Republic of Germany.
  * For details, see the files COPYING and LICENSE in the base directory
  * of the package.
  */
@@ -320,6 +320,7 @@ class LameNavierEqnFDMFirstOrder : public ScaFES::Problem<LameNavierEqnFDMFirstO
     /** Evaluates all fields at one given global inner grid node.
      *  @param vNew Set of all fields (return value), \f$ F^{(p;0)}_{(i,j,k)} \f$, \f$ G^{(p;0)}_{(i,j,k)} \f$, \f$ Y^{(p;0)}_{(i,j,k)} \f$.
      *  @param idxNode Index \f$(i,j,k)\f$ of given inner grid node \f$x_{(i,j,k)}\f$.
+     *  @param timestep Given first time step.
      */
     void evalInner(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
                    ScaFES::Ntuple<int,DIM> const& idxNode,
@@ -353,6 +354,7 @@ class LameNavierEqnFDMFirstOrder : public ScaFES::Problem<LameNavierEqnFDMFirstO
     /** Initializes all unknown fields at one given global inner grid node.
      *  @param vNew Set of all unknown fields (return value), \f$ Y^{(p;0)}_{(i,j,k)} \f$.
      *  @param idxNode Index \f$(i,j,k)\f$ of current inner grid node \f$ x_{(i,j,k)}\f$.
+     *  @param timestep Given time step 0.
      */
     template<typename TT>
     void initInner(std::vector< ScaFES::DataField<TT, DIM> >& vNew,
@@ -506,6 +508,7 @@ class LameNavierEqnFDMFirstOrder : public ScaFES::Problem<LameNavierEqnFDMFirstO
 
     /** Updates all unknown fields at one given global border grid node.
      *  @param vNew Set of all unknown fields (return value), \f$ Y^{(p;l+1)}_{(i,j,k)} \f$.
+     *  @param vOld Set of all given fields.
      *  @param idxNode Index \f$(i,j,k)\f$ of current border grid node \f$x_{(i,j,k)}\f$.
      */
     template<typename TT>
