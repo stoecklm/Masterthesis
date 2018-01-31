@@ -135,6 +135,9 @@
 # * Number of iterations between two convergence checks. <int>
 #   SCAFESRUN_CHECK_CONV_AT_EVERY_N_ITER="";
 #
+# * Name for result file (i.e. netCDF file). <string>
+#   SCAFESRUN_NAME_RESULTFILE="";
+#
 # ScaFES
 # Copyright (c) 2011-2018, ZIH, TU Dresden, Federal Republic of Germany.
 # For details, see the files COPYING and LICENSE in the base directory
@@ -457,6 +460,12 @@ if [ "x$SCAFESRUN_SOFTWARE_VERSION" == "x" ] ; then
 fi
 
 #------------------------------------------------------------------------------#
+if [ "x$SCAFESRUN_NAME_RESULTFILE" == "x" ] ; then
+    SCAFESRUN_NAME_RESULTFILE="";
+    echo "* WARNING: Use default value SCAFESRUN_NAME_RESULTFILE=$SCAFESRUN_NAME_RESULTFILE"
+fi
+
+#------------------------------------------------------------------------------#
 # From here on, all variables should be declared.
 set -u
 set -e
@@ -612,6 +621,10 @@ for idxTestMpi in `seq 0 $endTestMpi`; do
             namePartfile="${namePartfile}_${currNprocessesMpi}";
             namePartfile="${namePartfile}_${currNthreadsOpenMp}_${currNnodes}";
             nameDatafile=${namePartfile};
+
+            if [ ! "x$SCAFESRUN_NAME_RESULTFILE" == "x" ] ; then
+                nameDatafile=${SCAFESRUN_NAME_RESULTFILE};
+            fi
 
             #------------------------------------------------------------------#
             str_currNprocessesMpi=$(printf "%.5d" $currNprocessesMpi);
