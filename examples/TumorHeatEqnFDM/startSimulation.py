@@ -5,6 +5,8 @@ import os
 import subprocess
 import sys
 
+from plotSurface import plot_results
+
 params = {
     'NAME_CONFIGFILE' : ''
 }
@@ -462,6 +464,8 @@ def start_simulation():
     # by the simulation.
     if latest_file_nc_after_time > latest_file_nc_before_time:
         params['NAME_RESULTFILE'] = latest_file_nc_after
+    else:
+        params['NAME_RESULTFILE'] = ''
 
 
 def main():
@@ -488,6 +492,8 @@ def main():
         create_init_file()
     set_environment_variables()
     start_simulation()
+    if params['NAME_RESULTFILE'] != '' and params['SPACE_DIM'] == 3:
+        plot_results(params['NAME_RESULTFILE'])
 
 if __name__ == '__main__':
     main()
