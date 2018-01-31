@@ -34,9 +34,9 @@ def two_netcdf_files_surface(filepath, a_1, a_2):
             dim1_dense = a_1.shape[1]
 
         x_sparse, y_sparse = np.meshgrid(np.linspace(0, dim0_sparse-1, dim0_sparse), \
-                                         np.linspace(0, dim0_sparse-1, dim1_sparse))
+                                         np.linspace(0, dim1_sparse-1, dim1_sparse))
         x_dense, y_dense = np.meshgrid(np.linspace(0, dim0_sparse-1, dim0_dense), \
-                                       np.linspace(0, dim0_sparse-1, dim1_dense))
+                                       np.linspace(0, dim1_sparse-1, dim1_dense))
         if a_1.shape[1] < a_2.shape[1]:
             # a_1 = sparse
             # a_2 = dense
