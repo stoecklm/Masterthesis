@@ -22,3 +22,6 @@ config/m4/lt~obsolete.m4
 config/missing
 config/test-driver
 configure
+
+# Ignore files made by python.
+__pycache__
