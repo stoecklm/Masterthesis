@@ -1,4 +1,5 @@
 import configparser
+import glob
 import numpy as np
 import os
 import subprocess
@@ -433,6 +434,11 @@ def set_environment_variables():
 def start_simulation():
     global params
 
+    # Get time of newest netCDF file BEFORE simulation.
+    files_nc_before = glob.glob('./' + params['NAME_EXECUTABLE'] + '*.nc')
+    latest_file_nc_before = max(files_nc_before, key=os.path.getctime)
+    latest_file_nc_before_time = os.path.getctime(latest_file_nc_before)
+
     # Set name of folder as executable with dimension as suffix
     print('Starting {0}.'.format(params['NAME_EXECUTABLE']))
     print()
@@ -445,6 +451,17 @@ def start_simulation():
         print('Done.')
     else:
         print('* ERROR: Simulation returned error code {0}.'.format(returncode))
+
+    # Get time of newest netCDF file AFTER simulation.
+    files_nc_after = glob.glob(params['NAME_EXECUTABLE'] + '*.nc')
+    latest_file_nc_after = max(files_nc_after, key=os.path.getctime)
+    latest_file_nc_after_time = os.path.getctime(latest_file_nc_after)
+
+    # If time of newest file after simulation is newer than time of newest file
+    # before simulation, then it is assumend there is a new file written
+    # by the simulation.
+    if latest_file_nc_after_time > latest_file_nc_before_time:
+        params['NAME_RESULTFILE'] = latest_file_nc_after
 
 
 def main():
