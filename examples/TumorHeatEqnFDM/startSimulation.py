@@ -299,13 +299,16 @@ def create_init_file():
 
     if SPACE_DIM == 1:
         create_value_array_1D(nc_file, params['T_INIT'], params['T_TUMOR'], NAME_VARIABLES[0])
-        create_value_array_1D(nc_file, 1.0, -1.0, 'Region')
+        if len(NAME_VARIABLES) > 1:
+            create_value_array_1D(nc_file, 1.0, -1.0, NAME_VARIABLES[1])
     elif SPACE_DIM == 2:
         create_value_array_2D(nc_file, params['T_INIT'], params['T_TUMOR'], NAME_VARIABLES[0])
-        create_value_array_2D(nc_file, 1.0, -1.0, 'Region')
+        if len(NAME_VARIABLES) > 1:
+            create_value_array_2D(nc_file, 1.0, -1.0, NAME_VARIABLES[1])
     else:
         create_value_array_3D(nc_file, params['T_INIT'], params['T_TUMOR'], NAME_VARIABLES[0])
-        create_value_array_3D(nc_file, 1.0, -1.0, 'Region')
+        if len(NAME_VARIABLES) > 1:
+            create_value_array_3D(nc_file, 1.0, -1.0, NAME_VARIABLES[1])
     nc_file.close()
 
     print('Done.')
