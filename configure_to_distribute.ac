@@ -634,6 +634,7 @@ AC_CONFIG_LINKS([examples/TumorHeatEqnFDM/calcDiff.py:examples/TumorHeatEqnFDM/c
 AC_CONFIG_LINKS([examples/TumorHeatEqnFDM/checkConvergence.py:examples/TumorHeatEqnFDM/checkConvergence.py])
 AC_CONFIG_LINKS([examples/TumorHeatEqnFDM/checkResults.py:examples/TumorHeatEqnFDM/checkResults.py])
 AC_CONFIG_LINKS([examples/TumorHeatEqnFDM/getSurface.py:examples/TumorHeatEqnFDM/getSurface.py])
+AC_CONFIG_LINKS([examples/TumorHeatEqnFDM/plotScalingtest.py:examples/TumorHeatEqnFDM/plotScalingtest.py])
 AC_CONFIG_LINKS([examples/TumorHeatEqnFDM/plotSurface.py:examples/TumorHeatEqnFDM/plotSurface.py])
 AC_CONFIG_LINKS([examples/TumorHeatEqnFDM/startSimulation.py:examples/TumorHeatEqnFDM/startSimulation.py])
 
