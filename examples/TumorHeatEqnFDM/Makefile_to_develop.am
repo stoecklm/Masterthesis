@@ -51,6 +51,10 @@ DEPENDENCIES_COMMON= $(top_builddir)/src/libscafes.la
 exampledir = $(exec_prefix)/examples/TumorHeatEqnFDM
 example_PROGRAMS =
 example_SCRIPTS = RUN_HELPER.sh
+example_SCRIPTS += RUN_SCALINGTEST_HELPER.sh
+example_SCRIPTS += RUN_SCALINGTEST_HYBRID.sh
+example_SCRIPTS += RUN_SCALINGTEST_MPI.sh
+example_SCRIPTS += RUN_SCALINGTEST_OPENMP.sh
 example_SCRIPTS += plotSurface.plt.in
 example_SCRIPTS += plotSurface.sh.in
 example_SCRIPTS += Parameters.ini
@@ -107,6 +111,10 @@ TumorHeatEqnFDM3D_LDADD = $(LDADD_COMMON)
 TumorHeatEqnFDM3D_DEPENDENCIES = $(DEPENDENCIES_COMMON)
 #------------------------------------------------------------------------------#
 EXTRA_DIST = RUN_HELPER.sh
+EXTRA_DIST += RUN_SCALINGTEST_HELPER.sh
+EXTRA_DIST += RUN_SCALINGTEST_HYBRID.sh
+EXTRA_DIST += RUN_SCALINGTEST_MPI.sh
+EXTRA_DIST += RUN_SCALINGTEST_OPENMP.sh
 EXTRA_DIST += results/scafes-scalingtests.plt \
         results/ZIH_TAURUS-scaling_strong.plt \
         results/ZIH_TAURUS-scaling_weak.dat \
