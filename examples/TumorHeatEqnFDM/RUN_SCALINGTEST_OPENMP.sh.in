@@ -1,0 +1,29 @@
+#!/bin/bash
+#
+# Script for configuring the underlying application.
+#
+# Copyright (c) 2018, ZIH, TU Dresden, Federal Republic of Germany.
+# For details, see the files COPYING and LICENSE in the base directory
+# of the package.
+
+THREADS="1
+2
+4
+8
+12
+24"
+
+export TYPE_OF_TEST="OpenMP"
+export SCAFESRUN_N_PROCESSES_MPI_START="1"
+export SCAFESRUN_MACHINE_N_TASKS_PER_NODE="1"
+
+for THREAD in $THREADS
+do
+    export SCAFESRUN_N_THREADS_OPENMP_START="${THREAD}"
+    python3 startSimulation.py cases/Scalingtest/5A_120x120x10.ini RUN_SCALINGTEST_HELPER.sh
+    python3 startSimulation.py cases/Scalingtest/7C_120x120x10.ini RUN_SCALINGTEST_HELPER.sh
+    python3 startSimulation.py cases/Scalingtest/5A_120x120x50.ini RUN_SCALINGTEST_HELPER.sh
+    python3 startSimulation.py cases/Scalingtest/7C_120x120x50.ini RUN_SCALINGTEST_HELPER.sh
+done
+
+exit

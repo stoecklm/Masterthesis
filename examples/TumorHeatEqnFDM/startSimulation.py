@@ -433,8 +433,13 @@ def set_environment_variables():
 
     print('Done.')
 
-def start_simulation():
+def start_simulation(run_script):
     global params
+    # Check if run sript exists.
+    if os.path.isfile(run_script) == False:
+        print('* ERROR:', run_script, 'does not exist.')
+        print('Aborting.')
+        exit()
 
     # Get time of newest netCDF file BEFORE simulation.
     files_nc_before = glob.glob('./' + params['NAME_EXECUTABLE'] + '*.nc')
@@ -449,7 +454,7 @@ def start_simulation():
     print()
     # Call bash script to set more environment variables and
     # to start simulation.
-    returncode = subprocess.call('./RUN_HELPER.sh')
+    returncode = subprocess.call('./' + run_script)
     # Check if simulation/bash script ran successfully.
     print()
     if returncode == 0:
@@ -480,13 +485,21 @@ def main():
     if len(sys.argv) > 1:
         if os.path.isfile(sys.argv[1]) == True:
             params['NAME_CONFIGFILE'] = sys.argv[1]
+            run_script = 'RUN_HELPER.sh'
         else:
             print('* ERROR:', sys.argv[1], 'does not exist.')
+        if len(sys.argv) > 2:
+            if os.path.isfile(sys.argv[2]) == True:
+                run_script = sys.argv[2]
+            else:
+                print('* ERROR: Optional run script', sys.argv[2], 'does not exist.')
+                print('Aborting.')
+                exit()
     else:
         print('* ERROR: No command line argument for configfile provided.')
 
     if params['NAME_CONFIGFILE'] == '':
-        print('Usage: python3', sys.argv[0], '<PATH/TO/CONFIGFILE>')
+        print('Usage: python3', sys.argv[0], '<PATH/TO/CONFIGFILE> [<PATH/TO/RUN/SCRIPT]')
         print('Aborting.')
         exit()
 
@@ -497,7 +510,7 @@ def main():
     if params['CREATE_INITFILE'] == True:
         create_init_file()
     set_environment_variables()
-    start_simulation()
+    start_simulation(run_script)
     if params['NAME_RESULTFILE'] != '' and params['SPACE_DIM'] == 3:
         plot_results(params['NAME_RESULTFILE'])
 
