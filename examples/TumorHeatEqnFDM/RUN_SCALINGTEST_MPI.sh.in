@@ -24,10 +24,10 @@ export SCAFESRUN_MACHINE_N_TASKS_PER_NODE="24"
 for PROCESS in $PROCESSES
 do
     export SCAFESRUN_N_PROCESSES_MPI_START="${PROCESS}"
-    python3 startSimulation.py cases/ScalingTest/5A_120x120x10.ini RUN_SCALINGTEST_HELPER.sh
-    python3 startSimulation.py cases/ScalingTest/7C_120x120x10.ini RUN_SCALINGTEST_HELPER.sh
-    python3 startSimulation.py cases/ScalingTest/5A_120x120x50.ini RUN_SCALINGTEST_HELPER.sh
-    python3 startSimulation.py cases/ScalingTest/7C_120x120x50.ini RUN_SCALINGTEST_HELPER.sh
+    python3 startSimulation.py cases/scalingtest/5A_120x120x10.ini RUN_SCALINGTEST_HELPER.sh
+    python3 startSimulation.py cases/scalingtest/7C_120x120x10.ini RUN_SCALINGTEST_HELPER.sh
+    python3 startSimulation.py cases/scalingtest/5A_120x120x50.ini RUN_SCALINGTEST_HELPER.sh
+    python3 startSimulation.py cases/scalingtest/7C_120x120x50.ini RUN_SCALINGTEST_HELPER.sh
 done
 
 exit
