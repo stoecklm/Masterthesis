@@ -44,7 +44,7 @@ USE_INITFILE = True
 CREATE_INITFILE = True
 # Name of variables in init file.
 # Must be the name specified in main.cpp.
-NAME_VARIABLES = T Region
+NAME_VARIABLES = T
 # Threshold for check of convergence.
 THRESHOLD = 1.0e-5
 

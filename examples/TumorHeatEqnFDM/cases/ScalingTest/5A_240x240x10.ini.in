@@ -42,11 +42,11 @@ N_TIMESTEPS = 0
 NAME_INITFILE = init
 # Set USE_INITFILE to True even if CREATE_INITFILE is True,
 # if you want to use a init file.
-USE_INITFILE = False
-CREATE_INITFILE = False
+USE_INITFILE = True
+CREATE_INITFILE = True
 # Name of variables in init file.
 # Must be the name specified in main.cpp.
-NAME_VARIABLES = T Region
+NAME_VARIABLES = T
 # Threshold for check of convergence.
 THRESHOLD = 1.0e-5
 # Parameters to reduce number of convergence checks.
