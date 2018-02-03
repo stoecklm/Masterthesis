@@ -7,22 +7,21 @@
 # of the package.
 
 # Command for allocation of interactive shell with needed resources for approx. one run.
-# srun -n 1 -N 1 -c 24 --ntasks-per-node=1 --mem-per-cpu=2583 -p haswell64 --exclusive --time=1:30:00 --pty bash -l -i
+# srun -n 6 -N 6 -c 24 --ntasks-per-node=1 --mem-per-cpu=2583 -p haswell64 --exclusive --time=0:10:00 --pty bash -l -i
 
-THREADS="1
+# Run 1x24 per node.
+PROCESSES="1
 2
 4
-8
-12
-24"
+6"
 
-export TYPE_OF_TEST="OpenMP"
-export SCAFESRUN_N_PROCESSES_MPI_START="1"
-export SCAFESRUN_MACHINE_N_TASKS_PER_NODE="1"
+export TYPE_OF_TEST="Hybrid"
+export SCAFESRUN_MACHINE_N_TASKS_PER_NODE=1
+export SCAFESRUN_N_THREADS_OPENMP_START="24"
 
-for THREAD in $THREADS
+for PROCESS in $PROCESSES
 do
-    export SCAFESRUN_N_THREADS_OPENMP_START="${THREAD}"
+    export SCAFESRUN_N_PROCESSES_MPI_START="${PROCESS}"
     python3 startSimulation.py cases/scalingtest/5A_120x120x10.ini RUN_SCALINGTEST_HELPER.sh
     python3 startSimulation.py cases/scalingtest/7C_120x120x10.ini RUN_SCALINGTEST_HELPER.sh
     python3 startSimulation.py cases/scalingtest/5A_120x120x50.ini RUN_SCALINGTEST_HELPER.sh

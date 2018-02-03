@@ -6,17 +6,19 @@
 # For details, see the files COPYING and LICENSE in the base directory
 # of the package.
 
-export TYPE_OF_TEST="Hybrid"
+# Command for allocation of interactive shell with needed resources for approx. one run.
+# srun -n 12 -N 6 -c 12 --ntasks-per-node=2 --mem-per-cpu=2583 -p haswell64 --exclusive --time=0:15:00 --pty bash -l -i
 
+# Run 1x12 per node.
 PROCESSES="1
 2
 4
 6"
 
+export TYPE_OF_TEST="Hybrid"
 export SCAFESRUN_MACHINE_N_TASKS_PER_NODE=1
 export SCAFESRUN_N_THREADS_OPENMP_START="12"
 
-# Run 1x12.
 for PROCESS in $PROCESSES
 do
     export SCAFESRUN_N_PROCESSES_MPI_START="${PROCESS}"
@@ -26,26 +28,13 @@ do
     python3 startSimulation.py cases/scalingtest/7C_120x120x50.ini RUN_SCALINGTEST_HELPER.sh
 done
 
-# Run 1x24.
-export SCAFESRUN_N_THREADS_OPENMP_START="24"
-
-for PROCESS in $PROCESSES
-do
-    export SCAFESRUN_N_PROCESSES_MPI_START="${PROCESS}"
-    python3 startSimulation.py cases/scalingtest/5A_120x120x10.ini RUN_SCALINGTEST_HELPER.sh
-    python3 startSimulation.py cases/scalingtest/7C_120x120x10.ini RUN_SCALINGTEST_HELPER.sh
-    python3 startSimulation.py cases/scalingtest/5A_120x120x50.ini RUN_SCALINGTEST_HELPER.sh
-    python3 startSimulation.py cases/scalingtest/7C_120x120x50.ini RUN_SCALINGTEST_HELPER.sh
-done
-
-# Run 2x12.
-export SCAFESRUN_MACHINE_N_TASKS_PER_NODE=2
-export SCAFESRUN_N_THREADS_OPENMP_START="12"
-
+# Run 2x12 per node.
 PROCESSES="2
 4
 8
 12"
+
+export SCAFESRUN_MACHINE_N_TASKS_PER_NODE=2
 
 for PROCESS in $PROCESSES
 do

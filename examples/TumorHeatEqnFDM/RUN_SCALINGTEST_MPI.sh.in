@@ -6,6 +6,9 @@
 # For details, see the files COPYING and LICENSE in the base directory
 # of the package.
 
+# Command for allocation of interactive shell with needed resources for approx. one run.
+# srun -n 120 -N 5 -c 1 --ntasks-per-node=24 --mem-per-cpu=2583 -p haswell64 --exclusive --time=1:30:00 --pty bash -l -i
+
 PROCESSES="1
 2
 4
