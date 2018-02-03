@@ -181,11 +181,11 @@ def single_tests(filepath):
             # Save results for later.
             list_x.append(x)
             list_y.append(y)
-            list_title.append(str('Case: ' + os.path.basename(case) + ', ' + os.path.basename(node)))
+            list_title.append(str(os.path.basename(case) + ', ' + os.path.basename(node)))
             if serial_time > -0.5:
                 list_x_speedup.append(x_speedup)
                 list_y_speedup.append(y_speedup)
-                list_title_speedup.append(str('Case: ' + os.path.basename(case) + ', ' + os.path.basename(node)))
+                list_title_speedup.append(str(os.path.basename(case) + ', ' + os.path.basename(node)))
             # Reset all variables.
             x = np.zeros(0)
             y = np.zeros(0)
@@ -269,14 +269,14 @@ def hybrid_tests(filepath):
                 # Save results for later.
                 list_x.append(x)
                 list_y.append(y)
-                list_title.append(str('Case: ' + os.path.basename(case) + ', ' + os.path.basename(node)))
+                list_title.append(str(os.path.basename(case) + ', ' + os.path.basename(node) + ' (' + os.path.basename(task_per_node) + ')'))
                 # Reset all variables.
                 x = np.zeros(0)
                 y = np.zeros(0)
                 results = np.zeros(0)
     plt.close()
     # Labels and filenames depends on type of test.
-    plt.xlabel('MPI processs x OpenMP threads [-]')
+    plt.xlabel('MPI processes x OpenMP threads [-]')
     path = 'Hybrid.eps'
     plt.ylabel('Runtime [s]')
     # Plot all saved results.
