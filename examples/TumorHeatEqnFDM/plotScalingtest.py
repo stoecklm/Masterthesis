@@ -243,9 +243,11 @@ def hybrid_tests(filepath):
     list_x = list()
     list_y = list()
     list_title = list()
+    list_cases = list()
     # Iterate through all result folders.
     for case in cases: # Cases, e.g. 5A, 7C, ...
         nodes = glob.glob(case + '/*')
+        list_cases.append(os.path.basename(case))
         for node in nodes: # Nodes, e.g. 120x120x10, 120x120x50, ...
             tasks_per_node = glob.glob(node + '/*')
             for task_per_node in tasks_per_node:
@@ -277,14 +279,18 @@ def hybrid_tests(filepath):
     plt.close()
     # Labels and filenames depends on type of test.
     plt.xlabel('MPI processes x OpenMP threads [-]')
-    path = 'Hybrid.eps'
     plt.ylabel('Runtime [s]')
-    # Plot all saved results.
-    for elem in range(0, len(list_x)):
-        plt.plot(list_x[elem], list_y[elem], linestyle='--', marker='o')
-    plt.legend(list_title)
-    plt.savefig('./figures/' + path)
-    plt.close()
+    for case in list_cases:
+        path = 'Hybrid_' + case + '_.eps'
+        list_title_case = list()
+        # Plot all saved results.
+        for elem in range(0, len(list_x)):
+            if case == list_title[elem].split(',')[0]:
+                list_title_case.append(list_title[elem])
+                plt.plot(list_x[elem], list_y[elem], linestyle='--', marker='o')
+        plt.legend(list_title_case)
+        plt.savefig('./figures/' + path)
+        plt.close()
 
 def main():
     # Check if path to folder is provided and if folder exists.
