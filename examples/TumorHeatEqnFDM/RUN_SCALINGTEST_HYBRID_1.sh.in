@@ -7,7 +7,7 @@
 # of the package.
 
 # Command for allocation of interactive shell with needed resources for approx. one run.
-# srun -n 12 -N 6 -c 12 --ntasks-per-node=2 --mem-per-cpu=2583 -p haswell64 --exclusive --time=0:15:00 --pty bash -l -i
+# srun -n 12 -N 6 -c 12 --ntasks-per-node=2 --mem-per-cpu=2583 -p haswell64 --exclusive --time=0:20:00 --pty bash -l -i
 
 # Run 1x12 per node.
 PROCESSES="1

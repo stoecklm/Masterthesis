@@ -7,13 +7,15 @@
 # of the package.
 
 # Command for allocation of interactive shell with needed resources for approx. one run.
-# srun -n 1 -N 1 -c 24 --ntasks-per-node=1 --mem-per-cpu=2583 -p haswell64 --exclusive --time=1:30:00 --pty bash -l -i
+# srun -n 1 -N 1 -c 24 --ntasks-per-node=1 --mem-per-cpu=2583 -p haswell64 --exclusive --time=1:10:00 --pty bash -l -i
 
 THREADS="1
 2
 4
 8
 12
+16
+20
 24"
 
 export TYPE_OF_TEST="OpenMP"
