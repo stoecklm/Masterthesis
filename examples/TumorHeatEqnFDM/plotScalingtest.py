@@ -489,6 +489,45 @@ def plot_all_speedups(x_speedup, y_speedup, title_speedup):
             plt.savefig('./figures/' + case + '_' + node + '_speedup.eps')
             plt.close()
 
+def print_results_to_dat_file(x_runtime, y_runtime, title_runtime):
+    list_of_cases = list()
+    list_of_nodes = list()
+    for elem in range(0, len(title_runtime[0])):
+        list_of_cases.append(title_runtime[0][elem].split(',')[0].strip())
+        list_of_nodes.append(title_runtime[0][elem].split(',')[1].strip())
+    for elem in range(0, len(title_runtime[1])):
+        list_of_cases.append(title_runtime[1][elem].split(',')[0].strip())
+        list_of_nodes.append(title_runtime[1][elem].split(',')[1].strip())
+    for elem in range(0, len(title_runtime[2])):
+        list_of_cases.append(title_runtime[2][elem].split(',')[0].strip())
+        list_of_nodes.append(title_runtime[2][elem].split(',')[1].strip().split(' ')[0])
+    set_of_cases = set(list_of_cases)
+    set_of_nodes = set(list_of_nodes)
+    # Save total runtime to file.
+    text_file = open('./figures/runtime.dat', 'w')
+    for case in set_of_cases:
+        for node in set_of_nodes:
+            list_of_titles = list()
+            for elem in range(len(x_runtime[0])): # MPI
+                if case == title_runtime[0][elem].split(',')[0].strip() and \
+                   node == title_runtime[0][elem].split(',')[1].strip():
+                    text_file.write(str('MPI, Case: ' + case + ', Nodes: ' + node + '\n'))
+                    for i in range(len(x_runtime[0][elem])):
+                        text_file.write(str(x_runtime[0][elem][i]) + ' : ' + str(y_runtime[0][elem][TOTAL_RUNTIME][i]) + '\n')
+            for elem in range(len(x_runtime[1])): # OpenMP
+                if case == title_runtime[1][elem].split(',')[0].strip() and \
+                   node == title_runtime[1][elem].split(',')[1].strip():
+                    text_file.write(str('OpenMP, Case: ' + case + ', Nodes: ' + node + '\n'))
+                    for i in range(len(x_runtime[1][elem])):
+                        text_file.write(str(x_runtime[1][elem][i]) + ' : ' +  str(y_runtime[1][elem][TOTAL_RUNTIME][i]) + '\n')
+            for elem in range(len(x_runtime[2])): # Hybrid
+                if case == title_runtime[2][elem].split(',')[0].strip() and \
+                   node == title_runtime[2][elem].split(',')[1].strip().split(' ')[0]:
+                    title = 'Hybrid ' + title_runtime[2][elem].split(',')[1].strip().split(' ')[1]
+                    text_file.write(str(title + ', Case: ' + case + ', Nodes: ' + node + '\n'))
+                    for i in range(len(x_runtime[2][elem])):
+                        text_file.write(str(x_runtime[2][elem][i]) + ' : ' + str(y_runtime[2][elem][TOTAL_RUNTIME][i]) + '\n')
+
 
 def main():
     # Check if path to folder is provided and if folder exists.
@@ -533,6 +572,8 @@ def main():
 
     plot_all_runtimes(x_runtime, y_runtime, title_runtime)
     plot_all_speedups(x_speedup, y_speedup, title_speedup)
+
+    print_results_to_dat_file(x_runtime, y_runtime, title_runtime)
 
     print('Done.')
 
