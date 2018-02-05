@@ -62,7 +62,7 @@ def plot_with_phases(phases, ind, title, path):
     p8, = plt.bar(ind, phases[EVAL_KNOWN_DF], width, bottom=dataset)
     dataset += phases[EVAL_KNOWN_DF]
     p9, = plt.bar(ind, phases[BARRIERS], width, bottom=dataset)
-    dataset += phases[GRID_GLOBAL]
+    dataset += phases[BARRIERS]
     p10, = plt.bar(ind, phases[GRID_GLOBAL], width, bottom=dataset)
     plt.ylabel('Runtime')
     plt.title(title)
@@ -272,7 +272,8 @@ def single_tests(filepath):
         plt.savefig('./figures/' + type_of_test + '/' + path + '_speedup.eps')
         plt.close()
 
-    return list_x_speedup, list_y_speedup, list_title_speedup
+    return  list_x, list_yy, list_title, \
+            list_x_speedup, list_y_speedup, list_title_speedup
 
 # Function for Hybrid (MPI and OpenMP) tests.
 def hybrid_tests(filepath):
@@ -287,6 +288,9 @@ def hybrid_tests(filepath):
     print('Looking for results in {}.'.format(filepath))
     cases = glob.glob(filepath + '/*')
     # Create all variables to save results.
+    list_x_runtime_all = list()
+    list_y_runtime_all = list()
+    list_title_runtime_all = list()
     list_x_speedup_all = list()
     list_y_speedup_all = list()
     list_title_speedup_all = list()
@@ -346,6 +350,9 @@ def hybrid_tests(filepath):
                 list_x.append(x)
                 list_yy.append(yy)
                 list_title.append(str(os.path.basename(case) + ', ' + os.path.basename(node) + ' (' + os.path.basename(task_per_node) + ')'))
+                list_x_runtime_all.append(x)
+                list_y_runtime_all.append(yy)
+                list_title_runtime_all.append(str(os.path.basename(case) + ', ' + os.path.basename(node) + ' (' + os.path.basename(task_per_node) + ')'))
                 if serial_time > -0.5:
                     list_x_speedup.append(x_speedup)
                     list_y_speedup.append(y_speedup)
@@ -394,7 +401,50 @@ def hybrid_tests(filepath):
                 plt.savefig('./figures/' + type_of_test + '/' + path + '_speedup.eps')
                 plt.close()
 
-    return list_x_speedup_all, list_y_speedup_all, list_title_speedup_all
+    return list_x_runtime_all, list_y_runtime_all, list_title_runtime_all, \
+           list_x_speedup_all, list_y_speedup_all, list_title_speedup_all
+
+def plot_all_runtimes(x_runtime, y_runtime, title_runtime):
+    list_of_cases = list()
+    list_of_nodes = list()
+    for elem in range(0, len(title_runtime[0])):
+        list_of_cases.append(title_runtime[0][elem].split(',')[0].strip())
+        list_of_nodes.append(title_runtime[0][elem].split(',')[1].strip())
+    for elem in range(0, len(title_runtime[1])):
+        list_of_cases.append(title_runtime[1][elem].split(',')[0].strip())
+        list_of_nodes.append(title_runtime[1][elem].split(',')[1].strip())
+    for elem in range(0, len(title_runtime[2])):
+        list_of_cases.append(title_runtime[2][elem].split(',')[0].strip())
+        list_of_nodes.append(title_runtime[2][elem].split(',')[1].strip().split(' ')[0])
+    set_of_cases = set(list_of_cases)
+    set_of_nodes = set(list_of_nodes)
+    # Plot total runtime.
+    for case in set_of_cases:
+        for node in set_of_nodes:
+            list_of_titles = list()
+            for elem in range(len(x_runtime[0])): # MPI
+                if case == title_runtime[0][elem].split(',')[0].strip() and \
+                   node == title_runtime[0][elem].split(',')[1].strip():
+                    plt.plot(x_runtime[0][elem], y_runtime[0][elem][TOTAL_RUNTIME], linestyle='--', marker='o')
+                    list_of_titles.append('MPI')
+            for elem in range(len(x_runtime[1])): # OpenMP
+                if case == title_runtime[1][elem].split(',')[0].strip() and \
+                   node == title_runtime[1][elem].split(',')[1].strip():
+                    plt.plot(x_runtime[1][elem], y_runtime[1][elem][TOTAL_RUNTIME], linestyle='--', marker='o')
+                    list_of_titles.append('OpenMP')
+            for elem in range(len(x_runtime[2])): # Hybrid
+                if case == title_runtime[2][elem].split(',')[0].strip() and \
+                   node == title_runtime[2][elem].split(',')[1].strip().split(' ')[0]:
+                    plt.plot(x_runtime[2][elem], y_runtime[2][elem][TOTAL_RUNTIME], linestyle='--', marker='o')
+                    list_of_titles.append('Hybrid ' + title_runtime[2][elem].split(',')[1].strip().split(' ')[1])
+            plt.title('Runtime for ' + case + ', ' + node)
+            plt.xlabel('Cores [-]')
+            plt.ylabel('Runtime [s]')
+            plt.yscale('log')
+            plt.legend(list_of_titles)
+            plt.grid()
+            plt.savefig('./figures/' + case + '_' + node + '_runtime.eps')
+            plt.close()
 
 def plot_all_speedups(x_speedup, y_speedup, title_speedup):
     list_of_cases = list()
@@ -466,15 +516,22 @@ def main():
     if os.path.exists('./figures/Hybrid') == False:
         os.makedirs('./figures/Hybrid')
 
+    x_runtime = [[] for i in range(3)]
+    y_runtime = [[] for i in range(3)]
+    title_runtime = [[] for i in range(3)]
     x_speedup = [[] for i in range(3)]
     y_speedup = [[] for i in range(3)]
     title_speedup = [[] for i in range(3)]
 
     # Call function for every testcase.
+    x_runtime[0], y_runtime[0], title_runtime[0], \
     x_speedup[0], y_speedup[0], title_speedup[0] = single_tests(filepath + '/MPI')
+    x_runtime[1], y_runtime[1], title_runtime[1], \
     x_speedup[1], y_speedup[1], title_speedup[1] = single_tests(filepath + '/OpenMP')
+    x_runtime[2], y_runtime[2], title_runtime[2], \
     x_speedup[2], y_speedup[2], title_speedup[2] = hybrid_tests(filepath + '/Hybrid')
 
+    plot_all_runtimes(x_runtime, y_runtime, title_runtime)
     plot_all_speedups(x_speedup, y_speedup, title_speedup)
 
     print('Done.')
