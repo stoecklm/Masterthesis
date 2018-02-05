@@ -272,6 +272,8 @@ def single_tests(filepath):
         plt.savefig('./figures/' + type_of_test + '/' + path + '_speedup.eps')
         plt.close()
 
+    return list_x_speedup, list_y_speedup, list_title_speedup
+
 # Function for Hybrid (MPI and OpenMP) tests.
 def hybrid_tests(filepath):
     filepath = os.path.normpath(filepath)
@@ -285,6 +287,9 @@ def hybrid_tests(filepath):
     print('Looking for results in {}.'.format(filepath))
     cases = glob.glob(filepath + '/*')
     # Create all variables to save results.
+    list_x_speedup_all = list()
+    list_y_speedup_all = list()
+    list_title_speedup_all = list()
     # Iterate through all result folders.
     for case in cases: # Cases, e.g. 5A, 7C, ...
         nodes = glob.glob(case + '/*')
@@ -345,6 +350,9 @@ def hybrid_tests(filepath):
                     list_x_speedup.append(x_speedup)
                     list_y_speedup.append(y_speedup)
                     list_title_speedup.append(str(os.path.basename(case) + ', ' + os.path.basename(node) + ' (' + os.path.basename(task_per_node) + ')'))
+                    list_x_speedup_all.append(x_speedup)
+                    list_y_speedup_all.append(y_speedup)
+                    list_title_speedup_all.append(str(os.path.basename(case) + ', ' + os.path.basename(node) + ' (' + os.path.basename(task_per_node) + ')'))
             if os.path.exists('./figures/' + type_of_test + '/details') == False:
                 os.makedirs('./figures/' + type_of_test + '/details')
             # Plot all results.
@@ -386,6 +394,52 @@ def hybrid_tests(filepath):
                 plt.savefig('./figures/' + type_of_test + '/' + path + '_speedup.eps')
                 plt.close()
 
+    return list_x_speedup_all, list_y_speedup_all, list_title_speedup_all
+
+def plot_all_speedups(x_speedup, y_speedup, title_speedup):
+    list_of_cases = list()
+    list_of_nodes = list()
+    for elem in range(1, len(title_speedup[0])):
+        list_of_cases.append(title_speedup[0][elem].split(',')[0].strip())
+        list_of_nodes.append(title_speedup[0][elem].split(',')[1].strip())
+    for elem in range(1, len(title_speedup[1])):
+        list_of_cases.append(title_speedup[1][elem].split(',')[0].strip())
+        list_of_nodes.append(title_speedup[1][elem].split(',')[1].strip())
+    for elem in range(0, len(title_speedup[2])):
+        list_of_cases.append(title_speedup[2][elem].split(',')[0].strip())
+        list_of_nodes.append(title_speedup[2][elem].split(',')[1].strip().split(' ')[0])
+    set_of_cases = set(list_of_cases)
+    set_of_nodes = set(list_of_nodes)
+    # Plot linear speedup.
+    for case in set_of_cases:
+        for node in set_of_nodes:
+            list_of_titles = list()
+            plt.plot(np.arange(1, 144), np.arange(1, 144), linestyle='--')
+            list_of_titles.append('linear speedup')
+            for elem in range(len(x_speedup[0])): # MPI
+                if case == title_speedup[0][elem+1].split(',')[0].strip() and \
+                   node == title_speedup[0][elem+1].split(',')[1].strip():
+                    plt.plot(x_speedup[0][elem], y_speedup[0][elem], linestyle='--', marker='o')
+                    list_of_titles.append('MPI')
+            for elem in range(len(x_speedup[1])): # OpenMP
+                if case == title_speedup[1][elem+1].split(',')[0].strip() and \
+                   node == title_speedup[1][elem+1].split(',')[1].strip():
+                    plt.plot(x_speedup[1][elem], y_speedup[1][elem], linestyle='--', marker='o')
+                    list_of_titles.append('OpenMP')
+            for elem in range(len(x_speedup[2])): # Hybrid
+                if case == title_speedup[2][elem].split(',')[0].strip() and \
+                   node == title_speedup[2][elem].split(',')[1].strip().split(' ')[0]:
+                    plt.plot(x_speedup[2][elem], y_speedup[2][elem], linestyle='--', marker='o')
+                    list_of_titles.append('Hybrid ' + title_speedup[2][elem].split(',')[1].strip().split(' ')[1])
+            plt.title('Speedup for ' + case + ', ' + node)
+            plt.xlabel('Cores [-]')
+            plt.ylabel('Speedup [-]')
+            plt.legend(list_of_titles)
+            plt.grid()
+            plt.savefig('./figures/' + case + '_' + node + '_speedup.eps')
+            plt.close()
+
+
 def main():
     # Check if path to folder is provided and if folder exists.
     if len(sys.argv) > 1:
@@ -412,10 +466,16 @@ def main():
     if os.path.exists('./figures/Hybrid') == False:
         os.makedirs('./figures/Hybrid')
 
+    x_speedup = [[] for i in range(3)]
+    y_speedup = [[] for i in range(3)]
+    title_speedup = [[] for i in range(3)]
+
     # Call function for every testcase.
-    single_tests(filepath + '/MPI')
-    single_tests(filepath + '/OpenMP')
-    hybrid_tests(filepath + '/Hybrid')
+    x_speedup[0], y_speedup[0], title_speedup[0] = single_tests(filepath + '/MPI')
+    x_speedup[1], y_speedup[1], title_speedup[1] = single_tests(filepath + '/OpenMP')
+    x_speedup[2], y_speedup[2], title_speedup[2] = hybrid_tests(filepath + '/Hybrid')
+
+    plot_all_speedups(x_speedup, y_speedup, title_speedup)
 
     print('Done.')
 
