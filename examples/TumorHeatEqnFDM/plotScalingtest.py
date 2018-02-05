@@ -7,7 +7,7 @@ import os
 import re
 import sys
 
-NUM_OF_PHASES = 12
+NUM_OF_PHASES = 14
 
 UPDATE = 0
 SYNC = 1
@@ -21,6 +21,8 @@ ITERATE = 8
 ITER_W_BARRIERS = 9
 BARRIERS = 10
 WO_UPDATE = 11
+GRID_GLOBAL = 12
+TOTAL_RUNTIME = 13
 
 NAMES_OF_PHASES = [[] for i in range(NUM_OF_PHASES)]
 NAMES_OF_PHASES[UPDATE] = 'Update'
@@ -34,7 +36,9 @@ NAMES_OF_PHASES[EVAL_KNOWN_DF] = 'Eval KnownDf'
 NAMES_OF_PHASES[ITERATE] = 'Iterate'
 NAMES_OF_PHASES[ITER_W_BARRIERS] = 'Iterate with Barriers'
 NAMES_OF_PHASES[BARRIERS] = 'Barriers'
-NAMES_OF_PHASES[WO_UPDATE] = 'Without Update'
+NAMES_OF_PHASES[WO_UPDATE] = 'All phases without Update'
+NAMES_OF_PHASES[GRID_GLOBAL] = 'Grid Global'
+NAMES_OF_PHASES[TOTAL_RUNTIME] = 'Total Runtime'
 
 # Function to plot all phases of a specific case,
 # e.g. 5A, 120x120x10, 24 MPI processes
@@ -58,12 +62,14 @@ def plot_with_phases(phases, ind, title, path):
     p8, = plt.bar(ind, phases[EVAL_KNOWN_DF], width, bottom=dataset)
     dataset += phases[EVAL_KNOWN_DF]
     p9, = plt.bar(ind, phases[BARRIERS], width, bottom=dataset)
+    dataset += phases[GRID_GLOBAL]
+    p10, = plt.bar(ind, phases[GRID_GLOBAL], width, bottom=dataset)
     plt.ylabel('Runtime')
     plt.title(title)
     plt.xticks(ind)
-    p = (p9, p8, p7, p6, p5, p4, p3, p2, p1)
-    names = ('barriers', 'evalknownDf', 'trace', 'compErr', 'checkConv',
-             'init', 'write', 'sync', 'update')
+    p = (p10, p9, p8, p7, p6, p5, p4, p3, p2, p1)
+    names = ('gridGlobal', 'barriers', 'evalknownDf', 'trace', 'compErr',\
+             'checkConv', 'init', 'write', 'sync', 'update')
     plt.legend(p, names)
     plt.savefig(path)
     plt.gcf().clear()
@@ -83,12 +89,18 @@ def parse_outfiles(outs):
     iterate = np.zeros(0)
     iterWBarriers = np.zeros(0)
     woUpdate = np.zeros(0)
+    gridGlobal = np.zeros(0)
+    totalRuntime = np.zeros(0)
     # Save result for each phase in a numpy array.
     for out in outs: # *.slurm.out files
         if os.path.isfile(out) == True:
             with open(out) as f:
                 for line in f:
-                    if "checkConv)" in line:
+                    if "t(gridGlobal)" in line:
+                        result = re.search('= (.*) s', line)
+                        gridGlobal = np.append(gridGlobal, float(result.group(1)))
+                        #print(line)
+                    elif "checkConv)" in line:
                         result = re.search('= (.*) s', line)
                         checkConv = np.append(checkConv, float(result.group(1)))
                         #print(line)
@@ -141,8 +153,10 @@ def parse_outfiles(outs):
     phases[EVAL_KNOWN_DF] = np.mean(evalKnownDf)
     phases[ITERATE] = np.mean(iterate)
     phases[ITER_W_BARRIERS] = np.mean(iterWBarriers)
+    phases[GRID_GLOBAL] = np.mean(gridGlobal)
     phases[BARRIERS] = phases[ITER_W_BARRIERS] - phases[ITERATE]
-    phases[WO_UPDATE] = phases[ITER_W_BARRIERS] - phases[UPDATE]
+    phases[WO_UPDATE] = phases[ITER_W_BARRIERS] - phases[UPDATE] + phases[GRID_GLOBAL]
+    phases[TOTAL_RUNTIME] = phases[ITER_W_BARRIERS] + phases[GRID_GLOBAL]
 
     return phases
 
@@ -236,7 +250,7 @@ def single_tests(filepath):
     plt.xlabel(xlabel)
     plt.ylabel('Runtime [s]')
     for elem in range(0, len(list_x)):
-        plt.plot(list_x[elem], list_yy[elem][ITER_W_BARRIERS], linestyle='--', marker='o')
+        plt.plot(list_x[elem], list_yy[elem][TOTAL_RUNTIME], linestyle='--', marker='o')
     plt.legend(list_title)
     plt.title('Total runtime with ' + type_of_test + ' parallelization')
     plt.grid()
@@ -350,7 +364,7 @@ def hybrid_tests(filepath):
             plt.xlabel('MPI processes x OpenMP threads [-]')
             plt.ylabel('Runtime [s]')
             for elem in range(0, len(list_x)):
-                plt.plot(list_x[elem], list_yy[elem][ITER_W_BARRIERS], linestyle='--', marker='o')
+                plt.plot(list_x[elem], list_yy[elem][TOTAL_RUNTIME], linestyle='--', marker='o')
             plt.legend(list_title)
             plt.title('Total runtime with ' + type_of_test + ' parallelization')
             plt.grid()
