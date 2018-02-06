@@ -48,6 +48,7 @@ def plot_results(filepath):
     # Add a color bar which maps values to colors.
     fig.colorbar(surf, orientation='vertical', shrink=0.5, aspect=20)
     # Save plot to file.
+    print('Save figure to {}.'.format(filepath))
     plt.savefig(filepath)
 
     print('Done.')
