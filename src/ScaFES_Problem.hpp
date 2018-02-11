@@ -4406,14 +4406,10 @@ inline void Problem<OWNPRBLM, CT, DIM>::initDfsFromFile(const int& timeIter)
         {
             if (0 < this->nLayers().at(ii))
             {
-                if (this->isKnownDf().at(ii))
+                if (this->isKnownDf().at(ii) == false)
                 {
-                    if (ScaFES::WriteHowOften::NEVER != this->mWriteToFile[ii])
-                    {
-                        tmpElemData.push_back(
-                            this->vectUnknownDfsBdryNew()[idxUnknownDf]
-                                .elemData());
-                    }
+                    tmpElemData.push_back(
+                        this->vectUnknownDfsBdryNew()[idxUnknownDf].elemData());
                     ++idxUnknownDf;
                 }
             }
