@@ -2393,13 +2393,35 @@ mpirun noticed that process rank 0 with PID 0 on node edr11814 exited on signal 
 
 Reason:
 =========
-unknown
+updateTimesOfKnownDfs() calls this->mVectKnownDfsDomNew[ii].time(),
+which does not exist, because there is no known Df.
 
-Workaround:
+Solution:
 =========
-set computeError[0] = true
-or add another known DataField with
-isKnownDf[0] = true;
+added:
+
+for (std::size_t ii = 0; ii < this->mComputeError.size(); ++ii)
+{
+    if (this->mComputeError.at(ii) || this->isKnownDf().at(ii))
+    {
+        evalDf = true;
+        break;
+    }
+}
+if (evalDf)
+{
+    // normal code:
+    for (std::size_t ii = 0; ii < this->mVectKnownDfsDomNew.size(); ++ii)
+    {
+        this->mVectKnownDfsDomNew[ii].time() =
+            this->mVectKnownDfsDomOld[ii].time() + this->params().tau();
+    }
+    for (std::size_t ii = 0; ii < this->mVectKnownDfsBdryNew.size(); ++ii)
+    {
+        this->mVectKnownDfsBdryNew[ii].time() =
+            this->mVectKnownDfsBdryOld[ii].time() + this->params().tau();
+    }
+}
 
 
 ################################################################################

@@ -3151,15 +3151,27 @@ inline void Problem<OWNPRBLM, CT, DIM>::updateTimesOfKnownDfs()
 
     /*------------------------------------------------------------------------*/
     // Update current time of "new" data fields AFTER swapping.
-    for (std::size_t ii = 0; ii < this->mVectKnownDfsDomNew.size(); ++ii)
+    bool evalDf = false;
+    for (std::size_t ii = 0; ii < this->mComputeError.size(); ++ii)
     {
-        this->mVectKnownDfsDomNew[ii].time() =
-            this->mVectKnownDfsDomOld[ii].time() + this->params().tau();
+        if (this->mComputeError.at(ii) || this->isKnownDf().at(ii))
+        {
+            evalDf = true;
+            break;
+        }
     }
-    for (std::size_t ii = 0; ii < this->mVectKnownDfsBdryNew.size(); ++ii)
+    if (evalDf)
     {
-        this->mVectKnownDfsBdryNew[ii].time() =
-            this->mVectKnownDfsBdryOld[ii].time() + this->params().tau();
+        for (std::size_t ii = 0; ii < this->mVectKnownDfsDomNew.size(); ++ii)
+        {
+            this->mVectKnownDfsDomNew[ii].time() =
+                this->mVectKnownDfsDomOld[ii].time() + this->params().tau();
+        }
+        for (std::size_t ii = 0; ii < this->mVectKnownDfsBdryNew.size(); ++ii)
+        {
+            this->mVectKnownDfsBdryNew[ii].time() =
+                this->mVectKnownDfsBdryOld[ii].time() + this->params().tau();
+        }
     }
 
     this->mParams.increaseLevel();
