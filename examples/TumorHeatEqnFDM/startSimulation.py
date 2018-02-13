@@ -495,9 +495,7 @@ def main():
         print('Aborting.')
         exit()
 
-    print(params)
     parse_config_file(params)
-    print(params)
     check_variables(params)
     calc_variables(params)
     check_stability(params)
