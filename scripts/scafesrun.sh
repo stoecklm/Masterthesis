@@ -125,6 +125,9 @@
 # * Name of the init file (netCDF file). <string>
 #   SCAFESRUN_NAME_INITFILE="";
 #
+# * Should known datafields be initialized from init file?. <yes/no>
+#   SCAFESRUN_INIT_KNOWNDFS="NO";
+#
 # * Threshold for convergence check. <double>
 #   SCAFESRUN_THRESHOLD="";
 #
@@ -223,6 +226,11 @@ fi
 if [ "x$SCAFESRUN_NAME_INITFILE" == "x" ] ; then
     SCAFESRUN_NAME_INITFILE=""
     echo "* WARNING: Use default value SCAFESRUN_NAME_INITFILE=$SCAFESRUN_NAME_INITFILE"
+fi
+#------------------------------------------------------------------------------#
+if [ "x$SCAFESRUN_INIT_KNOWNDFS" == "x" ] ; then
+    SCAFESRUN_INIT_KNOWNDFS="NO";
+    echo "* WARNING: Use default value SCAFESRUN_INIT_KNOWNDFS=$SCAFESRUN_INIT_KNOWNDFS"
 fi
 
 #------------------------------------------------------------------------------#
@@ -508,6 +516,7 @@ declare    -r local nameReservation=${SCAFESRUN_MACHINE_NAME_RESERVATION};
 declare    -r local memoryPerCore=${SCAFESRUN_MACHINE_MEMORY_PER_CORE};
 declare    local jobexestring="";
 declare    -r local nameInitfile=${SCAFESRUN_NAME_INITFILE};
+declare    -r local initKnownDfs=${SCAFESRUN_INIT_KNOWNDFS};
 declare    -r local valueThreshold=${SCAFESRUN_THRESHOLD};
 declare -i -r local valueCheckConvFirstAtIter=${SCAFESRUN_CHECK_CONV_FIRST_AT_ITER};
 declare -i -r local valueCheckConvAtEveryNIter=${SCAFESRUN_CHECK_CONV_AT_EVERY_N_ITER};
@@ -548,6 +557,12 @@ if [ "x$nameInitfile" == "x" ] ; then
 else
     optionInitfile="--initfile=$nameInitfile";
 fi
+#------------------------------------------------------------------------------#
+boolInitKnownDfs=0;
+if [ "x$initKnownDfs" == "xYES" ] ; then
+    boolInitKnownDfs="1";
+fi
+optionInitKnownDfs="--initKnownDfs=$boolInitKnownDfs";
 #------------------------------------------------------------------------------#
 boolEnabledAdolc=0;
 if [ "x$enableAdolc" == "xYES" ] ; then
@@ -741,6 +756,7 @@ for idxTestMpi in `seq 0 $endTestMpi`; do
                     --writeKindFile=$boolWriteKindfile \
                     ${optionConfigfile} \
                     ${optionInitfile} \
+                    ${optionInitKnownDfs} \
                     --enabledAdolc=$boolEnabledAdolc \
                     --asynchronMode=$boolAsynchronMode \
                     --useBoostMpiSkeletonConcept=$boolUseSkeletonConcept \

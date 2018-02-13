@@ -199,6 +199,10 @@ public:
     /** Returns the decision if an init file should be read. */
     const bool& readInitFile() const;
 
+    /** Returns the decision if known datafields should be initialized
+      * from init file. */
+    const bool& initKnownDfs() const;
+
     /** Returns if ADOL-C is enabled. */
     const bool& enabledAdolc() const;
 
@@ -379,6 +383,9 @@ private:
     /** Read init file? */
     bool mReadInitFile;
 
+    /** Initialize known datafields from file? */
+    bool mInitKnownDfs;
+
     /** Is ADOL-C enabled? */
     bool mEnabledAdolc;
 
@@ -443,6 +450,7 @@ inline Parameters::Parameters(int argc, char* argv[])
 , mNameOfConfigFile("EMPTYCONFIGFILE")
 , mNameOfInitFile("EMPTYINITFILE")
 , mReadInitFile(false)
+, mInitKnownDfs(false)
 , mEnabledAdolc(false)
 , mAsynchronMode(true)
 , mUseBoostMpiSkeletonConcept(true)
@@ -509,6 +517,8 @@ inline Parameters::Parameters(int argc, char* argv[])
             "Sets the name of the config file.")(
             "initfile", po::value<std::string>(),
             "Sets the name of the init file.")(
+            "initKnownDfs", po::value<int>(),
+            "Sets if known datafields should be init from file.")(
             "enabledAdolc", po::value<int>(),
             "Sets if ADOL-C should be enabled, 1=yes, 0=no (default=0).")(
             "asynchronMode", po::value<int>(), "Sets if asynchronous MPI "
@@ -934,6 +944,23 @@ inline Parameters::Parameters(int argc, char* argv[])
             std::cerr << "\nREMARK: Use --initfile=<name>.\n\n";
         }
         /*--------------------------------------------------------------------*/
+        if (vm.count("initKnownDfs"))
+        {
+            int tmpInitKnownDfs = vm["initKnownDfs"].as<int>();
+            if (1 == tmpInitKnownDfs)
+            {
+                this->mInitKnownDfs = true;
+            }
+            else
+            {
+                this->mInitKnownDfs = false;
+            }
+        }
+        else
+        {
+            std::cerr << "\nREMARK: Use --initKnownDfs=<YES/NO>.\n\n";
+        }
+        /*--------------------------------------------------------------------*/
         if (vm.count("enabledAdolc"))
         {
             int tmpEnabledAdolc = vm["enabledAdolc"].as<int>();
@@ -1125,6 +1152,7 @@ inline Parameters::Parameters(const Parameters& rhs)
 , mNameOfConfigFile(rhs.nameConfigFile())
 , mNameOfInitFile(rhs.nameInitFile())
 , mReadInitFile(rhs.readInitFile())
+, mInitKnownDfs(rhs.initKnownDfs())
 , mEnabledAdolc(rhs.enabledAdolc())
 , mAsynchronMode(rhs.asynchronMode())
 , mUseBoostMpiSkeletonConcept(rhs.useBoostMpiSkeletonConcept())
@@ -1166,6 +1194,7 @@ inline Parameters::Parameters(const Parameters& rhs)
 , mNameOfConfigFile(rhs.nameConfigFile())
 , mNameOfInitFile(rhs.nameInitFile())
 , mReadInitFile(rhs.readInitFile())
+, mInitKnownDfs(rhs.initKnownDfs())
 , mEnabledAdolc(rhs.enabledAdolc())
 , mAsynchronMode(rhs.asynchronMode())
 , mUseBoostMpiSkeletonConcept(rhs.useBoostMpiSkeletonConcept())
@@ -1331,6 +1360,11 @@ inline const std::string& Parameters::nameInitFile() const
 inline const bool& Parameters::readInitFile() const
 {
     return this->mReadInitFile;
+}
+/*----------------------------------------------------------------------------*/
+inline const bool& Parameters::initKnownDfs() const
+{
+    return this->mInitKnownDfs;
 }
 /*----------------------------------------------------------------------------*/
 inline const bool& Parameters::enabledAdolc() const
@@ -1506,6 +1540,10 @@ inline bool Parameters::operator==(const Parameters& rhs) const
         isEqual = false;
     }
     if (this->readInitFile() != rhs.readInitFile())
+    {
+        isEqual = false;
+    }
+    if (this->initKnownDfs() != rhs.initKnownDfs())
     {
         isEqual = false;
     }
@@ -1733,6 +1771,7 @@ void Parameters::serialize(Archive& ar, const unsigned int version)
         ar&(this->mNameOfConfigFile);
         ar&(this->mNameOfInitFile);
         ar&(this->mReadInitFile);
+        ar&(this->mInitKnownDfs);
         ar&(this->mEnabledAdolc);
         ar&(this->mAsynchronMode);
         ar&(this->mUseBoostMpiSkeletonConcept);
@@ -1778,6 +1817,7 @@ inline void swap(Parameters& first, Parameters& second)
     std::swap(first.mNameOfConfigFile, second.mNameOfConfigFile);
     std::swap(first.mNameOfInitFile, second.mNameOfInitFile);
     std::swap(first.mReadInitFile, second.mReadInitFile);
+    std::swap(first.mInitKnownDfs, second.mInitKnownDfs);
     std::swap(first.mEnabledAdolc, second.mEnabledAdolc);
     std::swap(first.mAsynchronMode, second.mAsynchronMode);
     std::swap(first.mUseBoostMpiSkeletonConcept, second.mUseBoostMpiSkeletonConcept);

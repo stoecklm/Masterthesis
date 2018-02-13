@@ -1894,8 +1894,6 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
         this->globalGrid().discreteDomain().nNodes(), tmpMemNormal);
 
     /*------------------------------------------------------------------------*/
-    bool initKnownDf = true;
-
     if (this->mParams.readInitFile() == true)
     {
         /* Create Variables for mInitFile. */
@@ -1911,7 +1909,8 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
             {
                 ++nDataFieldsToInit;
             }
-            if (this->isKnownDf().at(ii) == true && initKnownDf == true)
+            if (this->isKnownDf().at(ii) == true
+                && this->params().initKnownDfs() == true)
             {
                 ++nDataFieldsToInit;
             }
@@ -1925,7 +1924,8 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
             {
                 initNames.push_back(this->mNameDataField[ii]);
             }
-            if (this->isKnownDf().at(ii) == true && initKnownDf == true)
+            if (this->isKnownDf().at(ii) == true
+                && this->params().initKnownDfs() == true)
             {
                 initNames.push_back(this->mNameDataField[ii]);
             }
@@ -1946,7 +1946,8 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
                         this->vectUnknownDfsDomNew()[idxUnknownDf].memNormal());
                     ++idxUnknownDf;
                 }
-                if (this->isKnownDf().at(ii) == true && initKnownDf == true)
+                if (this->isKnownDf().at(ii) == true
+                    && this->params().initKnownDfs() == true)
                 {
                     initMemNormal.push_back(
                         this->vectKnownDfsDomNew()[idxKnownDf].memNormal());
@@ -1966,7 +1967,8 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
                         this->vectUnknownDfsBdryNew()[idxUnknownDf].memNormal());
                     ++idxUnknownDf;
                 }
-                if (this->isKnownDf().at(ii) == true && initKnownDf == true)
+                if (this->isKnownDf().at(ii) == true
+                    && this->params().initKnownDfs() == true)
                 {
                     initMemNormal.push_back(
                         this->vectKnownDfsBdryNew()[idxKnownDf].memNormal());
@@ -4422,8 +4424,6 @@ inline void Problem<OWNPRBLM, CT, DIM>::initDfsFromFile(const int& timeIter)
 
     timerPhase.restart();
 
-    bool initKnownDf = true;
-
     int nDataFieldsToInit = 0;
     for (std::size_t ii = 0; ii < this->isKnownDf().size(); ++ii)
     {
@@ -4431,7 +4431,8 @@ inline void Problem<OWNPRBLM, CT, DIM>::initDfsFromFile(const int& timeIter)
         {
             ++nDataFieldsToInit;
         }
-        if (this->isKnownDf().at(ii) == true && initKnownDf == true)
+        if (this->isKnownDf().at(ii) == true
+            && this->params().initKnownDfs() == true)
         {
             ++nDataFieldsToInit;
         }
@@ -4453,7 +4454,8 @@ inline void Problem<OWNPRBLM, CT, DIM>::initDfsFromFile(const int& timeIter)
                         this->vectUnknownDfsDomNew()[idxUnknownDf].elemData());
                     ++idxUnknownDf;
                 }
-                if (this->isKnownDf().at(ii) == true && initKnownDf == true)
+                if (this->isKnownDf().at(ii) == true
+                    && this->params().initKnownDfs() == true)
                 {
                     tmpElemData.push_back(
                         this->vectKnownDfsDomNew()[idxKnownDf].elemData());
@@ -4473,7 +4475,8 @@ inline void Problem<OWNPRBLM, CT, DIM>::initDfsFromFile(const int& timeIter)
                         this->vectUnknownDfsBdryNew()[idxUnknownDf].elemData());
                     ++idxUnknownDf;
                 }
-                if (this->isKnownDf().at(ii) == true && initKnownDf == true)
+                if (this->isKnownDf().at(ii) == true
+                    && this->params().initKnownDfs() == true)
                 {
                     tmpElemData.push_back(
                         this->vectKnownDfsBdryNew()[idxKnownDf].elemData());
@@ -4530,7 +4533,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::initDfsFromFile(const int& timeIter)
         mVectGradUnknownDfsDomNew[ii].copyValuesFromReceiveBufferToMemGhost(timeIter);
     }
     /*------------------------------------------------------------------------*/
-    if (initKnownDf == true)
+    if (this->params().initKnownDfs() == true)
     {
         for (std::size_t ii = 0; ii < this->mVectKnownDfsDomNew.size(); ++ii)
         {
