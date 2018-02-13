@@ -7,12 +7,7 @@ import sys
 
 from plotSurface import plot_results
 
-params = {
-    'NAME_CONFIGFILE' : ''
-}
-
-def parse_config_file():
-    global params
+def parse_config_file(params):
     print('Parsing {0}.'.format(params['NAME_CONFIGFILE']))
 
     # Create configparser and open file.
@@ -68,8 +63,7 @@ def parse_config_file():
 
     print('Done.')
 
-def check_variables():
-    global params
+def check_variables(params):
     print('Checking variables.')
 
     # Check if dimension makes sense and
@@ -149,8 +143,7 @@ def check_variables():
 
     print('Done.')
 
-def calc_variables():
-    global params
+def calc_variables(params):
     print('Calculating variables.')
 
     # Calculate gridsize in each dimension.
@@ -223,8 +216,7 @@ def calc_variables():
 
     print('Done.')
 
-def check_stability():
-    global params
+def check_stability(params):
     print('Checking stability.')
 
     RHO = params['RHO']
@@ -284,9 +276,8 @@ def check_stability():
 
     print('Done.')
 
-def create_init_file():
+def create_init_file(params):
     import netCDF4 as nc
-    global params
     SPACE_DIM = params['SPACE_DIM']
     NAME_INITFILE = params['NAME_INITFILE']
     NAME_VARIABLES = params['NAME_VARIABLES']
@@ -298,22 +289,22 @@ def create_init_file():
         nNodes = nc_file.createDimension('nNodes_' + str(dim), params['N_NODES'][dim])
 
     if SPACE_DIM == 1:
-        create_value_array_1D(nc_file, params['T_INIT'], params['T_TUMOR'], NAME_VARIABLES[0])
+        create_value_array_1D(params, nc_file, params['T_INIT'], params['T_TUMOR'], NAME_VARIABLES[0])
         if len(NAME_VARIABLES) > 1:
-            create_value_array_1D(nc_file, 1.0, -1.0, NAME_VARIABLES[1])
+            create_value_array_1D(params, nc_file, 1.0, -1.0, NAME_VARIABLES[1])
     elif SPACE_DIM == 2:
-        create_value_array_2D(nc_file, params['T_INIT'], params['T_TUMOR'], NAME_VARIABLES[0])
+        create_value_array_2D(params, nc_file, params['T_INIT'], params['T_TUMOR'], NAME_VARIABLES[0])
         if len(NAME_VARIABLES) > 1:
-            create_value_array_2D(nc_file, 1.0, -1.0, NAME_VARIABLES[1])
+            create_value_array_2D(params, nc_file, 1.0, -1.0, NAME_VARIABLES[1])
     else:
-        create_value_array_3D(nc_file, params['T_INIT'], params['T_TUMOR'], NAME_VARIABLES[0])
+        create_value_array_3D(params, nc_file, params['T_INIT'], params['T_TUMOR'], NAME_VARIABLES[0])
         if len(NAME_VARIABLES) > 1:
-            create_value_array_3D(nc_file, 1.0, -1.0, NAME_VARIABLES[1])
+            create_value_array_3D(params, nc_file, 1.0, -1.0, NAME_VARIABLES[1])
     nc_file.close()
 
     print('Done.')
 
-def create_value_array_1D(nc_file, BRAIN_VALUE, TUMOR_VALUE, NAME_VARIABLE):
+def create_value_array_1D(params, nc_file, BRAIN_VALUE, TUMOR_VALUE, NAME_VARIABLE):
     RADIUS = params['DIAMETER']/2
     TUMOR_CENTER = []
     # Get file/grid dimensions.
@@ -336,7 +327,7 @@ def create_value_array_1D(nc_file, BRAIN_VALUE, TUMOR_VALUE, NAME_VARIABLE):
     # Write NumPy array to netCDF file.
     write_values_to_file(nc_file, values_array, NAME_VARIABLE)
 
-def create_value_array_2D(nc_file, BRAIN_VALUE, TUMOR_VALUE, NAME_VARIABLE):
+def create_value_array_2D(params, nc_file, BRAIN_VALUE, TUMOR_VALUE, NAME_VARIABLE):
     RADIUS = params['DIAMETER']/2
     TUMOR_CENTER = []
     # Get file/grid dimensions.
@@ -364,7 +355,7 @@ def create_value_array_2D(nc_file, BRAIN_VALUE, TUMOR_VALUE, NAME_VARIABLE):
     # Write NumPy array to netCDF file.
     write_values_to_file(nc_file, values_array, NAME_VARIABLE)
 
-def create_value_array_3D(nc_file, BRAIN_VALUE, TUMOR_VALUE, NAME_VARIABLE):
+def create_value_array_3D(params, nc_file, BRAIN_VALUE, TUMOR_VALUE, NAME_VARIABLE):
     RADIUS = params['DIAMETER']/2
     TUMOR_CENTER = []
     # Get file/grid dimensions.
@@ -407,8 +398,7 @@ def write_values_to_file(nc_file, values_array, NAME_VARIABLE):
     # Write NumPy Array to file.
     init_values[0,] = values_array
 
-def set_environment_variables():
-    global params
+def set_environment_variables(params):
     print('Setting environment variables.')
 
     # Set all environment from dict.
@@ -436,8 +426,7 @@ def set_environment_variables():
 
     print('Done.')
 
-def start_simulation(run_script):
-    global params
+def start_simulation(params, run_script):
     # Check if run sript exists.
     if os.path.isfile(run_script) == False:
         print('* ERROR:', run_script, 'does not exist.')
@@ -483,7 +472,7 @@ def start_simulation(run_script):
 
 
 def main():
-    global params
+    params = {'NAME_CONFIGFILE' : ''}
     # Check if path to configfile is provided and if file exists.
     if len(sys.argv) > 1:
         if os.path.isfile(sys.argv[1]) == True:
@@ -506,14 +495,16 @@ def main():
         print('Aborting.')
         exit()
 
-    parse_config_file()
-    check_variables()
-    calc_variables()
-    check_stability()
+    print(params)
+    parse_config_file(params)
+    print(params)
+    check_variables(params)
+    calc_variables(params)
+    check_stability(params)
     if params['CREATE_INITFILE'] == True:
-        create_init_file()
-    set_environment_variables()
-    start_simulation(run_script)
+        create_init_file(params)
+    set_environment_variables(params)
+    start_simulation(params, run_script)
     if params['NAME_RESULTFILE'] != '' and params['SPACE_DIM'] == 3:
         plot_results(params['NAME_RESULTFILE'])
 
