@@ -689,6 +689,8 @@ AC_CONFIG_FILES([examples/TumorHeatEqnFDM/RUN_SCALINGTEST_MPI.sh],
        [chmod +x examples/TumorHeatEqnFDM/RUN_SCALINGTEST_MPI.sh])
 AC_CONFIG_FILES([examples/TumorHeatEqnFDM/RUN_SCALINGTEST_OPENMP.sh],
        [chmod +x examples/TumorHeatEqnFDM/RUN_SCALINGTEST_OPENMP.sh])
+AC_CONFIG_FILES([examples/TumorHeatEqnFDM/RUN_WEAK_SCALINGTEST_HELPER.sh],
+       [chmod +x examples/TumorHeatEqnFDM/RUN_WEAK_SCALINGTEST_HELPER.sh])
 AC_CONFIG_FILES([examples/TumorHeatEqnFDM/plotSurface.sh],
        [chmod +x examples/TumorHeatEqnFDM/plotSurface.sh])
 AC_CONFIG_FILES(examples/TumorHeatEqnFDM/plotSurface.plt)
@@ -722,6 +724,7 @@ AC_CONFIG_LINKS([examples/TumorHeatEqnFDM/getSurface.py:examples/TumorHeatEqnFDM
 AC_CONFIG_LINKS([examples/TumorHeatEqnFDM/plotScalingtest.py:examples/TumorHeatEqnFDM/plotScalingtest.py])
 AC_CONFIG_LINKS([examples/TumorHeatEqnFDM/plotSurface.py:examples/TumorHeatEqnFDM/plotSurface.py])
 AC_CONFIG_LINKS([examples/TumorHeatEqnFDM/startSimulation.py:examples/TumorHeatEqnFDM/startSimulation.py])
+AC_CONFIG_LINKS([examples/TumorHeatEqnFDM/weakScaling.py:examples/TumorHeatEqnFDM/weakScaling.py])
 
 AC_CONFIG_FILES(examples/ZhangExampleFDM/Makefile)
 AC_CONFIG_FILES([examples/ZhangExampleFDM/RUN.sh],

@@ -1,0 +1,42 @@
+#!/bin/bash
+#
+# Script for configuring the underlying application.
+#
+# Copyright (c) 2018, ZIH, TU Dresden, Federal Republic of Germany.
+# For details, see the files COPYING and LICENSE in the base directory
+# of the package.
+
+export SCAFESRUN_TYPE_DOMAIN_DECOMPOSITION="UNI"
+export SCAFESRUN_OUTPUT_LEVEL=2
+export SCAFESRUN_NLAYERS_AT_BORDER=1
+export SCAFESRUN_NAME_KINDFILE=""
+export SCAFESRUN_WRITE_KINDFILE="NO";
+export SCAFESRUN_ENABLE_ADOLC="NO"
+export SCAFESRUN_ASYNCHRON_MODE="YES"
+export SCAFESRUN_COMP_GRADIENTS="NO"
+
+export SCAFESRUN_CHECK_RESULTS="NO";
+#------------------------------------------------------------------------------#
+export SCAFESRUN_RUN_MODE="SLURM"
+export SCAFESRUN_MACHINE_N_NODES=${SLURM_NNODES:-1};
+export SCAFESRUN_MACHINE_N_CORES_PER_NODE=${SLURM_CPUS_ON_NODE:-24};
+export SCAFESRUN_MACHINE_MEMORY_PER_CORE=2583
+
+export SCAFESRUN_RESULTS_DIR=$SCAFESRUN_RESULTS_DIR
+
+if  [ ! -d ${SCAFESRUN_RESULTS_DIR} ]; then
+    mkdir -p ${SCAFESRUN_RESULTS_DIR}
+fi
+
+export SCAFESRUN_N_TESTS_MPI=1
+export SCAFESRUN_N_TESTS_OPENMP=1
+export SCAFESRUN_TYPE_SCALINGTEST="STRONG"
+
+export SCAFESRUN_SOFTWARE_VERSION="MT_MS"
+export SCAFESRUN_MACHINE_NAME="ZIH_TEST_SYSTEM";
+export SCAFESRUN_MACHINE_TIME="1:00:00"
+export SCAFESRUN_MACHINE_NAME_PARTITION="haswell64"
+export SCAFESRUN_MACHINE_NAME_PROJECT=""
+export SCAFESRUN_MACHINE_NAME_RESERVATION=""
+
+./@top_srcdir@/scripts/scafesrun.sh

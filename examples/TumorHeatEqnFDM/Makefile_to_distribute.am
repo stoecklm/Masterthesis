@@ -67,6 +67,7 @@ EXTRA_DIST += RUN_SCALINGTEST_HYBRID_1.sh
 EXTRA_DIST += RUN_SCALINGTEST_HYBRID_2.sh
 EXTRA_DIST += RUN_SCALINGTEST_MPI.sh
 EXTRA_DIST += RUN_SCALINGTEST_OPENMP.sh
+EXTRA_DIST += RUN_WEAK_SCALINGTEST_HELPER.sh
 EXTRA_DIST += results/scafes-scalingtests.plt \
         results/ZIH_TAURUS-scaling_strong.plt \
         results/ZIH_TAURUS-scaling_weak.dat \
