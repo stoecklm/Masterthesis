@@ -98,11 +98,13 @@ def parse_outfiles(outs):
                 for line in f:
                     if "t(gridGlobal)" in line:
                         result = re.search('= (.*) s', line)
-                        gridGlobal = np.append(gridGlobal, float(result.group(1)))
+                        gridGlobal = np.append(gridGlobal,
+                                               float(result.group(1)))
                         #print(line)
                     elif "checkConv)" in line:
                         result = re.search('= (.*) s', line)
-                        checkConv = np.append(checkConv, float(result.group(1)))
+                        checkConv = np.append(checkConv,
+                                              float(result.group(1)))
                         #print(line)
                     elif "compErr)" in line:
                         result = re.search('= (.*) s', line)
@@ -126,7 +128,8 @@ def parse_outfiles(outs):
                         #print(line)
                     elif "evalKnownDf)" in line:
                         result = re.search('= (.*) s', line)
-                        evalKnownDf = np.append(evalKnownDf, float(result.group(1)))
+                        evalKnownDf = np.append(evalKnownDf,
+                                                float(result.group(1)))
                         #print(line)
                     elif "sync)" in line:
                         result = re.search('= (.*) s', line)
@@ -138,7 +141,8 @@ def parse_outfiles(outs):
                         #print(line)
                     elif "w.barriers" in line:
                         result = re.search('= (.*) s', line)
-                        iterWBarriers = np.append(iterWBarriers, float(result.group(1)))
+                        iterWBarriers = np.append(iterWBarriers,
+                                                  float(result.group(1)))
                         #print(line)
                     else:
                         pass
@@ -155,13 +159,14 @@ def parse_outfiles(outs):
     phases[ITER_W_BARRIERS] = np.mean(iterWBarriers)
     phases[GRID_GLOBAL] = np.mean(gridGlobal)
     phases[BARRIERS] = phases[ITER_W_BARRIERS] - phases[ITERATE]
-    phases[WO_UPDATE] = phases[ITER_W_BARRIERS] - phases[UPDATE] + phases[GRID_GLOBAL]
+    phases[WO_UPDATE] = phases[ITER_W_BARRIERS] - phases[UPDATE] \
+                        + phases[GRID_GLOBAL]
     phases[TOTAL_RUNTIME] = phases[ITER_W_BARRIERS] + phases[GRID_GLOBAL]
 
     return phases
 
 # Function for MPI and OpenMP only tests.
-def single_tests(filepath):
+def single_tests(filepath, type_scaling):
     filepath = os.path.normpath(filepath)
     # Check if this test case does exist.
     # If not, return to main function.
@@ -183,7 +188,8 @@ def single_tests(filepath):
     for case in cases: # Cases, e.g. 5A, 7C, ...
         nodes = glob.glob(case + '/*')
         for node in nodes: # Nodes, e.g. 120x120x10, 120x120x50, ...
-            processes = sorted(glob.glob(node + '/*'), key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
+            processes = sorted(glob.glob(node + '/*'),
+                               key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
             serial_time = -1.0
             x = np.zeros(0)
             yy = [np.zeros(0) for i in range(NUM_OF_PHASES)]
@@ -199,13 +205,16 @@ def single_tests(filepath):
                     yy[elem] = np.append(yy[elem], phases[elem])
                 ind = np.zeros(0)
                 ind = np.append(ind, int(os.path.basename(process)))
-                path = './figures/' + type_of_test + '/' + os.path.basename(case)
+                path = './figures/' + type_scaling + '/' + type_of_test + '/' \
+                       + os.path.basename(case)
                 if os.path.exists(path) == False:
                     os.makedirs(path)
-                path =  path + '/' + os.path.basename(case) + '_' + os.path.basename(node) + '_' + type_of_test + '_' + \
-                       str(os.path.basename(process)).zfill(4) + '.eps'
-                title = 'Case: ' + os.path.basename(case) + ', ' + os.path.basename(node) + \
-                        ', ' + type_of_test + ': ' + os.path.basename(process)
+                path = path + '/' + os.path.basename(case) + '_' \
+                       + os.path.basename(node) + '_' + type_of_test + '_' \
+                       + str(os.path.basename(process)).zfill(4) + '.eps'
+                title = 'Case: ' + os.path.basename(case) + ', ' \
+                        + os.path.basename(node) + ', ' + type_of_test + ': ' \
+                        + os.path.basename(process)
                 plot_with_phases(phases, ind, title, path)
                 # Speedup calculation.
                 # Only calculate speedup if there is a serial runtime.
@@ -213,16 +222,19 @@ def single_tests(filepath):
                     serial_time = phases[ITER_W_BARRIERS]
                 if serial_time > -0.5:
                     speedup = serial_time/phases[ITER_W_BARRIERS]
-                    x_speedup = np.append(x_speedup, int(os.path.basename(process)))
+                    x_speedup = np.append(x_speedup,
+                                          int(os.path.basename(process)))
                     y_speedup = np.append(y_speedup, speedup)
             # Save results for later.
             list_x.append(x)
             list_yy.append(yy)
-            list_title.append(str(os.path.basename(case) + ', ' + os.path.basename(node)))
+            list_title.append(str(os.path.basename(case) + ', ' \
+                                  + os.path.basename(node)))
             if serial_time > -0.5:
                 list_x_speedup.append(x_speedup)
                 list_y_speedup.append(y_speedup)
-                list_title_speedup.append(str(os.path.basename(case) + ', ' + os.path.basename(node)))
+                list_title_speedup.append(str(os.path.basename(case) + ', ' \
+                                              + os.path.basename(node)))
     # Labels and filenames depends on type of test.
     if type_of_test == 'MPI':
         xlabel = 'MPI processes [-]'
@@ -233,50 +245,60 @@ def single_tests(filepath):
     else:
         plt.xlabel('Unknown [-]')
         path = 'Unknown'
-    if os.path.exists('./figures/' + type_of_test + '/details') == False:
-        os.makedirs('./figures/' + type_of_test + '/details')
+    if os.path.exists('./figures/' + type_scaling + '/' + type_of_test \
+                      + '/details') == False:
+        os.makedirs('./figures/' + type_scaling + '/' + type_of_test \
+                    + '/details')
     # Plot all saved results.
     for phase in range(NUM_OF_PHASES):
         plt.xlabel(xlabel)
         plt.ylabel('Runtime [s]')
         for elem in range(0, len(list_x)):
-            plt.plot(list_x[elem], list_yy[elem][phase], linestyle='--', marker='o')
+            plt.plot(list_x[elem], list_yy[elem][phase], linestyle='--',
+                     marker='o')
         plt.legend(list_title)
-        plt.title('Runtime of \'' + NAMES_OF_PHASES[phase] + '\' with ' + type_of_test + ' parallelization')
+        plt.title('Runtime of \'' + NAMES_OF_PHASES[phase] + '\' with ' \
+                  + type_of_test + ' parallelization')
         plt.grid()
-        plt.savefig('./figures/' + type_of_test + '/details/' + path + '_' + NAMES_OF_PHASES[phase].replace(' ', '_') + '.eps')
+        plt.savefig('./figures/' + type_scaling + '/' + type_of_test \
+                    + '/details/' + path + '_' \
+                    + NAMES_OF_PHASES[phase].replace(' ', '_') + '.eps')
         plt.close()
     # Plot just the total runtime.
     plt.xlabel(xlabel)
     plt.ylabel('Runtime [s]')
     for elem in range(0, len(list_x)):
-        plt.plot(list_x[elem], list_yy[elem][TOTAL_RUNTIME], linestyle='--', marker='o')
+        plt.plot(list_x[elem], list_yy[elem][TOTAL_RUNTIME], linestyle='--',
+                 marker='o')
     plt.legend(list_title)
     plt.title('Total runtime with ' + type_of_test + ' parallelization')
     plt.grid()
-    plt.savefig('./figures/' + type_of_test + '/' + path + '_runtime.eps')
+    plt.savefig('./figures/' + type_scaling + '/' + type_of_test + '/' + path \
+                + '_runtime.eps')
     plt.close()
     # Plot speedup results if there are any results to plot.
-    if len(list_x_speedup) > 0:
+    if len(list_x_speedup) > 0 and type_scaling == 'strong-scaling':
         plt.xlabel(xlabel)
         plt.ylabel('Speedup [-]')
         # Plot linear speedup.
         plt.plot(list_x_speedup[0], list_x_speedup[0], linestyle='--')
         # Plot speedup from results.
         for elem in range(0, len(list_x_speedup)):
-            plt.plot(list_x_speedup[elem], list_y_speedup[elem], linestyle='--', marker='o')
-        list_title_speedup = ['linear speedup'] + list_title_speedup
-        plt.legend(list_title_speedup)
+            plt.plot(list_x_speedup[elem], list_y_speedup[elem],
+                     linestyle='--', marker='o')
+        #list_title_speedup = ['linear speedup'] + list_title_speedup
+        plt.legend(['linear speedup'] + list_title_speedup)
         plt.title('Speedup with ' + type_of_test + ' parallelization')
         plt.grid()
-        plt.savefig('./figures/' + type_of_test + '/' + path + '_speedup.eps')
+        plt.savefig('./figures/' + type_scaling + '/' + type_of_test + '/' \
+                    + path + '_speedup.eps')
         plt.close()
 
     return  list_x, list_yy, list_title, \
             list_x_speedup, list_y_speedup, list_title_speedup
 
 # Function for Hybrid (MPI and OpenMP) tests.
-def hybrid_tests(filepath):
+def hybrid_tests(filepath, type_scaling):
     filepath = os.path.normpath(filepath)
     # Check if this test case does exist.
     # If not, return to main function.
@@ -306,13 +328,16 @@ def hybrid_tests(filepath):
             list_title_speedup = list()
             tasks_per_node = glob.glob(node + '/*')
             for task_per_node in tasks_per_node:
-                processes = sorted(glob.glob(task_per_node + '/*'), key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
+                processes = sorted(glob.glob(task_per_node + '/*'),
+                                   key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
                 x = np.zeros(0)
                 yy = [np.zeros(0) for i in range(NUM_OF_PHASES)]
                 x_speedup = np.zeros(0)
                 y_speedup = np.zeros(0)
                 serial_time = -1.0
-                outs = './results/MPI/' + os.path.basename(case) + '/' + os.path.basename(node) + '/1'
+                outs = './results/' + type_scaling + '/MPI/' \
+                       + os.path.basename(case) + '/' \
+                       + os.path.basename(node) + '/1'
                 if os.path.exists(outs) == True:
                     outs = glob.glob(outs + '/*.slurm.out')
                     phases = parse_outfiles(outs)
@@ -325,20 +350,25 @@ def hybrid_tests(filepath):
                     # Get all the phases from result file (*.slurm.out).
                     phases = parse_outfiles(outs)
                     # Plot this result with all its phases.
-                    num_proc = int(os.path.basename(process)) * int(str(os.path.basename(task_per_node)).split('x')[1])
+                    num_proc = int(os.path.basename(process)) \
+                               * int(str(os.path.basename(task_per_node)).split('x')[1])
                     x = np.append(x, num_proc)
                     for elem in range(0, len(phases)):
                         yy[elem] = np.append(yy[elem], phases[elem])
                     ind = np.zeros(0)
                     ind = np.append(ind, num_proc)
-                    path = './figures/' + type_of_test + '/' + os.path.basename(case)
+                    path = './figures/' + type_scaling + '/' + type_of_test + \
+                           '/' + os.path.basename(case)
                     if os.path.exists(path) == False:
                         os.makedirs(path)
-                    path =  path + '/' + os.path.basename(case) + '_' + os.path.basename(node) + '_' + type_of_test + '_' + \
-                            os.path.basename(task_per_node) + '_' + \
-                            str(num_proc).zfill(4) + '.eps'
-                    title = 'Case: ' + os.path.basename(case) + ', ' + os.path.basename(node) + \
-                            ', ' + type_of_test + ': ' + str(num_proc) + ' (per node: ' + os.path.basename(task_per_node) + ')'
+                    path =  path + '/' + os.path.basename(case) + '_' \
+                            + os.path.basename(node) + '_' + type_of_test \
+                            + '_' + os.path.basename(task_per_node) + '_' \
+                            + str(num_proc).zfill(4) + '.eps'
+                    title = 'Case: ' + os.path.basename(case) + ', ' \
+                            + os.path.basename(node) + ', ' + type_of_test + \
+                            ': ' + str(num_proc) + ' (per node: ' \
+                            + os.path.basename(task_per_node) + ')'
                     plot_with_phases(phases, ind, title, path)
                     # Speedup calculation.
                     # Only calculate speedup if there is a serial runtime.
@@ -349,191 +379,223 @@ def hybrid_tests(filepath):
                 # Save results for later.
                 list_x.append(x)
                 list_yy.append(yy)
-                list_title.append(str(os.path.basename(case) + ', ' + os.path.basename(node) + ' (' + os.path.basename(task_per_node) + ')'))
+                list_title.append(str(os.path.basename(case) + ', ' \
+                                  + os.path.basename(node) + \
+                                  ' (' + os.path.basename(task_per_node) \
+                                  + ')'))
                 list_x_runtime_all.append(x)
                 list_y_runtime_all.append(yy)
-                list_title_runtime_all.append(str(os.path.basename(case) + ', ' + os.path.basename(node) + ' (' + os.path.basename(task_per_node) + ')'))
+                list_title_runtime_all.append(str(os.path.basename(case) \
+                                              + ', ' + os.path.basename(node) \
+                                              + ' (' \
+                                              + os.path.basename(task_per_node) \
+                                              + ')'))
                 if serial_time > -0.5:
                     list_x_speedup.append(x_speedup)
                     list_y_speedup.append(y_speedup)
-                    list_title_speedup.append(str(os.path.basename(case) + ', ' + os.path.basename(node) + ' (' + os.path.basename(task_per_node) + ')'))
+                    list_title_speedup.append(str(os.path.basename(case) \
+                                              + ', ' + os.path.basename(node) \
+                                              + ' (' \
+                                              + os.path.basename(task_per_node) \
+                                              + ')'))
                     list_x_speedup_all.append(x_speedup)
                     list_y_speedup_all.append(y_speedup)
-                    list_title_speedup_all.append(str(os.path.basename(case) + ', ' + os.path.basename(node) + ' (' + os.path.basename(task_per_node) + ')'))
-            if os.path.exists('./figures/' + type_of_test + '/details') == False:
-                os.makedirs('./figures/' + type_of_test + '/details')
+                    list_title_speedup_all.append(str(os.path.basename(case) \
+                                                      + ', ' \
+                                                      + os.path.basename(node) \
+                                                      + ' (' \
+                                                      + os.path.basename(task_per_node) \
+                                                      + ')'))
+            if os.path.exists('./figures/' + type_scaling + '/' \
+                              + type_of_test + '/details') == False:
+                os.makedirs('./figures/' + type_scaling + '/' + type_of_test \
+                            + '/details')
             # Plot all results.
             for phase in range(NUM_OF_PHASES):
-                path = 'Hybrid_' + os.path.basename(case) + '_' + os.path.basename(node)
+                path = 'Hybrid_' + os.path.basename(case) + '_' \
+                       + os.path.basename(node)
                 plt.xlabel('MPI processes x OpenMP threads [-]')
                 plt.ylabel('Runtime [s]')
                 for elem in range(0, len(list_x)):
-                    plt.plot(list_x[elem], list_yy[elem][phase], linestyle='--', marker='o')
+                    plt.plot(list_x[elem], list_yy[elem][phase],
+                             linestyle='--', marker='o')
                 plt.legend(list_title)
-                plt.title('Runtime of \'' + NAMES_OF_PHASES[phase] + '\' with ' + type_of_test + ' parallelization')
+                plt.title('Runtime of \'' + NAMES_OF_PHASES[phase] \
+                          + '\' with ' + type_of_test + ' parallelization')
                 plt.grid()
-                plt.savefig('./figures/' + type_of_test + '/details/' + path + '_' + NAMES_OF_PHASES[phase].replace(' ', '_') + '.eps')
+                plt.savefig('./figures/' + type_scaling + '/' + type_of_test \
+                            + '/details/' + path + '_' \
+                            + NAMES_OF_PHASES[phase].replace(' ', '_') \
+                            + '.eps')
                 plt.close()
             # Plot just total runtime.
-            path = 'Hybrid_' + os.path.basename(case) + '_' + os.path.basename(node)
+            path = 'Hybrid_' + os.path.basename(case) + '_' \
+                   + os.path.basename(node)
             plt.xlabel('MPI processes x OpenMP threads [-]')
             plt.ylabel('Runtime [s]')
             for elem in range(0, len(list_x)):
-                plt.plot(list_x[elem], list_yy[elem][TOTAL_RUNTIME], linestyle='--', marker='o')
+                plt.plot(list_x[elem], list_yy[elem][TOTAL_RUNTIME],
+                         linestyle='--', marker='o')
             plt.legend(list_title)
-            plt.title('Total runtime with ' + type_of_test + ' parallelization')
+            plt.title('Total runtime with ' + type_of_test \
+                      + ' parallelization')
             plt.grid()
-            plt.savefig('./figures/' + type_of_test + '/' + path + '_runtime.eps')
+            plt.savefig('./figures/' + type_scaling + '/' + type_of_test \
+                        + '/' + path + '_runtime.eps')
             plt.close()
             # Plot speedup results if there are any results to plot.
-            if len(list_x_speedup) > 0:
+            if len(list_x_speedup) > 0 and type_scaling == 'strong-scaling':
                 plt.xlabel('MPI processes x OpenMP threads [-]')
                 plt.ylabel('Speedup [-]')
                 # Plot linear speedup.
                 plt.plot(list_x_speedup[1], list_x_speedup[1], linestyle='--')
                 # Plot speedup from results.
                 for elem in range(0, len(list_x_speedup)):
-                    plt.plot(list_x_speedup[elem], list_y_speedup[elem], linestyle='--', marker='o')
-                list_title_speedup = ['linear speedup'] + list_title_speedup
-                plt.legend(list_title_speedup)
+                    plt.plot(list_x_speedup[elem], list_y_speedup[elem],
+                             linestyle='--', marker='o')
+                #list_title_speedup = ['linear speedup'] + list_title_speedup
+                plt.legend(['linear speedup'] + list_title_speedup)
+                #plt.legend(list_title_speedup)
                 plt.title('Speedup with ' + type_of_test + ' parallelization')
                 plt.grid()
-                plt.savefig('./figures/' + type_of_test + '/' + path + '_speedup.eps')
+                plt.savefig('./figures/' + type_scaling + '/' + type_of_test \
+                            + '/' + path + '_speedup.eps')
                 plt.close()
 
     return list_x_runtime_all, list_y_runtime_all, list_title_runtime_all, \
            list_x_speedup_all, list_y_speedup_all, list_title_speedup_all
 
-def plot_all_runtimes(x_runtime, y_runtime, title_runtime):
+def cases_and_nodes(title):
     list_of_cases = list()
     list_of_nodes = list()
-    for elem in range(0, len(title_runtime[0])):
-        list_of_cases.append(title_runtime[0][elem].split(',')[0].strip())
-        list_of_nodes.append(title_runtime[0][elem].split(',')[1].strip())
-    for elem in range(0, len(title_runtime[1])):
-        list_of_cases.append(title_runtime[1][elem].split(',')[0].strip())
-        list_of_nodes.append(title_runtime[1][elem].split(',')[1].strip())
-    for elem in range(0, len(title_runtime[2])):
-        list_of_cases.append(title_runtime[2][elem].split(',')[0].strip())
-        list_of_nodes.append(title_runtime[2][elem].split(',')[1].strip().split(' ')[0])
+    for elem in range(0, len(title[0])):
+        list_of_cases.append(title[0][elem].split(',')[0].strip())
+        list_of_nodes.append(title[0][elem].split(',')[1].strip())
+    for elem in range(0, len(title[1])):
+        list_of_cases.append(title[1][elem].split(',')[0].strip())
+        list_of_nodes.append(title[1][elem].split(',')[1].strip())
+    for elem in range(0, len(title[2])):
+        list_of_cases.append(title[2][elem].split(',')[0].strip())
+        list_of_nodes.append(title[2][elem].split(',')[1].strip().split(' ')[0])
     set_of_cases = set(list_of_cases)
     set_of_nodes = set(list_of_nodes)
+
+    return set_of_cases, set_of_nodes
+
+def plot_all_runtimes(x, y, title, type_scaling):
+    cases, nodes = cases_and_nodes(title)
     # Plot total runtime.
-    for case in set_of_cases:
-        for node in set_of_nodes:
+    for case in cases:
+        for node in nodes:
             list_of_titles = list()
-            for elem in range(len(x_runtime[0])): # MPI
-                if case == title_runtime[0][elem].split(',')[0].strip() and \
-                   node == title_runtime[0][elem].split(',')[1].strip():
-                    plt.plot(x_runtime[0][elem], y_runtime[0][elem][TOTAL_RUNTIME], linestyle='--', marker='o')
+            for elem in range(len(x[0])): # MPI
+                if case == title[0][elem].split(',')[0].strip() and \
+                   node == title[0][elem].split(',')[1].strip():
+                    plt.plot(x[0][elem], y[0][elem][TOTAL_RUNTIME],
+                             linestyle='--', marker='o')
                     list_of_titles.append('MPI')
-            for elem in range(len(x_runtime[1])): # OpenMP
-                if case == title_runtime[1][elem].split(',')[0].strip() and \
-                   node == title_runtime[1][elem].split(',')[1].strip():
-                    plt.plot(x_runtime[1][elem], y_runtime[1][elem][TOTAL_RUNTIME], linestyle='--', marker='o')
+            for elem in range(len(x[1])): # OpenMP
+                if case == title[1][elem].split(',')[0].strip() and \
+                   node == title[1][elem].split(',')[1].strip():
+                    plt.plot(x[1][elem], y[1][elem][TOTAL_RUNTIME],
+                             linestyle='--', marker='o')
                     list_of_titles.append('OpenMP')
-            for elem in range(len(x_runtime[2])): # Hybrid
-                if case == title_runtime[2][elem].split(',')[0].strip() and \
-                   node == title_runtime[2][elem].split(',')[1].strip().split(' ')[0]:
-                    plt.plot(x_runtime[2][elem], y_runtime[2][elem][TOTAL_RUNTIME], linestyle='--', marker='o')
-                    list_of_titles.append('Hybrid ' + title_runtime[2][elem].split(',')[1].strip().split(' ')[1])
+            for elem in range(len(x[2])): # Hybrid
+                if case == title[2][elem].split(',')[0].strip() and \
+                   node == title[2][elem].split(',')[1].strip().split(' ')[0]:
+                    plt.plot(x[2][elem], y[2][elem][TOTAL_RUNTIME],
+                             linestyle='--', marker='o')
+                    list_of_titles.append('Hybrid ' \
+                                          + title[2][elem].split(',')[1].strip().split(' ')[1])
             plt.title('Runtime for ' + case + ', ' + node)
             plt.xlabel('Cores [-]')
             plt.ylabel('Runtime [s]')
             plt.yscale('log')
             plt.legend(list_of_titles)
             plt.grid()
-            plt.savefig('./figures/' + case + '_' + node + '_runtime.eps')
+            plt.savefig('./figures/' + type_scaling + '/' + case + '_' + node \
+                        + '_runtime.eps')
             plt.close()
 
-def plot_all_speedups(x_speedup, y_speedup, title_speedup):
-    list_of_cases = list()
-    list_of_nodes = list()
-    for elem in range(1, len(title_speedup[0])):
-        list_of_cases.append(title_speedup[0][elem].split(',')[0].strip())
-        list_of_nodes.append(title_speedup[0][elem].split(',')[1].strip())
-    for elem in range(1, len(title_speedup[1])):
-        list_of_cases.append(title_speedup[1][elem].split(',')[0].strip())
-        list_of_nodes.append(title_speedup[1][elem].split(',')[1].strip())
-    for elem in range(0, len(title_speedup[2])):
-        list_of_cases.append(title_speedup[2][elem].split(',')[0].strip())
-        list_of_nodes.append(title_speedup[2][elem].split(',')[1].strip().split(' ')[0])
-    set_of_cases = set(list_of_cases)
-    set_of_nodes = set(list_of_nodes)
+def plot_all_speedups(x, y, title, type_scaling):
+    cases, nodes = cases_and_nodes(title)
     # Plot linear speedup.
-    for case in set_of_cases:
-        for node in set_of_nodes:
+    for case in cases:
+        for node in nodes:
             list_of_titles = list()
             plt.plot(np.arange(1, 144), np.arange(1, 144), linestyle='--')
             list_of_titles.append('linear speedup')
-            for elem in range(len(x_speedup[0])): # MPI
-                if case == title_speedup[0][elem+1].split(',')[0].strip() and \
-                   node == title_speedup[0][elem+1].split(',')[1].strip():
-                    plt.plot(x_speedup[0][elem], y_speedup[0][elem], linestyle='--', marker='o')
+            for elem in range(len(x[0])): # MPI
+                if case == title[0][elem].split(',')[0].strip() and \
+                   node == title[0][elem].split(',')[1].strip():
+                    plt.plot(x[0][elem], y[0][elem], linestyle='--',
+                             marker='o')
                     list_of_titles.append('MPI')
-            for elem in range(len(x_speedup[1])): # OpenMP
-                if case == title_speedup[1][elem+1].split(',')[0].strip() and \
-                   node == title_speedup[1][elem+1].split(',')[1].strip():
-                    plt.plot(x_speedup[1][elem], y_speedup[1][elem], linestyle='--', marker='o')
+            for elem in range(len(x[1])): # OpenMP
+                if case == title[1][elem].split(',')[0].strip() and \
+                   node == title[1][elem].split(',')[1].strip():
+                    plt.plot(x[1][elem], y[1][elem], linestyle='--',
+                             marker='o')
                     list_of_titles.append('OpenMP')
-            for elem in range(len(x_speedup[2])): # Hybrid
-                if case == title_speedup[2][elem].split(',')[0].strip() and \
-                   node == title_speedup[2][elem].split(',')[1].strip().split(' ')[0]:
-                    plt.plot(x_speedup[2][elem], y_speedup[2][elem], linestyle='--', marker='o')
-                    list_of_titles.append('Hybrid ' + title_speedup[2][elem].split(',')[1].strip().split(' ')[1])
+            for elem in range(len(x[2])): # Hybrid
+                if case == title[2][elem].split(',')[0].strip() and \
+                   node == title[2][elem].split(',')[1].strip().split(' ')[0]:
+                    plt.plot(x[2][elem], y[2][elem], linestyle='--',
+                             marker='o')
+                    list_of_titles.append('Hybrid ' \
+                                          + title[2][elem].split(',')[1].strip().split(' ')[1])
             plt.title('Speedup for ' + case + ', ' + node)
             plt.xlabel('Cores [-]')
             plt.ylabel('Speedup [-]')
             plt.legend(list_of_titles)
             plt.grid()
-            plt.savefig('./figures/' + case + '_' + node + '_speedup.eps')
+            plt.savefig('./figures/' + type_scaling + '/' + case + '_' + node \
+                        + '_speedup.eps')
             plt.close()
 
-def print_results_to_dat_file(x_runtime, y_runtime, title_runtime):
-    list_of_cases = list()
-    list_of_nodes = list()
-    for elem in range(0, len(title_runtime[0])):
-        list_of_cases.append(title_runtime[0][elem].split(',')[0].strip())
-        list_of_nodes.append(title_runtime[0][elem].split(',')[1].strip())
-    for elem in range(0, len(title_runtime[1])):
-        list_of_cases.append(title_runtime[1][elem].split(',')[0].strip())
-        list_of_nodes.append(title_runtime[1][elem].split(',')[1].strip())
-    for elem in range(0, len(title_runtime[2])):
-        list_of_cases.append(title_runtime[2][elem].split(',')[0].strip())
-        list_of_nodes.append(title_runtime[2][elem].split(',')[1].strip().split(' ')[0])
-    set_of_cases = set(list_of_cases)
-    set_of_nodes = set(list_of_nodes)
+def save_runtime_to_dat_file(x, y, title, type_scaling):
+    cases, nodes = cases_and_nodes(title)
     # Save total runtime to file.
-    text_file = open('./figures/runtime.dat', 'w')
-    for case in set_of_cases:
-        for node in set_of_nodes:
+    text_file = open('./figures/' + type_scaling + '/runtime.dat', 'w')
+    for case in cases:
+        for node in nodes:
             list_of_titles = list()
-            for elem in range(len(x_runtime[0])): # MPI
-                if case == title_runtime[0][elem].split(',')[0].strip() and \
-                   node == title_runtime[0][elem].split(',')[1].strip():
-                    text_file.write(str('MPI, Case: ' + case + ', Nodes: ' + node + '\n'))
-                    for i in range(len(x_runtime[0][elem])):
-                        text_file.write(str(x_runtime[0][elem][i]) + ' : ' + str(y_runtime[0][elem][TOTAL_RUNTIME][i]) + '\n')
-            for elem in range(len(x_runtime[1])): # OpenMP
-                if case == title_runtime[1][elem].split(',')[0].strip() and \
-                   node == title_runtime[1][elem].split(',')[1].strip():
-                    text_file.write(str('OpenMP, Case: ' + case + ', Nodes: ' + node + '\n'))
-                    for i in range(len(x_runtime[1][elem])):
-                        text_file.write(str(x_runtime[1][elem][i]) + ' : ' +  str(y_runtime[1][elem][TOTAL_RUNTIME][i]) + '\n')
-            for elem in range(len(x_runtime[2])): # Hybrid
-                if case == title_runtime[2][elem].split(',')[0].strip() and \
-                   node == title_runtime[2][elem].split(',')[1].strip().split(' ')[0]:
-                    title = 'Hybrid ' + title_runtime[2][elem].split(',')[1].strip().split(' ')[1]
-                    text_file.write(str(title + ', Case: ' + case + ', Nodes: ' + node + '\n'))
-                    for i in range(len(x_runtime[2][elem])):
-                        text_file.write(str(x_runtime[2][elem][i]) + ' : ' + str(y_runtime[2][elem][TOTAL_RUNTIME][i]) + '\n')
+            for elem in range(len(x[0])): # MPI
+                if case == title[0][elem].split(',')[0].strip() and \
+                   node == title[0][elem].split(',')[1].strip():
+                    text_file.write(str('MPI, Case: ' + case + ', Nodes: ' \
+                                        + node + '\n'))
+                    for i in range(len(x[0][elem])):
+                        text_file.write(str(x[0][elem][i]) + ' : ' \
+                                        + str(y[0][elem][TOTAL_RUNTIME][i]) \
+                                        + '\n')
+            for elem in range(len(x[1])): # OpenMP
+                if case == title[1][elem].split(',')[0].strip() and \
+                   node == title[1][elem].split(',')[1].strip():
+                    text_file.write(str('OpenMP, Case: ' + case + ', Nodes: ' \
+                                    + node + '\n'))
+                    for i in range(len(x[1][elem])):
+                        text_file.write(str(x[1][elem][i]) + ' : ' \
+                                        + str(y[1][elem][TOTAL_RUNTIME][i]) \
+                                        + '\n')
+            for elem in range(len(x[2])): # Hybrid
+                if case == title[2][elem].split(',')[0].strip() and \
+                   node == title[2][elem].split(',')[1].strip().split(' ')[0]:
+                    tmp = 'Hybrid ' \
+                           + title[2][elem].split(',')[1].strip().split(' ')[1]
+                    text_file.write(str(tmp + ', Case: ' + case  \
+                                        + ', Nodes: ' + node + '\n'))
+                    for i in range(len(x[2][elem])):
+                        text_file.write(str(x[2][elem][i]) + ' : ' \
+                                        + str(y[2][elem][TOTAL_RUNTIME][i]) \
+                                        + '\n')
 
 
 def main():
     # Check if path to folder is provided and if folder exists.
     if len(sys.argv) > 1:
         if os.path.isdir(sys.argv[1]) == True:
-            filepath = sys.argv[1]
+            filepath = os.path.normpath(sys.argv[1])
         else:
             print(sys.argv[1], 'does not exist or is not a folder.')
             print('Usage: python3', sys.argv[0], '<PATH/TO/FOLDER>')
@@ -545,15 +607,8 @@ def main():
         print('Aborting.')
         exit()
 
-    # Create folder for results if it does not exist.
-    if os.path.exists('./figures') == False:
-        os.makedirs('./figures')
-    if os.path.exists('./figures/MPI') == False:
-        os.makedirs('./figures/MPI')
-    if os.path.exists('./figures/OpenMP') == False:
-        os.makedirs('./figures/OpenMP')
-    if os.path.exists('./figures/Hybrid') == False:
-        os.makedirs('./figures/Hybrid')
+
+    type_scaling = os.path.basename(filepath)
 
     x_runtime = [[] for i in range(3)]
     y_runtime = [[] for i in range(3)]
@@ -564,16 +619,21 @@ def main():
 
     # Call function for every testcase.
     x_runtime[0], y_runtime[0], title_runtime[0], \
-    x_speedup[0], y_speedup[0], title_speedup[0] = single_tests(filepath + '/MPI')
+    x_speedup[0], y_speedup[0], title_speedup[0] = single_tests(filepath + '/MPI',
+                                                                type_scaling)
     x_runtime[1], y_runtime[1], title_runtime[1], \
-    x_speedup[1], y_speedup[1], title_speedup[1] = single_tests(filepath + '/OpenMP')
+    x_speedup[1], y_speedup[1], title_speedup[1] = single_tests(filepath + '/OpenMP',
+                                                                type_scaling)
     x_runtime[2], y_runtime[2], title_runtime[2], \
-    x_speedup[2], y_speedup[2], title_speedup[2] = hybrid_tests(filepath + '/Hybrid')
+    x_speedup[2], y_speedup[2], title_speedup[2] = hybrid_tests(filepath + '/Hybrid',
+                                                                type_scaling)
 
-    plot_all_runtimes(x_runtime, y_runtime, title_runtime)
-    plot_all_speedups(x_speedup, y_speedup, title_speedup)
+    plot_all_runtimes(x_runtime, y_runtime, title_runtime, type_scaling)
+    if type_scaling == 'strong-scaling':
+        plot_all_speedups(x_speedup, y_speedup, title_speedup, type_scaling)
 
-    print_results_to_dat_file(x_runtime, y_runtime, title_runtime)
+    save_runtime_to_dat_file(x_runtime, y_runtime, title_runtime,
+                              type_scaling)
 
     print('Done.')
 
