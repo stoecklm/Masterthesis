@@ -7,7 +7,7 @@ import os
 import re
 import sys
 
-NUM_OF_PHASES = 14
+NUM_OF_PHASES = 15
 
 UPDATE = 0
 SYNC = 1
@@ -23,6 +23,7 @@ BARRIERS = 10
 WO_UPDATE = 11
 GRID_GLOBAL = 12
 TOTAL_RUNTIME = 13
+STD_DEV = 14
 
 NAMES_OF_PHASES = [[] for i in range(NUM_OF_PHASES)]
 NAMES_OF_PHASES[UPDATE] = 'Update'
@@ -39,6 +40,7 @@ NAMES_OF_PHASES[BARRIERS] = 'Barriers'
 NAMES_OF_PHASES[WO_UPDATE] = 'All phases without Update'
 NAMES_OF_PHASES[GRID_GLOBAL] = 'Grid Global'
 NAMES_OF_PHASES[TOTAL_RUNTIME] = 'Total Runtime'
+NAMES_OF_PHASES[STD_DEV] = 'Standard Deviation'
 
 # Function to plot all phases of a specific case,
 # e.g. 5A, 120x120x10, 24 MPI processes
@@ -150,6 +152,7 @@ def parse_outfiles(outs):
     phases[BARRIERS] = phases[ITER_W_BARRIERS] - phases[ITERATE]
     phases[TOTAL_RUNTIME] = phases[ITER_W_BARRIERS] + phases[GRID_GLOBAL]
     phases[WO_UPDATE] = phases[TOTAL_RUNTIME] - phases[UPDATE]
+    phases[STD_DEV] = np.std(iterWBarriers + gridGlobal)
 
     return phases
 
@@ -165,6 +168,24 @@ def plot_total_runtime(x, y, legend, xlabel, type_of_test, savepath):
     plt.savefig(savepath + '_runtime.eps')
     plt.yscale('log')
     plt.savefig(savepath + '_runtime_log.eps')
+    plt.close()
+    plot_total_runtime_with_std_dev(x, y, legend, xlabel, type_of_test,
+                                    savepath)
+
+def plot_total_runtime_with_std_dev(x, y, legend, xlabel, type_of_test,
+                                    savepath):
+    plt.xlabel(xlabel)
+    plt.ylabel('Runtime [s]')
+    for elem in range(0, len(x)):
+        plt.errorbar(x[elem], y[elem][TOTAL_RUNTIME], y[elem][STD_DEV],
+                     linestyle='None', marker='None', capsize=3)
+    plt.legend(legend)
+    plt.title('Error bars of total runtime with ' + type_of_test \
+              + ' parallelization')
+    plt.grid()
+    plt.savefig(savepath + '_errorbar.eps')
+    plt.yscale('log')
+    plt.savefig(savepath + '_errorbar_log.eps')
     plt.close()
 
 def plot_speedup(x, y, legend, xlabel, type_of_test, type_scaling, savepath):
