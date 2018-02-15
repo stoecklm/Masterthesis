@@ -597,19 +597,19 @@ def main():
     title_speedup = [[] for i in range(3)]
 
     # Call function for every testcase.
-    x_runtime[0], y_runtime[0],
-    title_runtime[0],
-    x_speedup[0], y_speedup[0],
+    x_runtime[0], y_runtime[0], \
+    title_runtime[0], \
+    x_speedup[0], y_speedup[0], \
     title_speedup[0] = single_tests(filepath + '/MPI', type_scaling)
 
-    x_runtime[1], y_runtime[1],
-    title_runtime[1],
-    x_speedup[1], y_speedup[1],
+    x_runtime[1], y_runtime[1], \
+    title_runtime[1], \
+    x_speedup[1], y_speedup[1], \
     title_speedup[1] = single_tests(filepath + '/OpenMP', type_scaling)
 
-    x_runtime[2], y_runtime[2],
-    title_runtime[2],
-    x_speedup[2], y_speedup[2],
+    x_runtime[2], y_runtime[2], \
+    title_runtime[2], \
+    x_speedup[2], y_speedup[2], \
     title_speedup[2] = hybrid_tests(filepath + '/Hybrid', type_scaling)
 
     plot_all_runtimes(x_runtime, y_runtime, title_runtime, type_scaling)
