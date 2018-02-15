@@ -100,50 +100,39 @@ def parse_outfiles(outs):
                         result = re.search('= (.*) s', line)
                         gridGlobal = np.append(gridGlobal,
                                                float(result.group(1)))
-                        #print(line)
                     elif "checkConv)" in line:
                         result = re.search('= (.*) s', line)
                         checkConv = np.append(checkConv,
                                               float(result.group(1)))
-                        #print(line)
                     elif "compErr)" in line:
                         result = re.search('= (.*) s', line)
                         compErr = np.append(compErr, float(result.group(1)))
-                        #print(line)
                     elif "init)" in line:
                         result = re.search('= (.*) s', line)
                         init = np.append(init, float(result.group(1)))
-                        #print(line)
                     elif "update)" in line:
                         result = re.search('= (.*) s', line)
                         update = np.append(update, float(result.group(1)))
-                        #print(line)
                     elif "write)" in line:
                         result = re.search('= (.*) s', line)
                         write = np.append(write, float(result.group(1)))
-                        #print(line)
                     elif "trace)" in line:
                         result = re.search('= (.*) s', line)
                         trace = np.append(trace, float(result.group(1)))
-                        #print(line)
                     elif "evalKnownDf)" in line:
                         result = re.search('= (.*) s', line)
                         evalKnownDf = np.append(evalKnownDf,
                                                 float(result.group(1)))
-                        #print(line)
                     elif "sync)" in line:
                         result = re.search('= (.*) s', line)
                         sync = np.append(sync, float(result.group(1)))
-                        #print(line)
                     elif " iterate)" in line:
                         result = re.search('= (.*) s', line)
                         iterate = np.append(iterate, float(result.group(1)))
-                        #print(line)
                     elif "w.barriers" in line:
                         result = re.search('= (.*) s', line)
                         iterWBarriers = np.append(iterWBarriers,
                                                   float(result.group(1)))
-                        #print(line)
                     else:
                         pass
     # Final result is mean value of all runs.
@@ -159,11 +148,54 @@ def parse_outfiles(outs):
     phases[ITER_W_BARRIERS] = np.mean(iterWBarriers)
     phases[GRID_GLOBAL] = np.mean(gridGlobal)
     phases[BARRIERS] = phases[ITER_W_BARRIERS] - phases[ITERATE]
-    phases[WO_UPDATE] = phases[ITER_W_BARRIERS] - phases[UPDATE] \
-                        + phases[GRID_GLOBAL]
     phases[TOTAL_RUNTIME] = phases[ITER_W_BARRIERS] + phases[GRID_GLOBAL]
+    phases[WO_UPDATE] = phases[TOTAL_RUNTIME] - phases[UPDATE]
 
     return phases
+
+def plot_total_runtime(x, y, legend, xlabel, type_of_test, savepath):
+    plt.xlabel(xlabel)
+    plt.ylabel('Runtime [s]')
+    for elem in range(0, len(x)):
+        plt.plot(x[elem], y[elem][TOTAL_RUNTIME], linestyle='--',
+                 marker='o')
+    plt.legend(legend)
+    plt.title('Total runtime with ' + type_of_test + ' parallelization')
+    plt.grid()
+    plt.savefig(savepath + '_runtime.eps')
+    plt.yscale('log')
+    plt.savefig(savepath + '_runtime_log.eps')
+    plt.close()
+
+def plot_speedup(x, y, legend, xlabel, type_of_test, type_scaling, savepath):
+    if len(x) > 0 and type_scaling == 'strong-scaling':
+        plt.xlabel(xlabel)
+        plt.ylabel('Speedup [-]')
+        # Plot linear speedup.
+        plt.plot(x[0], x[0], linestyle='--')
+        # Plot speedup from results.
+        for elem in range(0, len(x)):
+            plt.plot(x[elem], y[elem],
+                     linestyle='--', marker='o')
+        plt.legend(['linear speedup'] + legend)
+        plt.title('Speedup with ' + type_of_test + ' parallelization')
+        plt.grid()
+        plt.savefig(savepath + '_speedup.eps')
+        plt.close()
+
+def plot_all_phases(x, y, legend, xlabel, type_of_test, savepath):
+    for phase in range(NUM_OF_PHASES):
+        plt.xlabel(xlabel)
+        plt.ylabel('Runtime [s]')
+        for elem in range(0, len(x)):
+            plt.plot(x[elem], y[elem][phase], linestyle='--', marker='o')
+        plt.legend(legend)
+        plt.title('Runtime of \'' + NAMES_OF_PHASES[phase] + '\' with ' \
+                  + type_of_test + ' parallelization')
+        plt.grid()
+        plt.savefig(savepath + NAMES_OF_PHASES[phase].replace(' ', '_') \
+                    + '.eps')
+        plt.close()
 
 # Function for MPI and OpenMP only tests.
 def single_tests(filepath, type_scaling):
@@ -189,13 +221,14 @@ def single_tests(filepath, type_scaling):
         nodes = glob.glob(case + '/*')
         for node in nodes: # Nodes, e.g. 120x120x10, 120x120x50, ...
             processes = sorted(glob.glob(node + '/*'),
-                               key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
+                               key=lambda x:
+                                int(os.path.splitext(os.path.basename(x))[0]))
             serial_time = -1.0
             x = np.zeros(0)
             yy = [np.zeros(0) for i in range(NUM_OF_PHASES)]
             x_speedup = np.zeros(0)
             y_speedup = np.zeros(0)
-            for process in processes: # MPI processes or OpenMP threads, e.g. 1, 2, 4, ...
+            for process in processes: # MPI or OpenMP procs, e.g. 1, 2, 4, ...
                 outs = glob.glob(process + '/*.slurm.out')
                 # Get all the phases from result file (*.slurm.out).
                 phases = parse_outfiles(outs)
@@ -228,71 +261,36 @@ def single_tests(filepath, type_scaling):
             # Save results for later.
             list_x.append(x)
             list_yy.append(yy)
-            list_title.append(str(os.path.basename(case) + ', ' \
-                                  + os.path.basename(node)))
+            title = os.path.basename(case) + ', ' + os.path.basename(node)
+            list_title.append(title)
             if serial_time > -0.5:
                 list_x_speedup.append(x_speedup)
                 list_y_speedup.append(y_speedup)
-                list_title_speedup.append(str(os.path.basename(case) + ', ' \
-                                              + os.path.basename(node)))
+                list_title_speedup.append(title)
     # Labels and filenames depends on type of test.
     if type_of_test == 'MPI':
         xlabel = 'MPI processes [-]'
-        path = 'MPI'
     elif type_of_test == 'OpenMP':
         xlabel = 'OpenMP threads [-]'
-        path = 'OpenMP'
     else:
         plt.xlabel('Unknown [-]')
-        path = 'Unknown'
     if os.path.exists('./figures/' + type_scaling + '/' + type_of_test \
                       + '/details') == False:
         os.makedirs('./figures/' + type_scaling + '/' + type_of_test \
                     + '/details')
     # Plot all saved results.
-    for phase in range(NUM_OF_PHASES):
-        plt.xlabel(xlabel)
-        plt.ylabel('Runtime [s]')
-        for elem in range(0, len(list_x)):
-            plt.plot(list_x[elem], list_yy[elem][phase], linestyle='--',
-                     marker='o')
-        plt.legend(list_title)
-        plt.title('Runtime of \'' + NAMES_OF_PHASES[phase] + '\' with ' \
-                  + type_of_test + ' parallelization')
-        plt.grid()
-        plt.savefig('./figures/' + type_scaling + '/' + type_of_test \
-                    + '/details/' + path + '_' \
-                    + NAMES_OF_PHASES[phase].replace(' ', '_') + '.eps')
-        plt.close()
-    # Plot just the total runtime.
-    plt.xlabel(xlabel)
-    plt.ylabel('Runtime [s]')
-    for elem in range(0, len(list_x)):
-        plt.plot(list_x[elem], list_yy[elem][TOTAL_RUNTIME], linestyle='--',
-                 marker='o')
-    plt.legend(list_title)
-    plt.title('Total runtime with ' + type_of_test + ' parallelization')
-    plt.grid()
-    plt.savefig('./figures/' + type_scaling + '/' + type_of_test + '/' + path \
-                + '_runtime.eps')
-    plt.close()
+    savepath = './figures/' + type_scaling + '/' + type_of_test + '/details/' \
+               + type_of_test + '_'
+    plot_all_phases(list_x, list_yy, list_title , xlabel, type_of_test,
+                    savepath)
+    # Plot just total runtime.
+    savepath = './figures/' + type_scaling + '/' + type_of_test + '/' \
+               + type_of_test
+    plot_total_runtime(list_x, list_yy, list_title, xlabel, type_of_test,
+                       savepath)
     # Plot speedup results if there are any results to plot.
-    if len(list_x_speedup) > 0 and type_scaling == 'strong-scaling':
-        plt.xlabel(xlabel)
-        plt.ylabel('Speedup [-]')
-        # Plot linear speedup.
-        plt.plot(list_x_speedup[0], list_x_speedup[0], linestyle='--')
-        # Plot speedup from results.
-        for elem in range(0, len(list_x_speedup)):
-            plt.plot(list_x_speedup[elem], list_y_speedup[elem],
-                     linestyle='--', marker='o')
-        #list_title_speedup = ['linear speedup'] + list_title_speedup
-        plt.legend(['linear speedup'] + list_title_speedup)
-        plt.title('Speedup with ' + type_of_test + ' parallelization')
-        plt.grid()
-        plt.savefig('./figures/' + type_scaling + '/' + type_of_test + '/' \
-                    + path + '_speedup.eps')
-        plt.close()
+    plot_speedup(list_x_speedup, list_y_speedup, list_title_speedup, xlabel,
+                 type_of_test, type_scaling, savepath)
 
     return  list_x, list_yy, list_title, \
             list_x_speedup, list_y_speedup, list_title_speedup
@@ -329,7 +327,8 @@ def hybrid_tests(filepath, type_scaling):
             tasks_per_node = glob.glob(node + '/*')
             for task_per_node in tasks_per_node:
                 processes = sorted(glob.glob(task_per_node + '/*'),
-                                   key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
+                                   key=lambda x:
+                                    int(os.path.splitext(os.path.basename(x))[0]))
                 x = np.zeros(0)
                 yy = [np.zeros(0) for i in range(NUM_OF_PHASES)]
                 x_speedup = np.zeros(0)
@@ -379,88 +378,47 @@ def hybrid_tests(filepath, type_scaling):
                 # Save results for later.
                 list_x.append(x)
                 list_yy.append(yy)
-                list_title.append(str(os.path.basename(case) + ', ' \
-                                  + os.path.basename(node) + \
-                                  ' (' + os.path.basename(task_per_node) \
-                                  + ')'))
+                title = str(os.path.basename(case) + ', ' \
+                            + os.path.basename(node) \
+                            + ' (' + os.path.basename(task_per_node) + ')')
+                list_title.append(title)
                 list_x_runtime_all.append(x)
                 list_y_runtime_all.append(yy)
-                list_title_runtime_all.append(str(os.path.basename(case) \
-                                              + ', ' + os.path.basename(node) \
-                                              + ' (' \
-                                              + os.path.basename(task_per_node) \
-                                              + ')'))
+                list_title_runtime_all.append(title)
                 if serial_time > -0.5:
                     list_x_speedup.append(x_speedup)
                     list_y_speedup.append(y_speedup)
-                    list_title_speedup.append(str(os.path.basename(case) \
-                                              + ', ' + os.path.basename(node) \
-                                              + ' (' \
-                                              + os.path.basename(task_per_node) \
-                                              + ')'))
+                    list_title_speedup.append(title)
                     list_x_speedup_all.append(x_speedup)
                     list_y_speedup_all.append(y_speedup)
-                    list_title_speedup_all.append(str(os.path.basename(case) \
-                                                      + ', ' \
-                                                      + os.path.basename(node) \
-                                                      + ' (' \
-                                                      + os.path.basename(task_per_node) \
-                                                      + ')'))
+                    list_title_speedup_all.append(title)
+
             if os.path.exists('./figures/' + type_scaling + '/' \
                               + type_of_test + '/details') == False:
                 os.makedirs('./figures/' + type_scaling + '/' + type_of_test \
                             + '/details')
-            # Plot all results.
-            for phase in range(NUM_OF_PHASES):
-                path = 'Hybrid_' + os.path.basename(case) + '_' \
+            xlabel = 'MPI processes x OpenMP threads [-]'
+            # Plot all saved results.
+            savepath = './figures/' + type_scaling + '/' + type_of_test + \
+                       '/details/' + 'Hybrid_' + os.path.basename(case) + '_' \
                        + os.path.basename(node)
-                plt.xlabel('MPI processes x OpenMP threads [-]')
-                plt.ylabel('Runtime [s]')
-                for elem in range(0, len(list_x)):
-                    plt.plot(list_x[elem], list_yy[elem][phase],
-                             linestyle='--', marker='o')
-                plt.legend(list_title)
-                plt.title('Runtime of \'' + NAMES_OF_PHASES[phase] \
-                          + '\' with ' + type_of_test + ' parallelization')
-                plt.grid()
-                plt.savefig('./figures/' + type_scaling + '/' + type_of_test \
-                            + '/details/' + path + '_' \
-                            + NAMES_OF_PHASES[phase].replace(' ', '_') \
-                            + '.eps')
-                plt.close()
+            plot_all_phases(list_x, list_yy, list_title, xlabel, type_of_test,
+                            savepath)
             # Plot just total runtime.
-            path = 'Hybrid_' + os.path.basename(case) + '_' \
-                   + os.path.basename(node)
-            plt.xlabel('MPI processes x OpenMP threads [-]')
-            plt.ylabel('Runtime [s]')
-            for elem in range(0, len(list_x)):
-                plt.plot(list_x[elem], list_yy[elem][TOTAL_RUNTIME],
-                         linestyle='--', marker='o')
-            plt.legend(list_title)
-            plt.title('Total runtime with ' + type_of_test \
-                      + ' parallelization')
-            plt.grid()
-            plt.savefig('./figures/' + type_scaling + '/' + type_of_test \
-                        + '/' + path + '_runtime.eps')
-            plt.close()
+            savepath = './figures/' + type_scaling + '/' + type_of_test \
+                        + '/Hybrid_' + os.path.basename(case) + '_' \
+                        + os.path.basename(node)
+            plot_total_runtime(list_x, list_yy, list_title, xlabel,
+                               type_of_test, savepath)
             # Plot speedup results if there are any results to plot.
-            if len(list_x_speedup) > 0 and type_scaling == 'strong-scaling':
-                plt.xlabel('MPI processes x OpenMP threads [-]')
-                plt.ylabel('Speedup [-]')
-                # Plot linear speedup.
-                plt.plot(list_x_speedup[1], list_x_speedup[1], linestyle='--')
-                # Plot speedup from results.
-                for elem in range(0, len(list_x_speedup)):
-                    plt.plot(list_x_speedup[elem], list_y_speedup[elem],
-                             linestyle='--', marker='o')
-                #list_title_speedup = ['linear speedup'] + list_title_speedup
-                plt.legend(['linear speedup'] + list_title_speedup)
-                #plt.legend(list_title_speedup)
-                plt.title('Speedup with ' + type_of_test + ' parallelization')
-                plt.grid()
-                plt.savefig('./figures/' + type_scaling + '/' + type_of_test \
-                            + '/' + path + '_speedup.eps')
-                plt.close()
+            plot_speedup(list_x_speedup, list_y_speedup, list_title_speedup,
+                         xlabel, type_of_test, type_scaling, savepath)
+
+    # Plot just the total runtime.
+    savepath = './figures/' + type_scaling + '/' + type_of_test + '/' \
+               + type_of_test
+    plot_total_runtime(list_x_runtime_all, list_y_runtime_all,
+                       list_title_runtime_all, xlabel, type_of_test, savepath)
 
     return list_x_runtime_all, list_y_runtime_all, list_title_runtime_all, \
            list_x_speedup_all, list_y_speedup_all, list_title_speedup_all
@@ -618,15 +576,20 @@ def main():
     title_speedup = [[] for i in range(3)]
 
     # Call function for every testcase.
-    x_runtime[0], y_runtime[0], title_runtime[0], \
-    x_speedup[0], y_speedup[0], title_speedup[0] = single_tests(filepath + '/MPI',
-                                                                type_scaling)
-    x_runtime[1], y_runtime[1], title_runtime[1], \
-    x_speedup[1], y_speedup[1], title_speedup[1] = single_tests(filepath + '/OpenMP',
-                                                                type_scaling)
-    x_runtime[2], y_runtime[2], title_runtime[2], \
-    x_speedup[2], y_speedup[2], title_speedup[2] = hybrid_tests(filepath + '/Hybrid',
-                                                                type_scaling)
+    x_runtime[0], y_runtime[0],
+    title_runtime[0],
+    x_speedup[0], y_speedup[0],
+    title_speedup[0] = single_tests(filepath + '/MPI', type_scaling)
+
+    x_runtime[1], y_runtime[1],
+    title_runtime[1],
+    x_speedup[1], y_speedup[1],
+    title_speedup[1] = single_tests(filepath + '/OpenMP', type_scaling)
+
+    x_runtime[2], y_runtime[2],
+    title_runtime[2],
+    x_speedup[2], y_speedup[2],
+    title_speedup[2] = hybrid_tests(filepath + '/Hybrid', type_scaling)
 
     plot_all_runtimes(x_runtime, y_runtime, title_runtime, type_scaling)
     if type_scaling == 'strong-scaling':
