@@ -281,7 +281,12 @@ def create_init_file(params):
     SPACE_DIM = params['SPACE_DIM']
     NAME_INITFILE = params['NAME_INITFILE']
     NAME_VARIABLES = params['NAME_VARIABLES']
-    print('Creating {0}.nc.'.format(NAME_INITFILE))
+    filepath = NAME_INITFILE + '.nc'
+    print('Creating {0}.'.format(filepath))
+
+    # Delete old init file.
+    if os.path.isfile(filepath) == True:
+        os.remove(filepath)
 
     nc_file = nc.Dataset(NAME_INITFILE + '.nc', 'w', format='NETCDF3_CLASSIC')
     time = nc_file.createDimension('time')

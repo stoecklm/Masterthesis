@@ -23,13 +23,9 @@ def parse_config_file_scaling(params):
     config.read(params['NAME_CONFIGFILE'])
     # Get values from section 'Scaling'.
     params['TEST'] = config['Scaling'].get('TEST', fallback='Unknown')
-    params['THREADS_OPENMP_START'] = config['Scaling'].getint('THREADS_OPENMP_START', fallback=1)
-    params['THREADS_OPENMP'] = params['THREADS_OPENMP_START']
-    params['PROCESSES_MPI_START'] = config['Scaling'].getint('PROCESSES_MPI_START', fallback=1)
-    params['PROCESSES_MPI'] = params['PROCESSES_MPI_START']
-    params['N_TASKS_PER_NODE'] = config['Scaling'].getint('N_TASKS_PER_NODE', fallback=24)
-    SCALING = config['Scaling'].get('SCALING', fallback="1")
-    params['SCALING'] = list(map(int, SCALING.split(' ')))
+    if params['TEST'] == 'Hybrid':
+        params['THREADS_OPENMP_START'] = config['Scaling'].getint('THREADS_OPENMP_START', fallback=1)
+        params['N_TASKS_PER_NODE'] = config['Scaling'].getint('N_TASKS_PER_NODE', fallback=24)
     # Get values from section 'Geometry'.
     # Number of nodes.
     N_NODES = config['Geometry'].get('N_NODES')
@@ -37,6 +33,24 @@ def parse_config_file_scaling(params):
     params['N_NODES_ENV_START'] = N_NODES
     N_NODES = list(map(int, N_NODES.split('x')))
     params['N_NODES_START'] = N_NODES
+
+    # New ini file for scaling parameters
+    filepath = os.path.dirname(params['NAME_CONFIGFILE'])
+    if params['TEST'] == 'MPI':
+        filepath += '/MPI.ini'
+    elif params['TEST'] == 'OpenMP':
+        filepath += '/OpenMP.ini'
+    else: # Test == Hybrid
+        filepath += '/Hybrid_' + str(params['N_TASKS_PER_NODE']) + 'x' \
+                   + str(params['THREADS_OPENMP_START']) + '.ini'
+    config.read(filepath)
+    params['THREADS_OPENMP_START'] = config['Scaling'].getint('THREADS_OPENMP_START', fallback=1)
+    params['THREADS_OPENMP'] = params['THREADS_OPENMP_START']
+    params['PROCESSES_MPI_START'] = config['Scaling'].getint('PROCESSES_MPI_START', fallback=1)
+    params['PROCESSES_MPI'] = params['PROCESSES_MPI_START']
+    params['N_TASKS_PER_NODE'] = config['Scaling'].getint('N_TASKS_PER_NODE', fallback=24)
+    SCALING = config['Scaling'].get('SCALING', fallback="1")
+    params['SCALING'] = list(map(int, SCALING.split(' ')))
 
     print('Done.')
 
@@ -59,30 +73,38 @@ def calc_variables_scaling(factor, params):
     start_factor = params['SCALING'][0]
     # Calculate new number of nodes.
     N_NODES = params['N_NODES_START']
-    params['N_NODES_ENV'] = str(N_NODES[0]*factor) + 'x' + str(N_NODES[1]) + 'x' + str(N_NODES[2])
-    params['N_NODES'] = list(map(int, params['N_NODES_ENV'].split('x')))
+    if params['TEST'] == 'MPI' or params['TEST'] == 'OpenMP':
+        params['N_NODES_ENV'] = str(N_NODES[0]*factor) + 'x' + str(N_NODES[1]) + 'x' + str(N_NODES[2])
+        params['N_NODES'] = list(map(int, params['N_NODES_ENV'].split('x')))
+    else: # TEST == Hybrid
+        params['N_NODES_ENV'] = str(N_NODES[0]*factor*params['THREADS_OPENMP_START']*params['PROCESSES_MPI_START']) + 'x' + str(N_NODES[1]) + 'x' + str(N_NODES[2])
+        params['N_NODES'] = list(map(int, params['N_NODES_ENV'].split('x')))
     # Calculate new number of threads or processes.
     if params['TEST'] == 'MPI' or params['TEST'] == 'Hybrid':
         params['PROCESSES_MPI'] = factor * params['PROCESSES_MPI_START']
     else: # TEST == OpenMP
         params['THREADS_OPENMP'] = factor * params['THREADS_OPENMP_START']
     # Set result dir.
-    if params['TEST'] == 'MPI' or params['TEST'] == 'OpenMP':
+    if params['TEST'] == 'MPI':
         RESULT_DIR = './results/weak-scaling/' \
                      + params['TEST'] + '/' \
-                     + params['NAME_CONFIGFILE'].split('_')[0] + '/' \
-                     + params['N_NODES_ENV_START'] + 'x' \
-                     + str(params['N_TIMESTEPS']) + '/' \
-                     + str(factor)
+                     + os.path.basename(params['NAME_CONFIGFILE']).split('_')[0] + '/' \
+                     + params['N_NODES_ENV_START'] + '/' \
+                     + str(params['PROCESSES_MPI'])
+    elif params['TEST'] == 'OpenMP':
+        RESULT_DIR = './results/weak-scaling/' \
+                     + params['TEST'] + '/' \
+                     + os.path.basename(params['NAME_CONFIGFILE']).split('_')[0] + '/' \
+                     + params['N_NODES_ENV_START'] + '/' \
+                     + str(params['THREADS_OPENMP'])
     else: # TEST == Hybrid
         RESULT_DIR = './results/weak-scaling/' \
                      + params['TEST'] + '/' \
-                     + params['NAME_CONFIGFILE'].split('_')[0] + '/' \
-                     + params['N_NODES_ENV_START'] + 'x' \
-                     + str(params['N_TIMESTEPS'])  + '/' \
+                     + os.path.basename(params['NAME_CONFIGFILE']).split('_')[0] + '/' \
+                     + params['N_NODES_ENV_START'] + '/' \
                      + str(params['N_TASKS_PER_NODE']) + 'x' \
                      + str(params['THREADS_OPENMP_START']) + '/' \
-                     + str(factor)
+                     + str(params['PROCESSES_MPI'])
     params['RESULT_DIR'] = RESULT_DIR
 
     print('Done.')
@@ -91,7 +113,6 @@ def set_environment_variables_scaling(params):
     print('Setting environment scaling variables.')
 
     os.putenv('SCAFESRUN_RESULTS_DIR', str(params['RESULT_DIR']))
-    print(params['RESULT_DIR'])
     os.putenv('SCAFESRUN_N_THREADS_OPENMP_START', str(params['THREADS_OPENMP']))
     os.putenv('SCAFESRUN_N_PROCESSES_MPI_START', str(params['PROCESSES_MPI']))
     if params['TEST'] == 'MPI' or params['TEST'] == 'Hybrid':
