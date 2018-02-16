@@ -691,6 +691,12 @@ AC_CONFIG_FILES([examples/TumorHeatEqnFDM/RUN_SCALINGTEST_OPENMP.sh],
        [chmod +x examples/TumorHeatEqnFDM/RUN_SCALINGTEST_OPENMP.sh])
 AC_CONFIG_FILES([examples/TumorHeatEqnFDM/RUN_WEAK_SCALINGTEST_HELPER.sh],
        [chmod +x examples/TumorHeatEqnFDM/RUN_WEAK_SCALINGTEST_HELPER.sh])
+AC_CONFIG_FILES([examples/TumorHeatEqnFDM/RUN_WEAK_SCALINGTEST_HYBRID.sh],
+       [chmod +x examples/TumorHeatEqnFDM/RUN_WEAK_SCALINGTEST_HYBRID.sh])
+AC_CONFIG_FILES([examples/TumorHeatEqnFDM/RUN_WEAK_SCALINGTEST_MPI.sh],
+       [chmod +x examples/TumorHeatEqnFDM/RUN_WEAK_SCALINGTEST_MPI.sh])
+AC_CONFIG_FILES([examples/TumorHeatEqnFDM/RUN_WEAK_SCALINGTEST_OPENMP.sh],
+       [chmod +x examples/TumorHeatEqnFDM/RUN_WEAK_SCALINGTEST_OPENMP.sh])
 AC_CONFIG_FILES([examples/TumorHeatEqnFDM/plotSurface.sh],
        [chmod +x examples/TumorHeatEqnFDM/plotSurface.sh])
 AC_CONFIG_FILES(examples/TumorHeatEqnFDM/plotSurface.plt)
