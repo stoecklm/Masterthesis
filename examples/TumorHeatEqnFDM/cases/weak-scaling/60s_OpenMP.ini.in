@@ -1,0 +1,63 @@
+[Scaling]
+# Type of Test: <MPI/OpenMP/Hybrid>
+TEST = OpenMP
+
+[Dimension]
+SPACE_DIM = 3
+
+[Parameters]
+# Values from Bousselham et al. (2017).
+RHO = 1040.0
+C = 3650.0
+K = 0.6
+RHO_B = 1052.0
+C_PB = 3800.0
+H = 10.0
+T_INF = 22.4
+Q_BC = 0.0
+DIAMETER = 0.01
+DEPTH = 0.008
+T_A = 37.0
+T_I = 37.0
+T_TUMOR = 37.0
+OMEGA_B_BRAIN = 0.004
+OMEGA_B_TUMOR = 0.0007
+Q_BRAIN = 25000.0
+Q_TUMOR = 25000.0
+
+[Geometry]
+# [m].
+COORD_NODE_FIRST = 0x0x0
+COORD_NODE_LAST = 1x1x1
+# [-].
+N_NODES = 60x60x30
+
+[Time]
+# [s].
+START_TIME = 0
+END_TIME = 1
+# [-].
+# Comment or write = 0 if N_TIMESTEP shall be calculated
+# from stability criterion.
+N_TIMESTEPS = 3000
+
+[Input]
+# Name of file without file exentsion.
+NAME_INITFILE = init
+# Set USE_INITFILE to True even if CREATE_INITFILE is True,
+# if you want to use a init file.
+USE_INITFILE = True
+CREATE_INITFILE = True
+# Name of variables in init file.
+# Must be the name specified in main.cpp.
+NAME_VARIABLES = T
+# Threshold for check of convergence.
+THRESHOLD = 1.0e-14
+# Parameters to reduce number of convergence checks.
+# If value is >= 1, then it is assumed to be an absolute value.
+# If 0 < value < 1, then it is assumend to be an ratio.
+CHECK_CONV_FIRST_AT_ITER = 0.5
+CHECK_CONV_AT_EVERY_N_ITER = 0.05
+
+[Output]
+N_SNAPSHOTS = 1

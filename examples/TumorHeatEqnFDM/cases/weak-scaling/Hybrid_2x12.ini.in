@@ -1,0 +1,7 @@
+[Scaling]
+# Type of Test: <MPI/OpenMP/Hybrid>
+TEST = Hybrid
+THREADS_OPENMP_START = 12
+PROCESSES_MPI_START = 2
+N_TASKS_PER_NODE = 2
+SCALING = 1 2 3 4 5

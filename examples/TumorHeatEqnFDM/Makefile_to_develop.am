@@ -85,6 +85,18 @@ example_SCRIPTS += cases/scalingtest/7C_240x240x50.ini
 example_SCRIPTS += cases/scalingtest/7C_240x240x100.ini
 example_SCRIPTS += cases/scalingtest/7C_240x240x192.ini
 example_SCRIPTS += cases/scalingtest/7C_480x480x192.ini
+example_SCRIPTS += cases/weak-scaling/2s_Hybrid_2x12.ini
+example_SCRIPTS += cases/weak-scaling/2s_MPI.ini
+example_SCRIPTS += cases/weak-scaling/2s_OpenMP.ini
+example_SCRIPTS += cases/weak-scaling/10s_Hybrid_2x12.ini
+example_SCRIPTS += cases/weak-scaling/10s_MPI.ini
+example_SCRIPTS += cases/weak-scaling/10s_OpenMP.ini
+example_SCRIPTS += cases/weak-scaling/60s_Hybrid_2x12.ini
+example_SCRIPTS += cases/weak-scaling/60s_MPI.ini
+example_SCRIPTS += cases/weak-scaling/60s_OpenMP.ini
+example_SCRIPTS += cases/weak-scaling/Hybrid_2x12.ini
+example_SCRIPTS += cases/weak-scaling/MPI.ini
+example_SCRIPTS += cases/weak-scaling/OpenMP.ini
 bin_PROGRAMS =
 include_HEADERS =
 noinst_PROGRAMS =
@@ -156,6 +168,18 @@ EXTRA_DIST += cases/scalingtest/7C_240x240x50.ini
 EXTRA_DIST += cases/scalingtest/7C_240x240x100.ini
 EXTRA_DIST += cases/scalingtest/7C_240x240x192.ini
 EXTRA_DIST += cases/scalingtest/7C_480x480x192.ini
+EXTRA_DIST += cases/weak-scaling/2s_Hybrid_2x12.ini
+EXTRA_DIST += cases/weak-scaling/2s_MPI.ini
+EXTRA_DIST += cases/weak-scaling/2s_OpenMP.ini
+EXTRA_DIST += cases/weak-scaling/10s_Hybrid_2x12.ini
+EXTRA_DIST += cases/weak-scaling/10s_MPI.ini
+EXTRA_DIST += cases/weak-scaling/10s_OpenMP.ini
+EXTRA_DIST += cases/weak-scaling/60s_Hybrid_2x12.ini
+EXTRA_DIST += cases/weak-scaling/60s_MPI.ini
+EXTRA_DIST += cases/weak-scaling/60s_OpenMP.ini
+EXTRA_DIST += cases/weak-scaling/Hybrid_2x12.ini
+EXTRA_DIST += cases/weak-scaling/MPI.ini
+EXTRA_DIST += cases/weak-scaling/OpenMP.ini
 
 
 #------------------------------------------------------------------------------#
