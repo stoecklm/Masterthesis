@@ -6,8 +6,24 @@
 # For details, see the files COPYING and LICENSE in the base directory
 # of the package.
 
-# Command for allocation of interactive shell with needed resources for approx. one run.
+# Submit this script with: sbatch RUN_SCALINGTEST_OPENMP.sh
+# or use:
 # srun -n 1 -N 1 -c 24 --ntasks-per-node=1 --mem-per-cpu=2583 -p haswell64 --exclusive --time=1:10:00 --pty bash -l -i
+# ./RUN_SCALINGTEST_OPENMP.sh
+
+#SBATCH --time=01:10:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=24
+#SBATCH --partition=haswell64
+#SBATCH --mem-per-cpu=2583M
+#SBATCH --exclusive
+#SBATCH --mail-user=martin.stoeckl@mailbox.tu-dresden.de
+#SBATCH --mail-type=END,FAIL
+#SBATCH -A p_optim
+
+source ./@top_srcdir@/scripts/load-modules.sh
 
 THREADS="1
 2
