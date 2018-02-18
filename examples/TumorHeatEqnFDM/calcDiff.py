@@ -17,7 +17,8 @@ def two_netcdf_files_surface(filepath, a_1, a_2):
     elif a_1.shape[2] != a_2.shape[2] and \
          a_1.shape[1] != a_2.shape[1]:
         print('* WARNING: Shape in x dim and y dim is not equal.')
-        print('  Using downsampling and cubic interpolation to calc diff between results.')
+        print('  Using downsampling and cubic interpolation to calc diff',
+              'between results.')
         if a_1.shape[1] < a_2.shape[1]:
             # a_1 = sparse
             # a_2 = dense
@@ -33,22 +34,27 @@ def two_netcdf_files_surface(filepath, a_1, a_2):
             dim0_dense = a_1.shape[2]
             dim1_dense = a_1.shape[1]
 
-        x_sparse, y_sparse = np.meshgrid(np.linspace(0, dim0_sparse-1, dim0_sparse), \
-                                         np.linspace(0, dim1_sparse-1, dim1_sparse))
-        x_dense, y_dense = np.meshgrid(np.linspace(0, dim0_sparse-1, dim0_dense), \
-                                       np.linspace(0, dim1_sparse-1, dim1_dense))
+        x_sparse, y_sparse = np.meshgrid(np.linspace(0, dim0_sparse-1,
+                                                     dim0_sparse),
+                                         np.linspace(0, dim1_sparse-1,
+                                                     dim1_sparse))
+        x_dense, y_dense = np.meshgrid(np.linspace(0, dim0_sparse-1,
+                                                   dim0_dense),
+                                       np.linspace(0, dim1_sparse-1,
+                                                   dim1_dense))
         if a_1.shape[1] < a_2.shape[1]:
             # a_1 = sparse
             # a_2 = dense
-            a_sparse = griddata(np.array([x_dense.ravel(), y_dense.ravel()]).T, \
-                                a_2[a_2.shape[0]-1,:,:].ravel(), \
+            a_sparse = griddata(np.array([x_dense.ravel(),
+                                          y_dense.ravel()]).T,
+                                a_2[a_2.shape[0]-1,:,:].ravel(),
                                 (x_sparse, y_sparse), method='cubic')
             a_3 = np.subtract(a_1[a_1.shape[0]-1,:,:], a_sparse[:,:])
         else:
             # a_1 = dense
             # a_2 = sparse
-            a_sparse = griddata(np.array([x_dense.ravel(), y_dense.ravel()]).T, \
-                                a_1[a_1.shape[0]-1,:,:].ravel(), \
+            a_sparse = griddata(np.array([x_dense.ravel(), y_dense.ravel()]).T,
+                                a_1[a_1.shape[0]-1,:,:].ravel(),
                                 (x_sparse, y_sparse), method='cubic')
             a_3 = np.subtract(a_sparse[:,:], a_2[a_2.shape[0]-1,:,:])
 
@@ -56,7 +62,8 @@ def two_netcdf_files_surface(filepath, a_1, a_2):
     nNodes = nc_file.createDimension('nNodes_0', dim0_sparse)
     nNodes = nc_file.createDimension('nNodes_1', dim1_sparse)
     time = nc_file.createDimension('time')
-    diff = nc_file.createVariable('TDiff', 'f8', ('time', 'nNodes_1', 'nNodes_0'))
+    diff = nc_file.createVariable('TDiff', 'f8', ('time', 'nNodes_1',
+                                                  'nNodes_0'))
 
     diff[0,] = a_3
 
@@ -75,7 +82,8 @@ def two_netcdf_files_surface(filepath, a_1, a_2):
 
     for elem_y in range(0, a_3.shape[0]):
         for elem_x in range(0, a_3.shape[1]):
-            text_file.write('{0} {1} {2}\n'.format(str(elem_x), str(elem_y), str(a_3[elem_y, elem_x])))
+            text_file.write('{0} {1} {2}\n'.format(str(elem_x), str(elem_y),
+                                                   str(a_3[elem_y, elem_x])))
         text_file.write('\n')
 
     text_file.close()
@@ -92,7 +100,8 @@ def two_netcdf_files_volume(filepath, a_1, a_2, dim0, dim1, dim2):
     nNodes = nc_file.createDimension('nNodes_1', dim1)
     nNodes = nc_file.createDimension('nNodes_2', dim2)
     time = nc_file.createDimension('time')
-    diff = nc_file.createVariable('TDiff', 'f8', ('time', 'nNodes_2', 'nNodes_1', 'nNodes_0'))
+    diff = nc_file.createVariable('TDiff', 'f8', ('time', 'nNodes_2',
+                                                  'nNodes_1', 'nNodes_0'))
     a_3 = np.subtract(a_1, a_2)
     diff[0,] = a_3
 
@@ -118,7 +127,8 @@ def two_netcdf_files_volume(filepath, a_1, a_2, dim0, dim1, dim2):
 
     for elem_y in range(0, a.shape[0]):
         for elem_x in range(0, a.shape[1]):
-            text_file.write('{0} {1} {2}\n'.format(str(elem_x), str(elem_y), str(a[elem_y, elem_x])))
+            text_file.write('{0} {1} {2}\n'.format(str(elem_x), str(elem_y),
+                                                   str(a[elem_y, elem_x])))
         text_file.write('\n')
 
     text_file.close()
@@ -170,8 +180,10 @@ def two_netcdf_files(filepath):
         print('Calc diff only of surface.')
         two_netcdf_files_surface(filepath, a_1, a_2)
     else:
-        print('One dim of surface of file 1 is bigger than same dim of surface of file 2.')
-        print('The other dim of surface of file 1 is smaller than same dim of surface of file 2.')
+        print('One dim of surface of file 1 is bigger than same dim of',
+              'surface of file 2.')
+        print('The other dim of surface of file 1 is smaller than same dim of',
+              'surface of file 2.')
         print('Cannot work with shape of files.')
         print('Aborting.')
         exit()
@@ -200,11 +212,13 @@ def two_dat_files(filepath):
         exit()
     for num in range(0, a_1.shape[0]):
         if a_1.shape[1] != 3:
-            print('Not three values in file {0} in line {1}.'.format(filepath_1, num))
+            print('Not three values in file {0} in line {1}.'.format(filepath_1,
+                                                                     num))
             print('Aborting.')
             exit()
         if a_2.shape[1] != 3:
-            print('Not three values in file {0} in line {1}.'.format(filepath_2, num))
+            print('Not three values in file {0} in line {1}.'.format(filepath_2,
+                                                                     num))
             print('Aborting.')
             exit()
         if int(a_1[num,0]) != int(a_2[num,0]):
@@ -263,7 +277,8 @@ def netcdf_and_dat_file(filepath):
 
     for elem_y in range(0, a.shape[0]):
         for elem_x in range(0, a.shape[1]):
-            text_file.write('{0} {1} {2}\n'.format(str(elem_x), str(elem_y), str(a[elem_y, elem_x])))
+            text_file.write('{0} {1} {2}\n'.format(str(elem_x), str(elem_y),
+                                                   str(a[elem_y, elem_x])))
         text_file.write('\n')
 
     text_file.close()
@@ -281,14 +296,17 @@ def main():
                    os.path.splitext(sys.argv[elem])[1] == '.dat':
                     filepath.append(sys.argv[elem])
                 else:
-                    print(sys.argv[elem], 'does not have .nc or .dat extension.')
+                    print(sys.argv[elem],
+                          'does not have .nc or .dat extension.')
             else:
                 print(sys.argv[elem], 'does not exist.')
     else:
-        print('Not enough command line arguments for netCDF files or .dat files provided.')
+        print('Not enough command line arguments for netCDF files or .dat',
+              'files provided.')
 
     if len(filepath) < 2:
-        print('Usage: python3', sys.argv[0], '<PATH/TO/FILE_1> <PATH/TO/FILE_2>')
+        print('Usage: python3', sys.argv[0],
+              '<PATH/TO/FILE_1> <PATH/TO/FILE_2>')
         print('Aborting.')
         exit()
 

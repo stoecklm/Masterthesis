@@ -38,15 +38,21 @@ def parse_config_file(params):
     # Get values from section 'Output'.
     params['N_SNAPSHOTS'] = config['Output'].getint('N_SNAPSHOTS')
     # Get values from section 'Input'.
-    params['NAME_INITFILE'] = config['Input'].get('NAME_INITFILE', fallback='init')
-    params['USE_INITFILE'] = config['Input'].getboolean('USE_INITFILE', fallback=False)
-    params['CREATE_INITFILE'] = config['Input'].getboolean('CREATE_INITFILE', fallback=False)
+    params['NAME_INITFILE'] = config['Input'].get('NAME_INITFILE',
+                                                  fallback='init')
+    params['USE_INITFILE'] = config['Input'].getboolean('USE_INITFILE',
+                                                        fallback=False)
+    params['CREATE_INITFILE'] = config['Input'].getboolean('CREATE_INITFILE',
+                                                           fallback=False)
     NAME_VARIABLES = config['Input'].get('NAME_VARIABLES', fallback='U')
     NAME_VARIABLES = list(NAME_VARIABLES.split())
     params['NAME_VARIABLES'] = NAME_VARIABLES
-    params['THRESHOLD'] = config['Input'].getfloat('THRESHOLD', fallback=0.00001)
-    params['CHECK_CONV_FIRST_AT_ITER'] = config['Input'].getfloat('CHECK_CONV_FIRST_AT_ITER', fallback=1)
-    params['CHECK_CONV_AT_EVERY_N_ITER'] = config['Input'].getfloat('CHECK_CONV_AT_EVERY_N_ITER', fallback=1)
+    params['THRESHOLD'] = config['Input'].getfloat('THRESHOLD',
+                                                   fallback=0.00001)
+    params['CHECK_CONV_FIRST_AT_ITER'] = config['Input'].getfloat('CHECK_CONV_FIRST_AT_ITER',
+                                                                  fallback=1)
+    params['CHECK_CONV_AT_EVERY_N_ITER'] = config['Input'].getfloat('CHECK_CONV_AT_EVERY_N_ITER',
+                                                                    fallback=1)
     # Get values from section 'Parameters'.
     params['T_INIT'] = config['Parameters'].getfloat('T_I')
     params['T_TUMOR'] = config['Parameters'].getfloat('T_TUMOR')
@@ -111,7 +117,8 @@ def check_variables(params):
     # Check if combinations of USE_INITFILE and CREATE_INITFILE makes sense.
     if params['USE_INITFILE'] == True and params['CREATE_INITFILE'] == False:
         if os.path.isfile(params['NAME_INITFILE'] + '.nc') == False:
-            print('* ERROR: USE_INITFILE = True and CREATE_INITFILE = False, but', params['NAME_INITFILE'] + '.nc', 'does not exist.')
+            print('* ERROR: USE_INITFILE = True and CREATE_INITFILE = False,',
+                  'but', params['NAME_INITFILE'] + '.nc', 'does not exist.')
             print('Aborting.')
             exit()
     if params['USE_INITFILE'] == False and params['CREATE_INITFILE'] == True:
@@ -122,11 +129,13 @@ def check_variables(params):
     if params['CHECK_CONV_FIRST_AT_ITER'] < 0:
         print('* WARNING: CHECK_CONV_FIRST_AT_ITER < 0.')
         params['CHECK_CONV_FIRST_AT_ITER'] = abs(params['CHECK_CONV_FIRST_AT_ITER'])
-        print('  CHECK_CONV_FIRST_AT_ITER set to abs(CHECK_CONV_FIRST_AT_ITER).')
+        print('  CHECK_CONV_FIRST_AT_ITER set to',
+              'abs(CHECK_CONV_FIRST_AT_ITER).')
     if params['CHECK_CONV_AT_EVERY_N_ITER'] < 0:
         print('* WARNING: CHECK_CONV_AT_EVERY_N_ITER < 0.')
         params['CHECK_CONV_AT_EVERY_N_ITER'] = abs(params['CHECK_CONV_AT_EVERY_N_ITER'])
-        print('  CHECK_CONV_AT_EVERY_N_ITER set to abs(CHECK_CONV_AT_EVERY_N_ITER).')
+        print('  CHECK_CONV_AT_EVERY_N_ITER set to',
+              'abs(CHECK_CONV_AT_EVERY_N_ITER).')
     if params['CHECK_CONV_FIRST_AT_ITER'] < 1:
         print('* WARNING: CHECK_CONV_FIRST_AT_ITER < 1.')
         print('  CHECK_CONV_FIRST_AT_ITER is assumend to be a ratio.')
@@ -134,7 +143,8 @@ def check_variables(params):
         print('* WARNING: CHECK_CONV_AT_EVERY_N_ITER < 1.')
         print('  CHECK_CONV_AT_EVERY_N_ITER is assumend to be a ratio.')
     # Check if executable exists.
-    NAME_EXECUTABLE = os.path.basename(os.getcwd()) + str(params['SPACE_DIM']) + 'D'
+    NAME_EXECUTABLE = os.path.basename(os.getcwd()) \
+                      + str(params['SPACE_DIM']) + 'D'
     if os.path.isfile(NAME_EXECUTABLE) == False:
         print(NAME_EXECUTABLE, 'does not exist.')
         print('Aborting.')
@@ -149,7 +159,9 @@ def calc_variables(params):
     # Calculate gridsize in each dimension.
     GRIDSIZE = []
     for dim in range(0, params['SPACE_DIM']):
-        GRIDSIZE.append((params['COORD_NODE_LAST'][dim] - params['COORD_NODE_FIRST'][dim])/(params['N_NODES'][dim]-1))
+        GRIDSIZE.append((params['COORD_NODE_LAST'][dim] \
+                         - params['COORD_NODE_FIRST'][dim])
+                        / (params['N_NODES'][dim]-1))
     params['GRIDSIZE'] = GRIDSIZE
     # Calculate delta time.
     if params['N_TIMESTEPS'] < 1:
@@ -180,32 +192,39 @@ def calc_variables(params):
         if DELTA_TIME_TUMOR < DELTA_TIME_MIN:
             DELTA_TIME_MIN = DELTA_TIME_TUMOR
         # Healthy brain region at border with convection.
-        DELTA_TIME_BRAIN_CONV = tmp + 2.0*(1.0/GRIDSIZE[SPACE_DIM-1])*(H/(RHO*C))
+        DELTA_TIME_BRAIN_CONV = tmp + 2.0*(1.0/GRIDSIZE[SPACE_DIM-1]) \
+                                      * (H/(RHO*C))
         DELTA_TIME_BRAIN_CONV += ((RHO_B*C_PB)/(RHO*C)) * OMEGA_B_BRAIN
         DELTA_TIME_BRAIN_CONV = 1.0/DELTA_TIME_BRAIN_CONV
         if DELTA_TIME_BRAIN_CONV < DELTA_TIME_MIN:
             DELTA_TIME_MIN = DELTA_TIME_BRAIN_CONV
         # Tumor brain region at border with convection.
         # Will probably not be the case, but test it anyway.
-        DELTA_TIME_TUMOR_CONV = tmp + 2.0*(1.0/GRIDSIZE[SPACE_DIM-1])*(H/(RHO*C))
+        DELTA_TIME_TUMOR_CONV = tmp + 2.0*(1.0/GRIDSIZE[SPACE_DIM-1]) \
+                                      * (H/(RHO*C))
         DELTA_TIME_TUMOR_CONV += ((RHO_B*C_PB)/(RHO*C)) * OMEGA_B_TUMOR
         DELTA_TIME_TUMOR_CONV = 1.0/DELTA_TIME_TUMOR_CONV
         if DELTA_TIME_TUMOR_CONV < DELTA_TIME_MIN:
             DELTA_TIME_MIN = DELTA_TIME_TUMOR_CONV
         # Calculate timesteps from minimum if delta time.
         # Add five percent for safety reasons.
-        params['N_TIMESTEPS'] = int(((params['END_TIME'] - params['START_TIME'])/DELTA_TIME_MIN)*1.05) + 1
+        params['N_TIMESTEPS'] = int(((params['END_TIME'] \
+                                      - params['START_TIME']) \
+                                     / DELTA_TIME_MIN) * 1.05) + 1
         DELTA_TIME = DELTA_TIME_MIN
 
     # Final calculation for delta time.
-    params['DELTA_TIME'] = (params['END_TIME'] - params['START_TIME'])/params['N_TIMESTEPS']
+    params['DELTA_TIME'] = (params['END_TIME'] - params['START_TIME']) \
+                           / params['N_TIMESTEPS']
 
     # Calc CHECK_CONV parameters if they are a ratio.
     if params['CHECK_CONV_FIRST_AT_ITER'] < 1:
-        params['CHECK_CONV_FIRST_AT_ITER'] = params['CHECK_CONV_FIRST_AT_ITER'] * params['N_TIMESTEPS']
+        params['CHECK_CONV_FIRST_AT_ITER'] = params['CHECK_CONV_FIRST_AT_ITER'] \
+                                             * params['N_TIMESTEPS']
     params['CHECK_CONV_FIRST_AT_ITER'] = int(params['CHECK_CONV_FIRST_AT_ITER'])
     if params['CHECK_CONV_AT_EVERY_N_ITER'] < 1:
-        params['CHECK_CONV_AT_EVERY_N_ITER'] = params['CHECK_CONV_AT_EVERY_N_ITER'] * params['N_TIMESTEPS']
+        params['CHECK_CONV_AT_EVERY_N_ITER'] = params['CHECK_CONV_AT_EVERY_N_ITER'] \
+                                               * params['N_TIMESTEPS']
     params['CHECK_CONV_AT_EVERY_N_ITER'] = int(params['CHECK_CONV_AT_EVERY_N_ITER'])
 
     # Check if number of snapshots is possible.
@@ -252,25 +271,31 @@ def check_stability(params):
     # Abort simulation if stability is not fulfilled.
     if DELTA_TIME > DELTA_TIME_BRAIN:
         print('* ERROR: Stability not fulfilled in healthy brain region.')
-        print('  DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME, DELTA_TIME_BRAIN))
+        print('  DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME,
+                                                                           DELTA_TIME_BRAIN))
         print('Aborting.')
         exit()
     # Abort simulation if stability is not fulfilled.
     if DELTA_TIME > DELTA_TIME_TUMOR:
         print('* ERROR: Stability not fulfilled in tumor region.')
-        print('  DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME, DELTA_TIME_TUMOR))
+        print('  DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME,
+                                                                           DELTA_TIME_TUMOR))
         print('Aborting.')
         exit()
     # Abort simulation if stability is not fulfilled.
     if DELTA_TIME > DELTA_TIME_BRAIN_CONV:
-        print('* ERROR: Stability not fulfilled in healty brain region at border with convection.')
-        print('  DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME, DELTA_TIME_BRAIN_CONV))
+        print('* ERROR: Stability not fulfilled in healty brain region at \
+              border with convection.')
+        print('  DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME,
+                                                                           DELTA_TIME_BRAIN_CONV))
         print('Aborting.')
         exit()
     # Abort simulation if stability is not fulfilled.
     if DELTA_TIME > DELTA_TIME_TUMOR_CONV:
-        print('* ERROR: Stability not fulfilled in tumor region at border with convection.')
-        print('  DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME, DELTA_TIME_TUMOR_CONV))
+        print('* ERROR: Stability not fulfilled in tumor region at border \
+              with convection.')
+        print('  DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME,
+                                                                           DELTA_TIME_TUMOR_CONV))
         print('Aborting.')
         exit()
 
@@ -291,25 +316,30 @@ def create_init_file(params):
     nc_file = nc.Dataset(NAME_INITFILE + '.nc', 'w', format='NETCDF3_CLASSIC')
     time = nc_file.createDimension('time')
     for dim in range(0, SPACE_DIM):
-        nNodes = nc_file.createDimension('nNodes_' + str(dim), params['N_NODES'][dim])
+        nNodes = nc_file.createDimension('nNodes_' + str(dim),
+                                         params['N_NODES'][dim])
 
     if SPACE_DIM == 1:
-        create_value_array_1D(params, nc_file, params['T_INIT'], params['T_TUMOR'], NAME_VARIABLES[0])
+        create_value_array_1D(params, nc_file, params['T_INIT'],
+                              params['T_TUMOR'], NAME_VARIABLES[0])
         if len(NAME_VARIABLES) > 1:
             create_value_array_1D(params, nc_file, 1.0, -1.0, NAME_VARIABLES[1])
     elif SPACE_DIM == 2:
-        create_value_array_2D(params, nc_file, params['T_INIT'], params['T_TUMOR'], NAME_VARIABLES[0])
+        create_value_array_2D(params, nc_file, params['T_INIT'],
+                              params['T_TUMOR'], NAME_VARIABLES[0])
         if len(NAME_VARIABLES) > 1:
             create_value_array_2D(params, nc_file, 1.0, -1.0, NAME_VARIABLES[1])
     else:
-        create_value_array_3D(params, nc_file, params['T_INIT'], params['T_TUMOR'], NAME_VARIABLES[0])
+        create_value_array_3D(params, nc_file, params['T_INIT'],
+                              params['T_TUMOR'], NAME_VARIABLES[0])
         if len(NAME_VARIABLES) > 1:
             create_value_array_3D(params, nc_file, 1.0, -1.0, NAME_VARIABLES[1])
     nc_file.close()
 
     print('Done.')
 
-def create_value_array_1D(params, nc_file, BRAIN_VALUE, TUMOR_VALUE, NAME_VARIABLE):
+def create_value_array_1D(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
+                          NAME_VARIABLE):
     RADIUS = params['DIAMETER']/2
     TUMOR_CENTER = []
     # Get file/grid dimensions.
@@ -332,7 +362,8 @@ def create_value_array_1D(params, nc_file, BRAIN_VALUE, TUMOR_VALUE, NAME_VARIAB
     # Write NumPy array to netCDF file.
     write_values_to_file(nc_file, values_array, NAME_VARIABLE)
 
-def create_value_array_2D(params, nc_file, BRAIN_VALUE, TUMOR_VALUE, NAME_VARIABLE):
+def create_value_array_2D(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
+                          NAME_VARIABLE):
     RADIUS = params['DIAMETER']/2
     TUMOR_CENTER = []
     # Get file/grid dimensions.
@@ -360,7 +391,8 @@ def create_value_array_2D(params, nc_file, BRAIN_VALUE, TUMOR_VALUE, NAME_VARIAB
     # Write NumPy array to netCDF file.
     write_values_to_file(nc_file, values_array, NAME_VARIABLE)
 
-def create_value_array_3D(params, nc_file, BRAIN_VALUE, TUMOR_VALUE, NAME_VARIABLE):
+def create_value_array_3D(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
+                          NAME_VARIABLE):
     RADIUS = params['DIAMETER']/2
     TUMOR_CENTER = []
     # Get file/grid dimensions.
@@ -418,14 +450,17 @@ def set_environment_variables(params):
     os.putenv('SCAFESRUN_N_NODES', str(params['N_NODES_ENV']))
     os.putenv('SCAFESRUN_NAME_EXECUTABLE', str(params['NAME_EXECUTABLE']))
     os.putenv('SCAFESRUN_THRESHOLD', str(params['THRESHOLD']))
-    os.putenv('SCAFESRUN_CHECK_CONV_FIRST_AT_ITER', str(params['CHECK_CONV_FIRST_AT_ITER']))
-    os.putenv('SCAFESRUN_CHECK_CONV_AT_EVERY_N_ITER', str(params['CHECK_CONV_AT_EVERY_N_ITER']))
+    os.putenv('SCAFESRUN_CHECK_CONV_FIRST_AT_ITER',
+              str(params['CHECK_CONV_FIRST_AT_ITER']))
+    os.putenv('SCAFESRUN_CHECK_CONV_AT_EVERY_N_ITER',
+              str(params['CHECK_CONV_AT_EVERY_N_ITER']))
     # Check if init file should be used and if it exists.
     if params['USE_INITFILE'] == True:
         if os.path.isfile(params['NAME_INITFILE'] + '.nc') == True:
             os.putenv('SCAFESRUN_NAME_INITFILE', params['NAME_INITFILE'])
         else:
-            print('* ERROR: USE_INITFILE = True, but', params['NAME_INITFILE'] + '.nc', 'does not exist.')
+            print('* ERROR: USE_INITFILE = True, but',
+                  params['NAME_INITFILE'] + '.nc', 'does not exist.')
             print('Aborting.')
             exit()
 
@@ -489,14 +524,16 @@ def main():
             if os.path.isfile(sys.argv[2]) == True:
                 run_script = sys.argv[2]
             else:
-                print('* ERROR: Optional run script', sys.argv[2], 'does not exist.')
+                print('* ERROR: Optional run script', sys.argv[2],
+                      'does not exist.')
                 print('Aborting.')
                 exit()
     else:
         print('* ERROR: No command line argument for configfile provided.')
 
     if params['NAME_CONFIGFILE'] == '':
-        print('Usage: python3', sys.argv[0], '<PATH/TO/CONFIGFILE> [<PATH/TO/RUN/SCRIPT]')
+        print('Usage: python3', sys.argv[0],
+              '<PATH/TO/CONFIGFILE> [<PATH/TO/RUN/SCRIPT]')
         print('Aborting.')
         exit()
 

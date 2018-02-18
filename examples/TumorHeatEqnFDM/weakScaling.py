@@ -24,8 +24,10 @@ def parse_config_file_scaling(params):
     # Get values from section 'Scaling'.
     params['TEST'] = config['Scaling'].get('TEST', fallback='Unknown')
     if params['TEST'] == 'Hybrid':
-        params['THREADS_OPENMP_START'] = config['Scaling'].getint('THREADS_OPENMP_START', fallback=1)
-        params['N_TASKS_PER_NODE'] = config['Scaling'].getint('N_TASKS_PER_NODE', fallback=24)
+        params['THREADS_OPENMP_START'] = config['Scaling'].getint('THREADS_OPENMP_START',
+                                                                  fallback=1)
+        params['N_TASKS_PER_NODE'] = config['Scaling'].getint('N_TASKS_PER_NODE',
+                                                              fallback=24)
     # Get values from section 'Geometry'.
     # Number of nodes.
     N_NODES = config['Geometry'].get('N_NODES')
@@ -44,11 +46,14 @@ def parse_config_file_scaling(params):
         filepath += '/Hybrid_' + str(params['N_TASKS_PER_NODE']) + 'x' \
                    + str(params['THREADS_OPENMP_START']) + '.ini'
     config.read(filepath)
-    params['THREADS_OPENMP_START'] = config['Scaling'].getint('THREADS_OPENMP_START', fallback=1)
+    params['THREADS_OPENMP_START'] = config['Scaling'].getint('THREADS_OPENMP_START',
+                                                              fallback=1)
     params['THREADS_OPENMP'] = params['THREADS_OPENMP_START']
-    params['PROCESSES_MPI_START'] = config['Scaling'].getint('PROCESSES_MPI_START', fallback=1)
+    params['PROCESSES_MPI_START'] = config['Scaling'].getint('PROCESSES_MPI_START',
+                                                             fallback=1)
     params['PROCESSES_MPI'] = params['PROCESSES_MPI_START']
-    params['N_TASKS_PER_NODE'] = config['Scaling'].getint('N_TASKS_PER_NODE', fallback=24)
+    params['N_TASKS_PER_NODE'] = config['Scaling'].getint('N_TASKS_PER_NODE',
+                                                          fallback=24)
     SCALING = config['Scaling'].get('SCALING', fallback="1")
     params['SCALING'] = list(map(int, SCALING.split(' ')))
 
@@ -74,10 +79,14 @@ def calc_variables_scaling(factor, params):
     # Calculate new number of nodes.
     N_NODES = params['N_NODES_START']
     if params['TEST'] == 'MPI' or params['TEST'] == 'OpenMP':
-        params['N_NODES_ENV'] = str(N_NODES[0]*factor) + 'x' + str(N_NODES[1]) + 'x' + str(N_NODES[2])
+        params['N_NODES_ENV'] = str(N_NODES[0]*factor) + 'x' \
+                                + str(N_NODES[1]) + 'x' + str(N_NODES[2])
         params['N_NODES'] = list(map(int, params['N_NODES_ENV'].split('x')))
     else: # TEST == Hybrid
-        params['N_NODES_ENV'] = str(N_NODES[0]*factor*params['THREADS_OPENMP_START']*params['PROCESSES_MPI_START']) + 'x' + str(N_NODES[1]) + 'x' + str(N_NODES[2])
+        params['N_NODES_ENV'] = str(N_NODES[0] * factor \
+                                    * params['THREADS_OPENMP_START'] \
+                                    * params['PROCESSES_MPI_START']) + 'x' \
+                                + str(N_NODES[1]) + 'x' + str(N_NODES[2])
         params['N_NODES'] = list(map(int, params['N_NODES_ENV'].split('x')))
     # Calculate new number of threads or processes.
     if params['TEST'] == 'MPI' or params['TEST'] == 'Hybrid':
@@ -113,10 +122,12 @@ def set_environment_variables_scaling(params):
     print('Setting environment scaling variables.')
 
     os.putenv('SCAFESRUN_RESULTS_DIR', str(params['RESULT_DIR']))
-    os.putenv('SCAFESRUN_N_THREADS_OPENMP_START', str(params['THREADS_OPENMP']))
+    os.putenv('SCAFESRUN_N_THREADS_OPENMP_START',
+              str(params['THREADS_OPENMP']))
     os.putenv('SCAFESRUN_N_PROCESSES_MPI_START', str(params['PROCESSES_MPI']))
     if params['TEST'] == 'MPI' or params['TEST'] == 'Hybrid':
-        os.putenv('SCAFESRUN_MACHINE_N_TASKS_PER_NODE', str(params['N_TASKS_PER_NODE']))
+        os.putenv('SCAFESRUN_MACHINE_N_TASKS_PER_NODE',
+                  str(params['N_TASKS_PER_NODE']))
     else: # TEST == OpenMP
         os.putenv('SCAFESRUN_MACHINE_N_TASKS_PER_NODE', '1')
 
@@ -136,14 +147,16 @@ def main():
             if os.path.isfile(sys.argv[2]) == True:
                 run_script = sys.argv[2]
             else:
-                print('* ERROR: Optional run script', sys.argv[2], 'does not exist.')
+                print('* ERROR: Optional run script', sys.argv[2],
+                      'does not exist.')
                 print('Aborting.')
                 exit()
     else:
         print('* ERROR: No command line argument for configfile provided.')
 
     if params['NAME_CONFIGFILE'] == '':
-        print('Usage: python3', sys.argv[0], '<PATH/TO/CONFIGFILE> [<PATH/TO/RUN/SCRIPT]')
+        print('Usage: python3', sys.argv[0],
+              '<PATH/TO/CONFIGFILE> [<PATH/TO/RUN/SCRIPT]')
         print('Aborting.')
         exit()
 

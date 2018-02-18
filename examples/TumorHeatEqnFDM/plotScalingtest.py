@@ -617,7 +617,7 @@ def main():
         plot_all_speedups(x_speedup, y_speedup, title_speedup, type_scaling)
 
     save_runtime_to_dat_file(x_runtime, y_runtime, title_runtime,
-                              type_scaling)
+                             type_scaling)
 
     print('Done.')
 

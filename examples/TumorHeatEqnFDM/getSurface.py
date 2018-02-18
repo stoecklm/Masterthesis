@@ -47,7 +47,8 @@ def main():
     # Iterate through all elements of the surface.
     for elem_y in range(0, a.shape[0]):
         for elem_x in range(0, a.shape[1]):
-            text_file.write('{0} {1} {2}\n'.format(str(elem_x), str(elem_y), str(a[elem_y, elem_x])))
+            text_file.write('{0} {1} {2}\n'.format(str(elem_x), str(elem_y),
+                                                   str(a[elem_y, elem_x])))
         text_file.write('\n')
 
     text_file.close()
