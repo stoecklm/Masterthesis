@@ -76,6 +76,16 @@ def plot_with_phases(phases, ind, title, path):
     plt.savefig(path)
     plt.gcf().clear()
 
+def delete_min_and_max(array):
+    if array.shape[0] > 2:
+        # Delete min and max in two steps to ensure that two elements
+        # are deleted, even if all elements have the same value.
+        index_min = np.argmin(array)
+        array =  np.delete(array, index_min)
+        index_max = np.argmax(array)
+        array =  np.delete(array, index_max)
+    return array
+
 # Parses out files for all runs of a specific case,
 # e.g. 5A, 120x120x10, 24 MPI processes.
 def parse_outfiles(outs):
@@ -137,7 +147,19 @@ def parse_outfiles(outs):
                                                   float(result.group(1)))
                     else:
                         pass
-    # Final result is mean value of all runs.
+    # Delete highest and lowest value.
+    checkConv = delete_min_and_max(checkConv)
+    compErr = delete_min_and_max(compErr)
+    init = delete_min_and_max(init)
+    update = delete_min_and_max(update)
+    write = delete_min_and_max(write)
+    trace = delete_min_and_max(trace)
+    evalKnownDf = delete_min_and_max(evalKnownDf)
+    sync = delete_min_and_max(sync)
+    iterate = delete_min_and_max(iterate)
+    iterWBarriers = delete_min_and_max(iterWBarriers)
+    gridGlobal = delete_min_and_max(gridGlobal)
+    # Final result is mean value of remaining runs.
     phases[UPDATE] = np.mean(update)
     phases[SYNC] = np.mean(sync)
     phases[WRITE] = np.mean(write)
@@ -422,7 +444,7 @@ def hybrid_tests(filepath, type_scaling):
             # Plot all saved results.
             savepath = './figures/' + type_scaling + '/' + type_of_test + \
                        '/details/' + 'Hybrid_' + os.path.basename(case) + '_' \
-                       + os.path.basename(node)
+                       + os.path.basename(node) + '_'
             plot_all_phases(list_x, list_yy, list_title, xlabel, type_of_test,
                             savepath)
             # Plot just total runtime.
