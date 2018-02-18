@@ -9,7 +9,7 @@ import numpy as np
 import os
 import sys
 
-def plot_results(filepath):
+def plot_surface(filepath):
     print('Plotting {0}.'.format(filepath))
 
     # Open netCDF file and read data from it.
@@ -73,7 +73,7 @@ def main():
         print('Aborting.')
         exit()
 
-    plot_results(filepath)
+    plot_surface(filepath)
 
 if __name__ == '__main__':
     main()

@@ -3,26 +3,7 @@ import numpy as np
 import os
 import sys
 
-def main():
-    filepath = ''
-    # Check if path to netCDF file (i.e. results) is provided,
-    # if file exists and if file has .nc extension.
-    if len(sys.argv) > 1:
-        if os.path.isfile(sys.argv[1]) == True:
-            if os.path.splitext(sys.argv[1])[1] == '.nc':
-                filepath = sys.argv[1]
-            else:
-                print(sys.argv[1], 'does not have .nc extension.')
-        else:
-            print(sys.argv[1], 'does not exist.')
-    else:
-        print('No command line argument for netCDF file provided.')
-
-    if filepath == '':
-        print('Usage: python3', sys.argv[0], '<PATH/TO/FILE>')
-        print('Aborting.')
-        exit()
-
+def check_convergence(filepath):
     print('Read data from {0}.'.format(filepath))
 
     nc_file = nc.Dataset(filepath)
@@ -58,6 +39,28 @@ def main():
     nc_file.close()
 
     print('Done.')
+
+def main():
+    filepath = ''
+    # Check if path to netCDF file (i.e. results) is provided,
+    # if file exists and if file has .nc extension.
+    if len(sys.argv) > 1:
+        if os.path.isfile(sys.argv[1]) == True:
+            if os.path.splitext(sys.argv[1])[1] == '.nc':
+                filepath = sys.argv[1]
+            else:
+                print(sys.argv[1], 'does not have .nc extension.')
+        else:
+            print(sys.argv[1], 'does not exist.')
+    else:
+        print('No command line argument for netCDF file provided.')
+
+    if filepath == '':
+        print('Usage: python3', sys.argv[0], '<PATH/TO/FILE>')
+        print('Aborting.')
+        exit()
+
+    check_convergence(filepath)
 
 if __name__ == '__main__':
     main()

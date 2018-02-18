@@ -5,7 +5,7 @@ import os
 import subprocess
 import sys
 
-from plotSurface import plot_results
+from plotSurface import plot_surface
 from startSimulation import parse_config_file
 from startSimulation import check_variables
 from startSimulation import calc_variables
@@ -179,7 +179,7 @@ def main():
         set_environment_variables_scaling(params)
         start_simulation(params, run_script)
         if params['NAME_RESULTFILE'] != '' and params['SPACE_DIM'] == 3:
-            plot_results(params['NAME_RESULTFILE'])
+            plot_surface(params['NAME_RESULTFILE'])
 
     print()
     print('Test finished.')

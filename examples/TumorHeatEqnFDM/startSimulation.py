@@ -5,7 +5,7 @@ import os
 import subprocess
 import sys
 
-from plotSurface import plot_results
+from plotSurface import plot_surface
 
 def parse_config_file(params):
     print('Parsing {0}.'.format(params['NAME_CONFIGFILE']))
@@ -546,7 +546,7 @@ def main():
     set_environment_variables(params)
     start_simulation(params, run_script)
     if params['NAME_RESULTFILE'] != '' and params['SPACE_DIM'] == 3:
-        plot_results(params['NAME_RESULTFILE'])
+        plot_surface(params['NAME_RESULTFILE'])
 
 if __name__ == '__main__':
     main()
