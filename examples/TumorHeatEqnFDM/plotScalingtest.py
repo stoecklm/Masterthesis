@@ -147,18 +147,27 @@ def parse_outfiles(outs):
                                                   float(result.group(1)))
                     else:
                         pass
-    # Delete highest and lowest value.
-    checkConv = delete_min_and_max(checkConv)
-    compErr = delete_min_and_max(compErr)
-    init = delete_min_and_max(init)
-    update = delete_min_and_max(update)
-    write = delete_min_and_max(write)
-    trace = delete_min_and_max(trace)
-    evalKnownDf = delete_min_and_max(evalKnownDf)
-    sync = delete_min_and_max(sync)
-    iterate = delete_min_and_max(iterate)
-    iterWBarriers = delete_min_and_max(iterWBarriers)
-    gridGlobal = delete_min_and_max(gridGlobal)
+    totalRuntime = iterWBarriers + gridGlobal
+    # Delete highest and lowest value, if there are at least five runs.
+    if totalRuntime.shape[0] > 4:
+        # Get index for highest and lowest value of total runtime.
+        index = [np.argmin(totalRuntime), np.argmax(totalRuntime)]
+        # Delete values where total runtime is the highest and lowest.
+        checkConv = np.delete(checkConv, index)
+        compErr = np.delete(compErr, index)
+        init = np.delete(init, index)
+        update = np.delete(update, index)
+        write = np.delete(write, index)
+        trace = np.delete(trace, index)
+        evalKnownDf = np.delete(evalKnownDf, index)
+        sync = np.delete(sync, index)
+        iterate = np.delete(iterate, index)
+        iterWBarriers = np.delete(iterWBarriers, index)
+        gridGlobal = np.delete(gridGlobal, index)
+        totalRuntime = np.delete(totalRuntime, index)
+    # Calc some helpful values.
+    barriers = iterWBarriers - iterate
+    woUpdate = totalRuntime - update
     # Final result is mean value of remaining runs.
     phases[UPDATE] = np.mean(update)
     phases[SYNC] = np.mean(sync)
@@ -171,10 +180,10 @@ def parse_outfiles(outs):
     phases[ITERATE] = np.mean(iterate)
     phases[ITER_W_BARRIERS] = np.mean(iterWBarriers)
     phases[GRID_GLOBAL] = np.mean(gridGlobal)
-    phases[BARRIERS] = phases[ITER_W_BARRIERS] - phases[ITERATE]
-    phases[TOTAL_RUNTIME] = phases[ITER_W_BARRIERS] + phases[GRID_GLOBAL]
-    phases[WO_UPDATE] = phases[TOTAL_RUNTIME] - phases[UPDATE]
-    phases[STD_DEV] = np.std(iterWBarriers + gridGlobal)
+    phases[BARRIERS] = np.mean(barriers)
+    phases[TOTAL_RUNTIME] = np.mean(totalRuntime)
+    phases[WO_UPDATE] = np.mean(woUpdate)
+    phases[STD_DEV] = np.std(totalRuntime)
 
     return phases
 
