@@ -1,5 +1,6 @@
 import configparser
 import glob
+import netCDF4 as nc
 import numpy as np
 import os
 import subprocess
@@ -66,6 +67,9 @@ def parse_config_file(params):
     params['OMEGA_B_BRAIN'] = config['Parameters'].getfloat('OMEGA_B_BRAIN')
     params['OMEGA_B_TUMOR'] = config['Parameters'].getfloat('OMEGA_B_TUMOR')
     params['H'] = config['Parameters'].getfloat('H')
+    params['T_A'] = config['Parameters'].getfloat('T_A')
+    params['Q_BRAIN'] = config['Parameters'].getfloat('Q_BRAIN')
+    params['Q_TUMOR'] = config['Parameters'].getfloat('Q_TUMOR')
 
     print('Done.')
 
@@ -301,95 +305,27 @@ def check_stability(params):
 
     print('Done.')
 
-def create_init_file(params):
-    import netCDF4 as nc
+def create_region_file(params):
+    filepath = 'region.nc'
     SPACE_DIM = params['SPACE_DIM']
-    NAME_INITFILE = params['NAME_INITFILE']
-    NAME_VARIABLES = params['NAME_VARIABLES']
-    filepath = NAME_INITFILE + '.nc'
     print('Creating {0}.'.format(filepath))
 
-    # Delete old init file.
+    # Delete old region file.
     if os.path.isfile(filepath) == True:
         os.remove(filepath)
 
-    nc_file = nc.Dataset(NAME_INITFILE + '.nc', 'w', format='NETCDF3_CLASSIC')
+    nc_file = nc.Dataset(filepath, 'w', format='NETCDF3_CLASSIC')
     time = nc_file.createDimension('time')
     for dim in range(0, SPACE_DIM):
         nNodes = nc_file.createDimension('nNodes_' + str(dim),
                                          params['N_NODES'][dim])
 
-    if SPACE_DIM == 1:
-        create_value_array_1D(params, nc_file, params['T_INIT'],
-                              params['T_TUMOR'], NAME_VARIABLES[0])
-        if len(NAME_VARIABLES) > 1:
-            create_value_array_1D(params, nc_file, 1.0, -1.0, NAME_VARIABLES[1])
-    elif SPACE_DIM == 2:
-        create_value_array_2D(params, nc_file, params['T_INIT'],
-                              params['T_TUMOR'], NAME_VARIABLES[0])
-        if len(NAME_VARIABLES) > 1:
-            create_value_array_2D(params, nc_file, 1.0, -1.0, NAME_VARIABLES[1])
-    else:
-        create_value_array_3D(params, nc_file, params['T_INIT'],
-                              params['T_TUMOR'], NAME_VARIABLES[0])
-        if len(NAME_VARIABLES) > 1:
-            create_value_array_3D(params, nc_file, 1.0, -1.0, NAME_VARIABLES[1])
+    if SPACE_DIM == 3:
+        create_value_array_3D(params, nc_file, 0, 1, 'region')
+
     nc_file.close()
 
     print('Done.')
-
-def create_value_array_1D(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
-                          NAME_VARIABLE):
-    RADIUS = params['DIAMETER']/2
-    TUMOR_CENTER = []
-    # Get file/grid dimensions.
-    dim0 = params['N_NODES'][0]
-    # Resize temperature array.
-    num_elem = dim0
-    values_array = BRAIN_VALUE * np.ones(num_elem).reshape(dim0)
-    # Calculate location of tumor center.
-    TUMOR_CENTER.append(params['COORD_NODE_LAST'][0] - params['DEPTH'])
-    # Iterate through array.
-    for elem in range(0, values_array.shape[0]):
-        # Calculate location of current node.
-        x = elem * params['GRIDSIZE'][0]
-        # Calculate distance (squared) to tumor center.
-        distance = (x - TUMOR_CENTER[0]) * (x - TUMOR_CENTER[0])
-        # Check if current point is inside tumor.
-        # If yes, set value to tumor specific value
-        if distance <= RADIUS*RADIUS:
-            values_array[elem] = TUMOR_VALUE
-    # Write NumPy array to netCDF file.
-    write_values_to_file(nc_file, values_array, NAME_VARIABLE)
-
-def create_value_array_2D(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
-                          NAME_VARIABLE):
-    RADIUS = params['DIAMETER']/2
-    TUMOR_CENTER = []
-    # Get file/grid dimensions.
-    dim0 = params['N_NODES'][0]
-    dim1 = params['N_NODES'][1]
-    # Resize temperature array.
-    num_elem = dim0 * dim1
-    values_array = BRAIN_VALUE * np.ones(num_elem).reshape(dim1, dim0)
-    # Calculate location of tumor center.
-    TUMOR_CENTER.append(params['COORD_NODE_LAST'][0]/2.0)
-    TUMOR_CENTER.append(params['COORD_NODE_LAST'][1] - params['DEPTH'])
-    # Iterate through temperature array.
-    for elem_y in range(0, values_array.shape[0]):
-        for elem_x in range(0, values_array.shape[1]):
-            # Calculate location of current node.
-            x = elem_x * params['GRIDSIZE'][0]
-            y = elem_y * params['GRIDSIZE'][1]
-            # Calculate distance (squared) to tumor center.
-            distance = (x - TUMOR_CENTER[0]) * (x - TUMOR_CENTER[0])
-            distance += (y - TUMOR_CENTER[1]) * (y - TUMOR_CENTER[1])
-            # Check if current point is inside tumor.
-            # If yes, set value to tumor specific value
-            if distance <= RADIUS*RADIUS:
-                values_array[elem_y, elem_x] = TUMOR_VALUE
-    # Write NumPy array to netCDF file.
-    write_values_to_file(nc_file, values_array, NAME_VARIABLE)
 
 def create_value_array_3D(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
                           NAME_VARIABLE):
@@ -401,7 +337,7 @@ def create_value_array_3D(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
     dim2 = params['N_NODES'][2]
     # Resize temperature array.
     num_elem = dim0 * dim1 * dim2
-    values_array = BRAIN_VALUE * np.ones(num_elem).reshape(dim2, dim1, dim0)
+    values_array = BRAIN_VALUE * np.ones(num_elem, dtype=int).reshape(dim2, dim1, dim0)
     # Calculate location of tumor center.
     TUMOR_CENTER.append(params['COORD_NODE_LAST'][0]/2.0)
     TUMOR_CENTER.append(params['COORD_NODE_LAST'][1]/2.0)
@@ -422,8 +358,14 @@ def create_value_array_3D(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
                 # If yes, set value to tumor specific value
                 if distance <= RADIUS*RADIUS:
                     values_array[elem_z, elem_y, elem_x] = TUMOR_VALUE
-    # Write NumPy array to netCDF file.
-    write_values_to_file(nc_file, values_array, NAME_VARIABLE)
+    # Create netCDF variable.
+    nNodes = []
+    nNodes.append('time')
+    for dim in range(len(values_array.shape), 0, -1):
+        nNodes.append('nNodes_' + str(dim-1))
+    init_values = nc_file.createVariable(NAME_VARIABLE, 'i', nNodes)
+    # Write NumPy Array to file.
+    init_values[0,] = values_array
 
 def write_values_to_file(nc_file, values_array, NAME_VARIABLE):
     # Create netCDF variable.
@@ -434,6 +376,77 @@ def write_values_to_file(nc_file, values_array, NAME_VARIABLE):
     init_values = nc_file.createVariable(NAME_VARIABLE, 'f8', nNodes)
     # Write NumPy Array to file.
     init_values[0,] = values_array
+
+def create_init_file(params):
+    filepath = params['NAME_INITFILE'] + '.nc'
+    SPACE_DIM = params['SPACE_DIM']
+    print('Creating {0}.'.format(filepath))
+
+    # Delete old init file.
+    if os.path.isfile(filepath) == True:
+        os.remove(filepath)
+
+    # Open region file.
+    nc_file = nc.Dataset('region.nc')
+    dim0 = nc_file.dimensions['nNodes_0'].size
+    dim1 = nc_file.dimensions['nNodes_1'].size
+    dim2 = nc_file.dimensions['nNodes_2'].size
+    time = nc_file.dimensions['time'].size
+    nc_var = nc_file.variables['region']
+    region = np.zeros((dim2, dim1, dim0), dtype=int)
+    region[:,:,:] = nc_var[(time-1):time,:,:,:]
+
+    nc_file.close()
+
+    nc_file = nc.Dataset(filepath, 'w', format='NETCDF3_CLASSIC')
+    time = nc_file.createDimension('time')
+    for dim in range(0, SPACE_DIM):
+        nNodes = nc_file.createDimension('nNodes_' + str(dim),
+                                         params['N_NODES'][dim])
+
+
+    create_init_array(params, nc_file, region, params['RHO'], params['RHO'],
+                      'rho')
+    create_init_array(params, nc_file, region, params['C'], params['C'],
+                      'c')
+    create_init_array(params, nc_file, region, params['K'], params['K'],
+                      'lambda')
+    create_init_array(params, nc_file, region, params['RHO_B'], params['RHO_B'],
+                      'rho_blood')
+    create_init_array(params, nc_file, region, params['OMEGA_B_BRAIN'], params['OMEGA_B_TUMOR'],
+                      'omega')
+    create_init_array(params, nc_file, region, params['C_PB'], params['C_PB'],
+                      'c_blood')
+    create_init_array(params, nc_file, region, params['T_A'], params['T_A'],
+                      'T_blood')
+    create_init_array(params, nc_file, region, params['Q_BRAIN'], params['Q_TUMOR'],
+                      'q')
+    create_init_array(params, nc_file, region, params['T_INIT'], params['T_TUMOR'],
+                      'T')
+
+    nc_file.close()
+
+    print('Done.')
+
+def create_init_array(params, nc_file, region, BRAIN_VALUE, TUMOR_VALUE,
+                      NAME_VARIABLE):
+    # Get file/grid dimensions.
+    dim0 = params['N_NODES'][0]
+    dim1 = params['N_NODES'][1]
+    dim2 = params['N_NODES'][2]
+    # Resize temperature array.
+    num_elem = dim0 * dim1 * dim2
+    values_array = BRAIN_VALUE * np.ones(num_elem).reshape(dim2, dim1, dim0)
+    # Iterate through temperature array.
+    for elem_z in range(0, values_array.shape[0]):
+        for elem_y in range(0, values_array.shape[1]):
+            for elem_x in range(0, values_array.shape[2]):
+                # Check if current point is inside tumor.
+                # If yes, set value to tumor specific value.
+                if region[elem_z, elem_y, elem_x] == 1:
+                    values_array[elem_z, elem_y, elem_x] = TUMOR_VALUE
+    # Write NumPy array to netCDF file.
+    write_values_to_file(nc_file, values_array, NAME_VARIABLE)
 
 def set_environment_variables(params):
     print('Setting environment variables.')
@@ -513,6 +526,7 @@ def start_simulation(params, run_script):
 
 def main():
     params = {'NAME_CONFIGFILE' : ''}
+    params['NAME_RESULTFILE'] = ''
     # Check if path to configfile is provided and if file exists.
     if len(sys.argv) > 1:
         if os.path.isfile(sys.argv[1]) == True:
@@ -541,8 +555,8 @@ def main():
     check_variables(params)
     calc_variables(params)
     check_stability(params)
-    if params['CREATE_INITFILE'] == True:
-        create_init_file(params)
+    create_region_file(params)
+    create_init_file(params)
     set_environment_variables(params)
     start_simulation(params, run_script)
     if params['NAME_RESULTFILE'] != '' and params['SPACE_DIM'] == 3:

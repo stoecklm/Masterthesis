@@ -759,6 +759,8 @@ INPUT                  = @top_srcdir@/src \
                          @top_srcdir@/examples/HeatEqnFDMIntiFile \
                          @top_srcdir@/examples/LameNavierEqnFDM \
                          @top_srcdir@/examples/LameNavierEqnFDMFirstOrder \
+                         @top_srcdir@/examples/MaxwellEqnsFDTD \
+                         @top_srcdir@/examples/MRIDataPBHEqnFDM \
                          @top_srcdir@/examples/TumorHeatEqnFDM \
                          @top_srcdir@/examples/WaveEqnFDM  \
                          @top_srcdir@/examples/ZhangExampleFDM

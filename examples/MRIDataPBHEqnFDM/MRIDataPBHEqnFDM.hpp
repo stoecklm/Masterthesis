@@ -31,40 +31,6 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
     const PTree ptree;
 
   public:
-
-    /* Based on Bousselham et al. (2017). */
-
-    /************************************************************************/
-    /** constant rho. Density. */
-    const CT RHO; /* kg/m^3 */
-
-    /** constant C. Specific heat capacity. */
-    const CT C; /* J/(kg K) */
-
-    /** constant K. Thermal conductivity). */
-    const CT K; /* W/(m K) */
-
-    /** constant Q_brain. Metabolism heat generation of the brain. */
-    const CT Q_BRAIN; /* W/(m^3) */
-
-    /** constant Q_tumor. Metabolism heat generation of the tumor. */
-    const CT Q_TUMOR; /* W/(m^3) */
-
-    /** constant rho_b. Density of the blood. */
-    const CT RHO_B; /* kg/m^3 */
-
-    /** constant C_Pb. Specific heat of the blood. */
-    const CT C_PB; /* J/(kg K) */
-
-    /** constant omega_b. Blood perfusion rate (normal brain tissue). */
-    const CT OMEGA_B_BRAIN; /* 1/s */
-
-    /** constant omega_b. Blood perfusion rate (Astrocytoma brain tumor). */
-    const CT OMEGA_B_TUMOR; /* 1/s */
-
-    /** constant T_i. Initial condition for T. */
-    const CT T_I; /* K */
-
     /** constant h. Ambient convetion. */
     const CT H; /* W/(m^2 K) */
 
@@ -73,25 +39,6 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
 
     /** constant q_bc. Heat flux at surface. */
     const CT Q_BC; /* W/(m^2) */
-
-    /** constant diameter. diameter of the tumor. */
-    const CT DIAMETER; /* m */
-
-    /** constant depth. depth of the tumor. */
-    const CT DEPTH; /* m */
-
-    /* constant T_a. Temperature of artery. */
-    const CT T_A; /* K */
-
-    /************************************************************************/
-    /* Auxiliary values. */
-    /* Radius of tumor. */
-    CT RADIUS;
-
-    /* Center of tumor. */
-    ScaFES::Ntuple<CT,DIM> tumorCenter;
-
-    /************************************************************************/
 
     /** All fields which are related to the underlying problem
      * are added in terms of an entry of the parameters of
@@ -139,147 +86,41 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
                                                               geomparamsInit,
                                                               checkConvergence),
         ptree(ptree_),
-        RHO(ptree.get<CT>("Parameters.RHO")),
-        C(ptree.get<CT>("Parameters.C")),
-        K(ptree.get<CT>("Parameters.K")),
-        Q_BRAIN(ptree.get<CT>("Parameters.Q_BRAIN")),
-        Q_TUMOR(ptree.get<CT>("Parameters.Q_TUMOR")),
-        RHO_B(ptree.get<CT>("Parameters.RHO_B")),
-        C_PB(ptree.get<CT>("Parameters.C_PB")),
-        OMEGA_B_BRAIN(ptree.get<CT>("Parameters.OMEGA_B_BRAIN")),
-        OMEGA_B_TUMOR(ptree.get<CT>("Parameters.OMEGA_B_TUMOR")),
-        T_I(ptree.get<CT>("Parameters.T_I")),
         H(ptree.get<CT>("Parameters.H")),
         T_INF(ptree.get<CT>("Parameters.T_INF")),
-        Q_BC(ptree.get<CT>("Parameters.Q_BC")),
-        DIAMETER(ptree.get<CT>("Parameters.DIAMETER")),
-        DEPTH(ptree.get<CT>("Parameters.DEPTH")),
-        T_A(ptree.get<CT>("Parameters.T_A"))
-        {
-            RADIUS = DIAMETER/2.0;
-
-            /* Calculate center of tumor. */
-            for (std::size_t pp = 0; pp < DIM; ++pp) {
-                if (pp == (DIM-1)) {
-                    /* In the highest dimension parameter 'depth' will be used. */
-                    if (this->params().coordNodeLast()[pp] <= DIAMETER) {
-                        std::cerr << "WARNING: Diameter of tumor is bigger than grid in dimension: "
-                                  << pp << "." << std::endl;
-                    }
-                    if (this->params().coordNodeLast()[pp] < std::fabs(DEPTH) ||
-                        DEPTH < 0.0) {
-                        std::cerr << "WARNING: Center of tumor is outside of grid in dimension: "
-                                  << pp << "." << std::endl;
-                    }
-                    if ((this->params().coordNodeLast()[pp] + RADIUS) < std::fabs(DEPTH)) {
-                        std::cerr << "WARNING: Tumor is completely outside of grid." << std::endl;
-                    }
-                    if (std::fabs(this->params().coordNodeLast()[pp] - DEPTH) < RADIUS ||
-                        std::fabs(DEPTH) < RADIUS) {
-                        std::cerr << "WARNING: Part of tumor is outside of grid in dimension: "
-                                  << pp << "." << std::endl;
-                    }
-                    tumorCenter[pp] = this->params().coordNodeLast()[pp] - DEPTH;
-                } else {
-                    /* In every other dimension the tumor will be located in the center. */
-                    if (this->params().coordNodeLast()[pp] <= DIAMETER) {
-                        std::cerr << "WARNING: Diameter of tumor is bigger than grid in dimension: "
-                                  << pp << "." << std::endl;
-                    }
-                    tumorCenter[pp] = this->params().coordNodeLast()[pp]/2.0;
-                }
-            }
-        }
+        Q_BC(ptree.get<CT>("Parameters.Q_BC"))
+        { }
 
     /** Evaluates all fields at one given global inner grid node.
-     *  @param vNew Set of all fields.
-     *  @param idxNode Index of given grid node.
      */
-    void evalInner(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
-                   ScaFES::Ntuple<int,DIM> const& idxNode,
+    void evalInner(std::vector< ScaFES::DataField<CT, DIM> >& /*vNew*/,
+                   ScaFES::Ntuple<int,DIM> const& /*idxNode*/,
                    int const& /*timestep*/) {
-        /* Get coordinates of current node. */
-        ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
-        /* Calculate distance to tumor center. */
-        CT distance = 0.0;
-        for (std::size_t pp = 0; pp < DIM; ++pp) {
-            distance += (x[pp] - tumorCenter[pp]) * (x[pp] - tumorCenter[pp]);
-        }
-        /* Check if current point is inside tumor. */
-        if (distance <= (this->RADIUS*this->RADIUS)) {
-            /* Inside tumor. */
-            vNew[4](idxNode) = OMEGA_B_TUMOR;
-            vNew[7](idxNode) = Q_TUMOR;
-        } else {
-            /* Outside tumor, i.e. normal healthy brain tissue. */
-            vNew[4](idxNode) = OMEGA_B_BRAIN;
-            vNew[7](idxNode) = Q_BRAIN;
-        }
-        vNew[0](idxNode) = RHO;
-        vNew[1](idxNode) = C;
-        vNew[2](idxNode) = K;
-        vNew[3](idxNode) = RHO_B;
-        vNew[5](idxNode) = C_PB;
-        vNew[6](idxNode) = T_A;
     }
 
     /** Evaluates all fields at one given global border grid node.
-     *  @param vNew Set of all fields.
-     *  @param idxNode Index of given grid node.
      */
-    void evalBorder(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
-                    ScaFES::Ntuple<int,DIM> const& idxNode,
+    void evalBorder(std::vector< ScaFES::DataField<CT, DIM> >& /*vNew*/,
+                    ScaFES::Ntuple<int,DIM> const& /*idxNode*/,
                     int const& /*timestep*/) {
-        /* Get coordinates of current node. */
-        ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
-        /* Calculate distance to tumor center. */
-        CT distance = 0.0;
-        for (std::size_t pp = 0; pp < DIM; ++pp) {
-            distance += (x[pp] - tumorCenter[pp]) * (x[pp] - tumorCenter[pp]);
-        }
-        /* Check if current point is inside tumor. */
-        if (distance <= (this->RADIUS*this->RADIUS)) {
-            /* Inside tumor. */
-            vNew[4](idxNode) = OMEGA_B_TUMOR;
-            vNew[7](idxNode) = Q_TUMOR;
-        } else {
-            /* Outside tumor, i.e. normal healthy brain tissue. */
-            vNew[4](idxNode) = OMEGA_B_BRAIN;
-            vNew[7](idxNode) = Q_BRAIN;
-        }
-        vNew[0](idxNode) = RHO;
-        vNew[1](idxNode) = C;
-        vNew[2](idxNode) = K;
-        vNew[3](idxNode) = RHO_B;
-        vNew[5](idxNode) = C_PB;
-        vNew[6](idxNode) = T_A;
     }
 
     /** Initializes all unknown fields at one given global inner grid node.
-     *  @param vNew Set of all unknown fields (return value).
-     *  @param idxNode Index of given grid node.
      */
     template<typename TT>
-    void initInner(std::vector< ScaFES::DataField<TT, DIM> >& vNew,
+    void initInner(std::vector< ScaFES::DataField<TT, DIM> >& /*vNew*/,
                    std::vector<TT> const& /*vOld*/,
-                   ScaFES::Ntuple<int,DIM> const& idxNode,
+                   ScaFES::Ntuple<int,DIM> const& /*idxNode*/,
                    int const& /*timestep*/) {
-        /* Init all nodes with the same temperature. */
-        vNew[0](idxNode) = T_I;
     }
 
     /** Initializes all unknown fields at one given global border grid node.
-     *  @param vNew Set of all unknown fields (return value).
-     *  @param vOld Set of all unknown fields at old time step.
-     *  @param idxNode Index of given grid node.
-     *  @param timestep Given time step.
      */
     template<typename TT>
-    void initBorder(std::vector< ScaFES::DataField<TT, DIM> >& vNew,
-                   std::vector<TT> const& vOld,
-                   ScaFES::Ntuple<int,DIM> const& idxNode,
-                   int const& timestep) {
-        this->template initInner<TT>(vNew, vOld, idxNode, timestep);
+    void initBorder(std::vector< ScaFES::DataField<TT, DIM> >& /*vNew*/,
+                   std::vector<TT> const& /*vOld*/,
+                   ScaFES::Ntuple<int,DIM> const& /*idxNode*/,
+                   int const& /*timestep*/) {
     }
 
     /** Updates all unknown fields at one given global inner grid node.
