@@ -192,17 +192,67 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
         }
 
     /** Evaluates all fields at one given global inner grid node.
+     *  @param vNew Set of all fields.
+     *  @param idxNode Index of given grid node.
      */
-    void evalInner(std::vector< ScaFES::DataField<CT, DIM> >& /*vNew*/,
-                   ScaFES::Ntuple<int,DIM> const& /*idxNode*/,
+    void evalInner(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
+                   ScaFES::Ntuple<int,DIM> const& idxNode,
                    int const& /*timestep*/) {
+        /* Get coordinates of current node. */
+        ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
+        /* Calculate distance to tumor center. */
+        CT distance = 0.0;
+        for (std::size_t pp = 0; pp < DIM; ++pp) {
+            distance += (x[pp] - tumorCenter[pp]) * (x[pp] - tumorCenter[pp]);
+        }
+        /* Check if current point is inside tumor. */
+        if (distance <= (this->RADIUS*this->RADIUS)) {
+            /* Inside tumor. */
+            vNew[4](idxNode) = OMEGA_B_TUMOR;
+            vNew[7](idxNode) = Q_TUMOR;
+        } else {
+            /* Outside tumor, i.e. normal healthy brain tissue. */
+            vNew[4](idxNode) = OMEGA_B_BRAIN;
+            vNew[7](idxNode) = Q_BRAIN;
+        }
+        vNew[0](idxNode) = RHO;
+        vNew[1](idxNode) = C;
+        vNew[2](idxNode) = K;
+        vNew[3](idxNode) = RHO_B;
+        vNew[5](idxNode) = C_PB;
+        vNew[6](idxNode) = T_A;
     }
 
     /** Evaluates all fields at one given global border grid node.
+     *  @param vNew Set of all fields.
+     *  @param idxNode Index of given grid node.
      */
-    void evalBorder(std::vector< ScaFES::DataField<CT, DIM> >& /*vNew*/,
-                    ScaFES::Ntuple<int,DIM> const& /*idxNode*/,
+    void evalBorder(std::vector< ScaFES::DataField<CT, DIM> >& vNew,
+                    ScaFES::Ntuple<int,DIM> const& idxNode,
                     int const& /*timestep*/) {
+        /* Get coordinates of current node. */
+        ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
+        /* Calculate distance to tumor center. */
+        CT distance = 0.0;
+        for (std::size_t pp = 0; pp < DIM; ++pp) {
+            distance += (x[pp] - tumorCenter[pp]) * (x[pp] - tumorCenter[pp]);
+        }
+        /* Check if current point is inside tumor. */
+        if (distance <= (this->RADIUS*this->RADIUS)) {
+            /* Inside tumor. */
+            vNew[4](idxNode) = OMEGA_B_TUMOR;
+            vNew[7](idxNode) = Q_TUMOR;
+        } else {
+            /* Outside tumor, i.e. normal healthy brain tissue. */
+            vNew[4](idxNode) = OMEGA_B_BRAIN;
+            vNew[7](idxNode) = Q_BRAIN;
+        }
+        vNew[0](idxNode) = RHO;
+        vNew[1](idxNode) = C;
+        vNew[2](idxNode) = K;
+        vNew[3](idxNode) = RHO_B;
+        vNew[5](idxNode) = C_PB;
+        vNew[6](idxNode) = T_A;
     }
 
     /** Initializes all unknown fields at one given global inner grid node.
@@ -242,37 +292,27 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
                      std::vector<ScaFES::DataField<TT,DIM>> const& vOld,
                      ScaFES::Ntuple<int,DIM> const& idxNode,
                      int const& /*timestep*/) {
-        CT omega = 0.0;
-        CT Q = 0.0;
-        /* Get coordinates of current node. */
-        ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
-        /* Calculate distance to tumor center. */
-        CT distance = 0.0;
-        for (std::size_t pp = 0; pp < DIM; ++pp) {
-            distance += (x[pp] - tumorCenter[pp]) * (x[pp] - tumorCenter[pp]);
-        }
-        /* Check if current point is inside tumor. */
-        if (distance <= (this->RADIUS*this->RADIUS)) {
-            /* Inside tumor. */
-            omega = OMEGA_B_TUMOR;
-            Q = Q_TUMOR;
-        } else {
-            /* Outside tumor, i.e. normal healthy brain tissue. */
-            omega = OMEGA_B_BRAIN;
-            Q = Q_BRAIN;
-        }
+        CT rho = this->knownDf(0, idxNode);
+        CT c = this->knownDf(1, idxNode);
+        CT lambda = this->knownDf(2, idxNode);
+        CT rho_blood = this->knownDf(3, idxNode);
+        CT omega = this->knownDf(4, idxNode);
+        CT c_blood = this->knownDf(5, idxNode);
+        CT T_blood = this->knownDf(6, idxNode);
+        CT q = this->knownDf(7, idxNode);
+
         /* Discrete Pennes Bioheat Equation for updating inner nodes. */
         vNew[0](idxNode) = vOld[0](idxNode);
         for (std::size_t pp = 0; pp < DIM; ++pp) {
-            vNew[0](idxNode) += this->tau() * (K/(RHO*C))
+            vNew[0](idxNode) += this->tau() * (lambda/(rho*c))
                                 * (vOld[0](this->connect(idxNode, 2*pp))
                                    + vOld[0](this->connect(idxNode, 2*pp+1))
                                    - 2.0 * vOld[0](idxNode))
                                 / (this->gridsize(pp) * this->gridsize(pp));
         }
-        vNew[0](idxNode) += this->tau() * ((RHO_B*C_PB)/(RHO*C)) * omega
-                            * (T_A - vOld[0](idxNode));
-        vNew[0](idxNode) += this->tau() * (1.0/(RHO*C)) * Q;
+        vNew[0](idxNode) += this->tau() * ((rho_blood*c_blood)/(rho*c)) * omega
+                            * (T_blood - vOld[0](idxNode));
+        vNew[0](idxNode) += this->tau() * (1.0/(rho*c)) * q;
     }
 
     /** Updates all unknown fields at one given global border grid node.
@@ -285,25 +325,15 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
                       std::vector<ScaFES::DataField<TT,DIM>>const& vOld,
                       ScaFES::Ntuple<int,DIM> const& idxNode,
                       int const& /*timestep*/) {
-        CT omega = 0.0;
-        CT Q = 0.0;
-        /* Get coordinates of current node. */
-        ScaFES::Ntuple<double,DIM> x = this->coordinates(idxNode);
-        /* Calculate distance to tumor center. */
-        CT distance = 0.0;
-        for (std::size_t pp = 0; pp < DIM; ++pp) {
-            distance += (x[pp] - tumorCenter[pp]) * (x[pp] - tumorCenter[pp]);
-        }
-        /* Check if current point is inside tumor. */
-        if (distance <= (this->RADIUS*this->RADIUS)) {
-            /* Inside tumor. */
-            omega = OMEGA_B_TUMOR;
-            Q = Q_TUMOR;
-        } else {
-            /* Outside tumor, i.e. normal healthy brain tissue. */
-            omega = OMEGA_B_BRAIN;
-            Q = Q_BRAIN;
-        }
+        CT rho = this->knownDf(0, idxNode);
+        CT c = this->knownDf(1, idxNode);
+        CT lambda = this->knownDf(2, idxNode);
+        CT rho_blood = this->knownDf(3, idxNode);
+        CT omega = this->knownDf(4, idxNode);
+        CT c_blood = this->knownDf(5, idxNode);
+        CT T_blood = this->knownDf(6, idxNode);
+        CT q = this->knownDf(7, idxNode);
+
         /* Discrete Pennes Bioheat Equation modified for updating border nodes. */
         vNew[0](idxNode) = vOld[0](idxNode);
         for (std::size_t pp = 0; pp < DIM; ++pp) {
@@ -313,22 +343,22 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
             /* vOld[0](this->connect(idxNode, 2*pp+1) needs to be replaced. */
                 if (pp == (DIM-1)) {
                 /* Cauchy boundary condition. */
-                    vNew[0](idxNode) += this->tau() * (K/(RHO*C))
+                    vNew[0](idxNode) += this->tau() * (lambda/(rho*c))
                                         * (vOld[0](this->connect(idxNode, 2*pp))
                                         /* + vOld[0](this->connect(idxNode, 2*pp+1) */
                                            + vOld[0](this->connect(idxNode, 2*pp))
-                                           - ((2.0*this->gridsize(pp)/K)
+                                           - ((2.0*this->gridsize(pp)/lambda)
                                               * H * (vOld[0](idxNode) - T_INF))
                                         /********************************************/
                                            - 2.0 * vOld[0](idxNode))
                                         / (this->gridsize(pp) * this->gridsize(pp));
                 } else {
                 /* Neumann boundary condition. */
-                    vNew[0](idxNode) += this->tau() * (K/(RHO*C))
+                    vNew[0](idxNode) += this->tau() * (lambda/(rho*c))
                                         * (vOld[0](this->connect(idxNode, 2*pp))
                                         /* + vOld[0](this->connect(idxNode, 2*pp+1)) */
                                            + vOld[0](this->connect(idxNode, 2*pp))
-                                           - ((2.0*this->gridsize(pp)/K) * Q_BC)
+                                           - ((2.0*this->gridsize(pp)/lambda) * Q_BC)
                                         /*********************************************/
                                            - 2.0 * vOld[0](idxNode))
                                         / (this->gridsize(pp) * this->gridsize(pp));
@@ -336,10 +366,10 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
             } else if (idxNode.elem(pp) == 0){
             /* vOld[0](this->connect(idxNode, 2*pp) needs to be replaced.
              * Neumann boundary condition. */
-                vNew[0](idxNode) += this->tau() * (K/(RHO*C))
+                vNew[0](idxNode) += this->tau() * (lambda/(rho*c))
                                     /* + vOld[0](this->connect(idxNode, 2*pp)) */
                                     * (vOld[0](this->connect(idxNode, 2*pp+1))
-                                       + ((2.0*this->gridsize(pp)/K) * Q_BC)
+                                       + ((2.0*this->gridsize(pp)/lambda) * Q_BC)
                                     /*******************************************/
                                        + vOld[0](this->connect(idxNode, 2*pp+1))
                                        - 2.0 * vOld[0](idxNode))
@@ -347,7 +377,7 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
             } else {
             /* No value needs to be replaced.
              * Use central differencing scheme. */
-                vNew[0](idxNode) += this->tau() * (K/(RHO*C))
+                vNew[0](idxNode) += this->tau() * (lambda/(rho*c))
                                     * (vOld[0](this->connect(idxNode, 2*pp))
                                        + vOld[0](this->connect(idxNode, 2*pp+1))
                                        - 2.0 * vOld[0](idxNode))
@@ -356,9 +386,9 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
         }
 
         /* These terms are independet of the boundary condition. */
-        vNew[0](idxNode) += this->tau() * ((RHO_B*C_PB)/(RHO*C)) * omega
-                            * (T_A - vOld[0](idxNode));
-        vNew[0](idxNode) += this->tau() * (1.0/(RHO*C)) * Q;
+        vNew[0](idxNode) += this->tau() * ((rho_blood*c_blood)/(rho*c)) * omega
+                            * (T_blood - vOld[0](idxNode));
+        vNew[0](idxNode) += this->tau() * (1.0/(rho*c)) * q;
     }
 
     /** Updates (2nd cycle) all unknown fields at one given global inner grid node.
