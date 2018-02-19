@@ -6,6 +6,7 @@ SUBDIRS += LameNavierEqnFDMFirstOrder
 SUBDIRS += TumorHeatEqnFDM
 SUBDIRS += ZhangExampleFDM
 SUBDIRS += HeatEqnFDMInitFile
+SUBDIRS += MRIDataPBHEqnFDM
 
 if AMHAVEBOOST
 if AMHAVEBOOSTMPI

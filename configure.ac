@@ -744,6 +744,13 @@ AC_CONFIG_LINKS([examples/TumorHeatEqnFDM/plotSurface.py:examples/TumorHeatEqnFD
 AC_CONFIG_LINKS([examples/TumorHeatEqnFDM/startSimulation.py:examples/TumorHeatEqnFDM/startSimulation.py])
 AC_CONFIG_LINKS([examples/TumorHeatEqnFDM/weakScaling.py:examples/TumorHeatEqnFDM/weakScaling.py])
 
+AC_CONFIG_FILES(examples/MRIDataPBHEqnFDM/Makefile)
+AC_CONFIG_FILES([examples/MRIDataPBHEqnFDM/RUN_HELPER.sh],
+       [chmod +x examples/MRIDataPBHEqnFDM/RUN_HELPER.sh])
+AC_CONFIG_FILES(examples/MRIDataPBHEqnFDM/Parameters.ini)
+AC_CONFIG_LINKS([examples/MRIDataPBHEqnFDM/plotSurface.py:examples/TumorHeatEqnFDM/plotSurface.py])
+AC_CONFIG_LINKS([examples/MRIDataPBHEqnFDM/startSimulation.py:examples/TumorHeatEqnFDM/startSimulation.py])
+
 AC_CONFIG_FILES(examples/ZhangExampleFDM/Makefile)
 AC_CONFIG_FILES([examples/ZhangExampleFDM/RUN.sh],
        [chmod +x examples/ZhangExampleFDM/RUN.sh])
