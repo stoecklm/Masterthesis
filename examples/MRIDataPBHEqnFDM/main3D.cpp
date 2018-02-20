@@ -19,8 +19,8 @@ int main(int argc, char *argv[]) {
     nameDatafield[1] = "c";          /* heat capacity. */
     nameDatafield[2] = "lambda";     /* conductivity brain or tumor. */
     nameDatafield[3] = "rho_blood";  /* density blood. */
-    nameDatafield[4] = "omega";      /* blood perfusion rate brain or tumor. */
-    nameDatafield[5] = "c_blood";    /* heat capacity. */
+    nameDatafield[4] = "c_blood";    /* heat capacity. */
+    nameDatafield[5] = "omega";      /* blood perfusion rate brain or tumor. */
     nameDatafield[6] = "T_blood";    /* blood temperature. */
     nameDatafield[7] = "q";          /* metabolic heat rate brain or tumor. */
     nameDatafield[8] = "T";          /* Temperature. */

@@ -15,7 +15,7 @@ def parse_config_file(params):
     config = configparser.ConfigParser()
     config.read(params['NAME_CONFIGFILE'])
     # Get values from section 'Dimension'.
-    params['SPACE_DIM'] = config['Dimension'].getint('SPACE_DIM', fallback=1)
+    params['SPACE_DIM'] = config['Dimension'].getint('SPACE_DIM', fallback=3)
     # Get values from section 'Geometry'.
     # Coordinates of first node.
     COORD_NODE_FIRST = config['Geometry'].get('COORD_NODE_FIRST')
@@ -45,31 +45,27 @@ def parse_config_file(params):
                                                         fallback=False)
     params['CREATE_INITFILE'] = config['Input'].getboolean('CREATE_INITFILE',
                                                            fallback=False)
-    NAME_VARIABLES = config['Input'].get('NAME_VARIABLES', fallback='U')
-    NAME_VARIABLES = list(NAME_VARIABLES.split())
-    params['NAME_VARIABLES'] = NAME_VARIABLES
     params['THRESHOLD'] = config['Input'].getfloat('THRESHOLD',
                                                    fallback=0.00001)
     params['CHECK_CONV_FIRST_AT_ITER'] = config['Input'].getfloat('CHECK_CONV_FIRST_AT_ITER',
                                                                   fallback=1)
     params['CHECK_CONV_AT_EVERY_N_ITER'] = config['Input'].getfloat('CHECK_CONV_AT_EVERY_N_ITER',
                                                                     fallback=1)
+    # Get values from section 'Brain'.
+    brain = dict(config.items('Brain'))
+    for key in brain:
+        brain[key] = float(brain[key])
+    params['BRAIN'] = brain
+    # Get values from section 'Tumor'.
+    tumor = dict(config.items('Tumor'))
+    for key in tumor:
+        tumor[key] = float(tumor[key])
+    params['TUMOR'] = tumor
     # Get values from section 'Parameters'.
-    params['T_INIT'] = config['Parameters'].getfloat('T_I')
-    params['T_TUMOR'] = config['Parameters'].getfloat('T_TUMOR')
-    params['DIAMETER'] = config['Parameters'].getfloat('DIAMETER')
-    params['DEPTH'] = config['Parameters'].getfloat('DEPTH')
-    params['RHO'] = config['Parameters'].getfloat('RHO')
-    params['C'] = config['Parameters'].getfloat('C')
-    params['K'] = config['Parameters'].getfloat('K')
-    params['RHO_B'] = config['Parameters'].getfloat('RHO_B')
-    params['C_PB'] = config['Parameters'].getfloat('C_PB')
-    params['OMEGA_B_BRAIN'] = config['Parameters'].getfloat('OMEGA_B_BRAIN')
-    params['OMEGA_B_TUMOR'] = config['Parameters'].getfloat('OMEGA_B_TUMOR')
-    params['H'] = config['Parameters'].getfloat('H')
-    params['T_A'] = config['Parameters'].getfloat('T_A')
-    params['Q_BRAIN'] = config['Parameters'].getfloat('Q_BRAIN')
-    params['Q_TUMOR'] = config['Parameters'].getfloat('Q_TUMOR')
+    parameters = dict(config.items('Parameters'))
+    for key in parameters:
+        parameters[key] = float(parameters[key])
+    params['PARAMETERS'] = parameters
 
     print('Done.')
 
@@ -79,9 +75,9 @@ def check_variables(params):
     # Check if dimension makes sense and
     # some functions and variables only work for dimension 1, 2 or 3.
     SPACE_DIM = params['SPACE_DIM']
-    if SPACE_DIM < 1 or SPACE_DIM > 3:
+    if SPACE_DIM != 3:
         print('* ERROR: SPACE_DIM is {0}.'.format(SPACE_DIM))
-        print('  SPACE_DIM must be 1, 2 or 3.')
+        print('  SPACE_DIM must be 3.')
         print('Aborting.')
         exit()
     # Check if there are enough coordinates for first node.
@@ -157,6 +153,31 @@ def check_variables(params):
 
     print('Done.')
 
+def calc_delta_time(params, material, parameters):
+    RHO = material['rho']
+    C = material['c']
+    LAMBDA = material['lambda']
+    RHO_BLOOD = material['rho_blood']
+    C_BLOOD = material['c_blood']
+    OMEGA = material['omega']
+    H = parameters['h']
+    GRIDSIZE = params['GRIDSIZE']
+    SPACE_DIM = params['SPACE_DIM']
+    # Pennes Bioheat Equation.
+    tmp = 0
+    for dim in range(0, SPACE_DIM):
+        tmp += (2.0/(GRIDSIZE[dim]*GRIDSIZE[dim])) * (LAMBDA/(RHO*C))
+    # Inner nodes.
+    DELTA_TIME = tmp + ((RHO_BLOOD*C_BLOOD)/(RHO*C)) * OMEGA
+    DELTA_TIME = 1.0/DELTA_TIME
+    # Border with convection.
+    DELTA_TIME_CONV = tmp + 2.0*(1.0/GRIDSIZE[SPACE_DIM-1]) \
+                                  * (H/(RHO*C))
+    DELTA_TIME_CONV += ((RHO_BLOOD*C_BLOOD)/(RHO*C)) * OMEGA
+    DELTA_TIME_CONV = 1.0/DELTA_TIME_CONV
+
+    return DELTA_TIME, DELTA_TIME_CONV
+
 def calc_variables(params):
     print('Calculating variables.')
 
@@ -171,51 +192,19 @@ def calc_variables(params):
     if params['N_TIMESTEPS'] < 1:
         print('* WARNING: N_TIMESTEPS not specified.')
         print('  Calculate N_TIMESTEPS from stability criterion.')
-        RHO = params['RHO']
-        C = params['C']
-        K = params['K']
-        RHO_B = params['RHO_B']
-        C_PB = params['C_PB']
-        OMEGA_B_BRAIN = params['OMEGA_B_BRAIN']
-        OMEGA_B_TUMOR = params['OMEGA_B_TUMOR']
-        H = params['H']
-        GRIDSIZE = params['GRIDSIZE']
-        SPACE_DIM = params['SPACE_DIM']
-        DELTA_TIME_MIN = 0
-        # Pennes Bioheat Equation.
-        tmp = 0
-        for dim in range(0, SPACE_DIM):
-            tmp += (2.0/(GRIDSIZE[dim]*GRIDSIZE[dim])) * (K/(RHO*C))
-        # Healthy brain region in inner nodes.
-        DELTA_TIME_BRAIN = tmp + ((RHO_B*C_PB)/(RHO*C)) * OMEGA_B_BRAIN
-        DELTA_TIME_BRAIN = 1.0/DELTA_TIME_BRAIN
-        DELTA_TIME_MIN = DELTA_TIME_BRAIN
-        # Tumor region in inner nodes.
-        DELTA_TIME_TUMOR = tmp + ((RHO_B*C_PB)/(RHO*C)) * OMEGA_B_TUMOR
-        DELTA_TIME_TUMOR = 1.0/DELTA_TIME_TUMOR
-        if DELTA_TIME_TUMOR < DELTA_TIME_MIN:
-            DELTA_TIME_MIN = DELTA_TIME_TUMOR
-        # Healthy brain region at border with convection.
-        DELTA_TIME_BRAIN_CONV = tmp + 2.0*(1.0/GRIDSIZE[SPACE_DIM-1]) \
-                                      * (H/(RHO*C))
-        DELTA_TIME_BRAIN_CONV += ((RHO_B*C_PB)/(RHO*C)) * OMEGA_B_BRAIN
-        DELTA_TIME_BRAIN_CONV = 1.0/DELTA_TIME_BRAIN_CONV
-        if DELTA_TIME_BRAIN_CONV < DELTA_TIME_MIN:
-            DELTA_TIME_MIN = DELTA_TIME_BRAIN_CONV
-        # Tumor brain region at border with convection.
-        # Will probably not be the case, but test it anyway.
-        DELTA_TIME_TUMOR_CONV = tmp + 2.0*(1.0/GRIDSIZE[SPACE_DIM-1]) \
-                                      * (H/(RHO*C))
-        DELTA_TIME_TUMOR_CONV += ((RHO_B*C_PB)/(RHO*C)) * OMEGA_B_TUMOR
-        DELTA_TIME_TUMOR_CONV = 1.0/DELTA_TIME_TUMOR_CONV
-        if DELTA_TIME_TUMOR_CONV < DELTA_TIME_MIN:
-            DELTA_TIME_MIN = DELTA_TIME_TUMOR_CONV
-        # Calculate timesteps from minimum if delta time.
+        DELTA_TIME_BRAIN, \
+        DELTA_TIME_BRAIN_CONV = calc_delta_time(params, params['BRAIN'],
+                                                params['PARAMETERS'])
+        DELTA_TIME_TUMOR, \
+        DELTA_TIME_TUMOR_CONV = calc_delta_time(params, params['TUMOR'],
+                                                params['PARAMETERS'])
+        # Get minimum for calculation of timesteps.
+        DELTA_TIME_MIN = min((DELTA_TIME_BRAIN, DELTA_TIME_BRAIN_CONV,
+                              DELTA_TIME_TUMOR, DELTA_TIME_TUMOR_CONV))
         # Add five percent for safety reasons.
         params['N_TIMESTEPS'] = int(((params['END_TIME'] \
                                       - params['START_TIME']) \
                                      / DELTA_TIME_MIN) * 1.05) + 1
-        DELTA_TIME = DELTA_TIME_MIN
 
     # Final calculation for delta time.
     params['DELTA_TIME'] = (params['END_TIME'] - params['START_TIME']) \
@@ -242,36 +231,17 @@ def calc_variables(params):
 def check_stability(params):
     print('Checking stability.')
 
-    RHO = params['RHO']
-    C = params['C']
-    K = params['K']
-    RHO_B = params['RHO_B']
-    C_PB = params['C_PB']
-    OMEGA_B_BRAIN = params['OMEGA_B_BRAIN']
-    OMEGA_B_TUMOR = params['OMEGA_B_TUMOR']
-    H = params['H']
-    GRIDSIZE = params['GRIDSIZE']
-    SPACE_DIM = params['SPACE_DIM']
+    DELTA_TIME_BRAIN, \
+    DELTA_TIME_BRAIN_CONV = calc_delta_time(params, params['BRAIN'],
+                                            params['PARAMETERS'])
+    DELTA_TIME_TUMOR, \
+    DELTA_TIME_TUMOR_CONV = calc_delta_time(params, params['TUMOR'],
+                                            params['PARAMETERS'])
+    # Get minimum for calculation of timesteps.
+    DELTA_TIME_MIN = min((DELTA_TIME_BRAIN, DELTA_TIME_BRAIN_CONV,
+                          DELTA_TIME_TUMOR, DELTA_TIME_TUMOR_CONV))
+
     DELTA_TIME = params['DELTA_TIME']
-    # Pennes Bioheat Equation.
-    tmp = 0
-    for dim in range(0, SPACE_DIM):
-        tmp += (2.0/(GRIDSIZE[dim]*GRIDSIZE[dim])) * (K/(RHO*C))
-    # Healthy brain region in inner nodes.
-    DELTA_TIME_BRAIN = tmp + ((RHO_B*C_PB)/(RHO*C)) * OMEGA_B_BRAIN
-    DELTA_TIME_BRAIN = 1.0/DELTA_TIME_BRAIN
-    # Tumor region in inner nodes.
-    DELTA_TIME_TUMOR = tmp + ((RHO_B*C_PB)/(RHO*C)) * OMEGA_B_TUMOR
-    DELTA_TIME_TUMOR = 1.0/DELTA_TIME_TUMOR
-    # Healthy brain region at border with convection.
-    DELTA_TIME_BRAIN_CONV = tmp + 2.0*(1.0/GRIDSIZE[SPACE_DIM-1])*(H/(RHO*C))
-    DELTA_TIME_BRAIN_CONV += ((RHO_B*C_PB)/(RHO*C)) * OMEGA_B_BRAIN
-    DELTA_TIME_BRAIN_CONV = 1.0/DELTA_TIME_BRAIN_CONV
-    # Tumor brain region at border with convection.
-    # Will probably not be the case, but test it anyway.
-    DELTA_TIME_TUMOR_CONV = tmp + 2.0*(1.0/GRIDSIZE[SPACE_DIM-1])*(H/(RHO*C))
-    DELTA_TIME_TUMOR_CONV += ((RHO_B*C_PB)/(RHO*C)) * OMEGA_B_TUMOR
-    DELTA_TIME_TUMOR_CONV = 1.0/DELTA_TIME_TUMOR_CONV
     # Abort simulation if stability is not fulfilled.
     if DELTA_TIME > DELTA_TIME_BRAIN:
         print('* ERROR: Stability not fulfilled in healthy brain region.')
@@ -305,31 +275,9 @@ def check_stability(params):
 
     print('Done.')
 
-def create_region_file(params):
-    filepath = 'region.nc'
-    SPACE_DIM = params['SPACE_DIM']
-    print('Creating {0}.'.format(filepath))
-
-    # Delete old region file.
-    if os.path.isfile(filepath) == True:
-        os.remove(filepath)
-
-    nc_file = nc.Dataset(filepath, 'w', format='NETCDF3_CLASSIC')
-    time = nc_file.createDimension('time')
-    for dim in range(0, SPACE_DIM):
-        nNodes = nc_file.createDimension('nNodes_' + str(dim),
-                                         params['N_NODES'][dim])
-
-    if SPACE_DIM == 3:
-        create_value_array_3D(params, nc_file, 0, 1, 'region')
-
-    nc_file.close()
-
-    print('Done.')
-
-def create_value_array_3D(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
-                          NAME_VARIABLE):
-    RADIUS = params['DIAMETER']/2
+def create_region_array(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
+                        NAME_VARIABLE):
+    RADIUS = params['PARAMETERS']['diameter']/2
     TUMOR_CENTER = []
     # Get file/grid dimensions.
     dim0 = params['N_NODES'][0]
@@ -341,7 +289,7 @@ def create_value_array_3D(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
     # Calculate location of tumor center.
     TUMOR_CENTER.append(params['COORD_NODE_LAST'][0]/2.0)
     TUMOR_CENTER.append(params['COORD_NODE_LAST'][1]/2.0)
-    TUMOR_CENTER.append(params['COORD_NODE_LAST'][2] - params['DEPTH'])
+    TUMOR_CENTER.append(params['COORD_NODE_LAST'][2] - params['PARAMETERS']['depth'])
     # Iterate through temperature array.
     for elem_z in range(0, values_array.shape[0]):
         for elem_y in range(0, values_array.shape[1]):
@@ -367,6 +315,28 @@ def create_value_array_3D(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
     # Write NumPy Array to file.
     init_values[0,] = values_array
 
+def create_region_file(params):
+    filepath = 'region.nc'
+    SPACE_DIM = params['SPACE_DIM']
+    print('Creating {0}.'.format(filepath))
+
+    # Delete old region file.
+    if os.path.isfile(filepath) == True:
+        os.remove(filepath)
+
+    nc_file = nc.Dataset(filepath, 'w', format='NETCDF3_CLASSIC')
+    time = nc_file.createDimension('time')
+    for dim in range(0, SPACE_DIM):
+        nNodes = nc_file.createDimension('nNodes_' + str(dim),
+                                         params['N_NODES'][dim])
+
+    # 0 means brain, 1 means tumor.
+    create_region_array(params, nc_file, 0, 1, 'region')
+
+    nc_file.close()
+
+    print('Done.')
+
 def write_values_to_file(nc_file, values_array, NAME_VARIABLE):
     # Create netCDF variable.
     nNodes = []
@@ -376,57 +346,6 @@ def write_values_to_file(nc_file, values_array, NAME_VARIABLE):
     init_values = nc_file.createVariable(NAME_VARIABLE, 'f8', nNodes)
     # Write NumPy Array to file.
     init_values[0,] = values_array
-
-def create_init_file(params):
-    filepath = params['NAME_INITFILE'] + '.nc'
-    SPACE_DIM = params['SPACE_DIM']
-    print('Creating {0}.'.format(filepath))
-
-    # Delete old init file.
-    if os.path.isfile(filepath) == True:
-        os.remove(filepath)
-
-    # Open region file.
-    nc_file = nc.Dataset('region.nc')
-    dim0 = nc_file.dimensions['nNodes_0'].size
-    dim1 = nc_file.dimensions['nNodes_1'].size
-    dim2 = nc_file.dimensions['nNodes_2'].size
-    time = nc_file.dimensions['time'].size
-    nc_var = nc_file.variables['region']
-    region = np.zeros((dim2, dim1, dim0), dtype=int)
-    region[:,:,:] = nc_var[(time-1):time,:,:,:]
-
-    nc_file.close()
-
-    nc_file = nc.Dataset(filepath, 'w', format='NETCDF3_CLASSIC')
-    time = nc_file.createDimension('time')
-    for dim in range(0, SPACE_DIM):
-        nNodes = nc_file.createDimension('nNodes_' + str(dim),
-                                         params['N_NODES'][dim])
-
-
-    create_init_array(params, nc_file, region, params['RHO'], params['RHO'],
-                      'rho')
-    create_init_array(params, nc_file, region, params['C'], params['C'],
-                      'c')
-    create_init_array(params, nc_file, region, params['K'], params['K'],
-                      'lambda')
-    create_init_array(params, nc_file, region, params['RHO_B'], params['RHO_B'],
-                      'rho_blood')
-    create_init_array(params, nc_file, region, params['OMEGA_B_BRAIN'], params['OMEGA_B_TUMOR'],
-                      'omega')
-    create_init_array(params, nc_file, region, params['C_PB'], params['C_PB'],
-                      'c_blood')
-    create_init_array(params, nc_file, region, params['T_A'], params['T_A'],
-                      'T_blood')
-    create_init_array(params, nc_file, region, params['Q_BRAIN'], params['Q_TUMOR'],
-                      'q')
-    create_init_array(params, nc_file, region, params['T_INIT'], params['T_TUMOR'],
-                      'T')
-
-    nc_file.close()
-
-    print('Done.')
 
 def create_init_array(params, nc_file, region, BRAIN_VALUE, TUMOR_VALUE,
                       NAME_VARIABLE):
@@ -447,6 +366,53 @@ def create_init_array(params, nc_file, region, BRAIN_VALUE, TUMOR_VALUE,
                     values_array[elem_z, elem_y, elem_x] = TUMOR_VALUE
     # Write NumPy array to netCDF file.
     write_values_to_file(nc_file, values_array, NAME_VARIABLE)
+
+def create_init_file(params):
+    filepath = params['NAME_INITFILE'] + '.nc'
+    SPACE_DIM = params['SPACE_DIM']
+    print('Creating {0}.'.format(filepath))
+
+    # Delete old init file.
+    if os.path.isfile(filepath) == True:
+        os.remove(filepath)
+
+    # Check if region file exists.
+    if os.path.isfile('region.nc') == False:
+        print('* ERROR: region.nc does not exist.')
+        print('Aborting.')
+        exit()
+
+    # Open region file.
+    nc_file = nc.Dataset('region.nc')
+    dim0 = nc_file.dimensions['nNodes_0'].size
+    dim1 = nc_file.dimensions['nNodes_1'].size
+    dim2 = nc_file.dimensions['nNodes_2'].size
+    time = nc_file.dimensions['time'].size
+    nc_var = nc_file.variables['region']
+    region = np.zeros((dim2, dim1, dim0), dtype=int)
+    region[:,:,:] = nc_var[(time-1):time,:,:,:]
+
+    nc_file.close()
+
+    # Create init file.
+    nc_file = nc.Dataset(filepath, 'w', format='NETCDF3_CLASSIC')
+    time = nc_file.createDimension('time')
+    for dim in range(0, SPACE_DIM):
+        nNodes = nc_file.createDimension('nNodes_' + str(dim),
+                                         params['N_NODES'][dim])
+
+    brain = params['BRAIN']
+    tumor = params['TUMOR']
+    names = {'rho': 'rho', 'c': 'c', 'lambda': 'lambda',
+             'rho_blood': 'rho_blood', 'c_blood': 'c_blood', 'omega': 'omega',
+             't_blood': 'T_blood', 'q': 'q', 't': 'T'}
+    for key, value in brain.items():
+        create_init_array(params, nc_file, region, brain[key], tumor[key],
+                          names[key])
+
+    nc_file.close()
+
+    print('Done.')
 
 def set_environment_variables(params):
     print('Setting environment variables.')

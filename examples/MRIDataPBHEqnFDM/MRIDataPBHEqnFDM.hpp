@@ -137,8 +137,8 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
         CT c = this->knownDf(1, idxNode);
         CT lambda = this->knownDf(2, idxNode);
         CT rho_blood = this->knownDf(3, idxNode);
-        CT omega = this->knownDf(4, idxNode);
-        CT c_blood = this->knownDf(5, idxNode);
+        CT c_blood = this->knownDf(4, idxNode);
+        CT omega = this->knownDf(5, idxNode);
         CT T_blood = this->knownDf(6, idxNode);
         CT q = this->knownDf(7, idxNode);
 
@@ -170,8 +170,8 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
         CT c = this->knownDf(1, idxNode);
         CT lambda = this->knownDf(2, idxNode);
         CT rho_blood = this->knownDf(3, idxNode);
-        CT omega = this->knownDf(4, idxNode);
-        CT c_blood = this->knownDf(5, idxNode);
+        CT c_blood = this->knownDf(4, idxNode);
+        CT omega = this->knownDf(5, idxNode);
         CT T_blood = this->knownDf(6, idxNode);
         CT q = this->knownDf(7, idxNode);
 
