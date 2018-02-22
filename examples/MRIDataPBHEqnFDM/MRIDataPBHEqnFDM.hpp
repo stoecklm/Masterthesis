@@ -199,7 +199,8 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
                                         * (vOld[0](this->connect(idxNode, 2*pp))
                                         /* + vOld[0](this->connect(idxNode, 2*pp+1)) */
                                            + vOld[0](this->connect(idxNode, 2*pp))
-                                           - ((2.0*this->gridsize(pp)/lambda) * Q_BC)
+                                           - ((2.0*this->gridsize(pp)/lambda)
+                                              * (-1.0 * Q_BC))
                                         /*********************************************/
                                            - 2.0 * vOld[0](idxNode))
                                         / (this->gridsize(pp) * this->gridsize(pp));

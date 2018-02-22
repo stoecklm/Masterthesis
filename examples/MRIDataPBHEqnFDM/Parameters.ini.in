@@ -5,6 +5,9 @@ SPACE_DIM = 3
 [Parameters]
 H = 10.0
 T_INF = 22.4
+# Q_BC > 0 => heat flux into region (source)
+# Q_BC < 0 => heat flux out of region (sink)
+# Q_BC = 0 => insulated
 Q_BC = 0.0
 DIAMETER = 0.01
 DEPTH = 0.008
