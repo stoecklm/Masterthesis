@@ -5,12 +5,16 @@ SPACE_DIM = 3
 [Parameters]
 H = 10.0
 T_INF = 22.4
-# Q_BC > 0 => heat flux into region (source)
-# Q_BC < 0 => heat flux out of region (sink)
-# Q_BC = 0 => insulated
+# Q > 0 => heat flux into region (source)
+# Q < 0 => heat flux out of region (sink)
+# Q = 0 => insulated
 Q_BC = 0.0
-DIAMETER = 0.01
-DEPTH = 0.008
+Q_SKULL = 0.0
+# RADIUS or DIAMETER
+RADIUS = 0.021135
+DEPTH = 0.024
+# Diameter for hole in skull = HOLE_FACTOR * DIAMETER
+HOLE_FACTOR = 1.10
 
 [Brain]
 RHO = 1040.0
@@ -37,7 +41,7 @@ T = 37.0
 [Geometry]
 # [m].
 COORD_NODE_FIRST = 0x0x0
-COORD_NODE_LAST = 0.06x0.06x0.03
+COORD_NODE_LAST = 0.10x0.10x0.06
 # [-].
 N_NODES = 60x60x30
 

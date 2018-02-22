@@ -18,7 +18,22 @@ def plot_surface(filepath):
     dim1 = nc_file.dimensions['nNodes_1'].size
     dim2 = nc_file.dimensions['nNodes_2'].size
     time = nc_file.dimensions['time'].size
-    T = nc_file.variables['TNewDom']
+
+    possible_names = ['T', 'TNewDom', 'TDiff']
+    found_name = False
+    for name in possible_names:
+        try:
+            T = nc_file.variables[name]
+            found_name = True
+            break
+        except KeyError:
+            pass
+
+    if found_name == False:
+        print('* ERROR: No temperature variable found in this file.')
+        print('Aborting.')
+        exit()
+
     # Create numpy array and save surface data from netCDF file to it.
     a = np.zeros((dim1, dim0))
     a[:,:] = T[(time-1):time,(dim2-1),:,:]

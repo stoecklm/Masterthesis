@@ -37,8 +37,11 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
     /** constant T_inf. Air temperature. */
     const CT T_INF; /* K */
 
-    /** constant q_bc. Heat flux at surface. */
+    /** constant q_bc. Heat flux at surface inside the brain. */
     const CT Q_BC; /* W/(m^2) */
+
+    /** constant q_skull. Heat flux at upper surface under skull. */
+    const CT Q_SKULL; /* W/(m^2) */
 
     /** All fields which are related to the underlying problem
      * are added in terms of an entry of the parameters of
@@ -88,7 +91,8 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
         ptree(ptree_),
         H(ptree.get<CT>("Parameters.H")),
         T_INF(ptree.get<CT>("Parameters.T_INF")),
-        Q_BC(ptree.get<CT>("Parameters.Q_BC"))
+        Q_BC(ptree.get<CT>("Parameters.Q_BC")),
+        Q_SKULL(ptree.get<CT>("Parameters.Q_SKULL"))
         { }
 
     /** Evaluates all fields at one given global inner grid node.
@@ -174,6 +178,7 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
         CT omega = this->knownDf(5, idxNode);
         CT T_blood = this->knownDf(6, idxNode);
         CT q = this->knownDf(7, idxNode);
+        int surface = this->knownDf(8, idxNode);
 
         /* Discrete Pennes Bioheat Equation modified for updating border nodes. */
         vNew[0](idxNode) = vOld[0](idxNode);
@@ -183,16 +188,29 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
             if (idxNode.elem(pp) == (this->nNodes(pp)-1)) {
             /* vOld[0](this->connect(idxNode, 2*pp+1) needs to be replaced. */
                 if (pp == (DIM-1)) {
-                /* Cauchy boundary condition. */
-                    vNew[0](idxNode) += this->tau() * (lambda/(rho*c))
-                                        * (vOld[0](this->connect(idxNode, 2*pp))
-                                        /* + vOld[0](this->connect(idxNode, 2*pp+1) */
-                                           + vOld[0](this->connect(idxNode, 2*pp))
-                                           - ((2.0*this->gridsize(pp)/lambda)
-                                              * H * (vOld[0](idxNode) - T_INF))
-                                        /********************************************/
-                                           - 2.0 * vOld[0](idxNode))
-                                        / (this->gridsize(pp) * this->gridsize(pp));
+                    if (surface == 1) {
+                    /* Open skull: Cauchy boundary condition. */
+                        vNew[0](idxNode) += this->tau() * (lambda/(rho*c))
+                                            * (vOld[0](this->connect(idxNode, 2*pp))
+                                            /* + vOld[0](this->connect(idxNode, 2*pp+1) */
+                                               + vOld[0](this->connect(idxNode, 2*pp))
+                                               - ((2.0*this->gridsize(pp)/lambda)
+                                                  * H * (vOld[0](idxNode) - T_INF))
+                                            /********************************************/
+                                               - 2.0 * vOld[0](idxNode))
+                                            / (this->gridsize(pp) * this->gridsize(pp));
+                    } else {
+                    /* Closed skull: Neumann boundary condition. */
+                        vNew[0](idxNode) += this->tau() * (lambda/(rho*c))
+                                            * (vOld[0](this->connect(idxNode, 2*pp))
+                                            /* + vOld[0](this->connect(idxNode, 2*pp+1)) */
+                                               + vOld[0](this->connect(idxNode, 2*pp))
+                                               - ((2.0*this->gridsize(pp)/lambda)
+                                                  * (-1.0 * Q_SKULL))
+                                            /*********************************************/
+                                               - 2.0 * vOld[0](idxNode))
+                                            / (this->gridsize(pp) * this->gridsize(pp));
+                    }
                 } else {
                 /* Neumann boundary condition. */
                     vNew[0](idxNode) += this->tau() * (lambda/(rho*c))

@@ -65,6 +65,10 @@ def parse_config_file(params):
     parameters = dict(config.items('Parameters'))
     for key in parameters:
         parameters[key] = float(parameters[key])
+    try:
+        parameters['diameter'] = 2.0 * parameters['radius']
+    except KeyError:
+        pass
     params['PARAMETERS'] = parameters
 
     print('Done.')
@@ -123,8 +127,6 @@ def check_variables(params):
             exit()
     if params['USE_INITFILE'] == False and params['CREATE_INITFILE'] == True:
         print('* WARNING: CREATE_INITFILE = True, but USE_INITFILE = False.')
-    else:
-        pass
     # Check CHECK_CONV parameters.
     if params['CHECK_CONV_FIRST_AT_ITER'] < 0:
         print('* WARNING: CHECK_CONV_FIRST_AT_ITER < 0.')
@@ -285,11 +287,13 @@ def create_region_array(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
     dim2 = params['N_NODES'][2]
     # Resize temperature array.
     num_elem = dim0 * dim1 * dim2
-    values_array = BRAIN_VALUE * np.ones(num_elem, dtype=int).reshape(dim2, dim1, dim0)
+    values_array = BRAIN_VALUE \
+                   * np.ones(num_elem, dtype=int).reshape(dim2, dim1, dim0)
     # Calculate location of tumor center.
     TUMOR_CENTER.append(params['COORD_NODE_LAST'][0]/2.0)
     TUMOR_CENTER.append(params['COORD_NODE_LAST'][1]/2.0)
-    TUMOR_CENTER.append(params['COORD_NODE_LAST'][2] - params['PARAMETERS']['depth'])
+    TUMOR_CENTER.append(params['COORD_NODE_LAST'][2]
+                        - params['PARAMETERS']['depth'])
     # Iterate through temperature array.
     for elem_z in range(0, values_array.shape[0]):
         for elem_y in range(0, values_array.shape[1]):
@@ -367,6 +371,44 @@ def create_init_array(params, nc_file, region, BRAIN_VALUE, TUMOR_VALUE,
     # Write NumPy array to netCDF file.
     write_values_to_file(nc_file, values_array, NAME_VARIABLE)
 
+def create_surface_array(params, nc_file, region, BRAIN_VALUE, TUMOR_VALUE,
+                         NAME_VARIABLE):
+    RADIUS = (params['PARAMETERS']['diameter'] \
+              * params['PARAMETERS']['hole_factor'])/2
+    TUMOR_CENTER = []
+    # Get file/grid dimensions.
+    dim0 = params['N_NODES'][0]
+    dim1 = params['N_NODES'][1]
+    dim2 = params['N_NODES'][2]
+    # Resize temperature array.
+    num_elem = dim0 * dim1 * dim2
+    values_array = BRAIN_VALUE \
+                   * np.ones(num_elem, dtype=int).reshape(dim2, dim1, dim0)
+    # Calculate location of tumor center.
+    TUMOR_CENTER.append(params['COORD_NODE_LAST'][0]/2.0)
+    TUMOR_CENTER.append(params['COORD_NODE_LAST'][1]/2.0)
+    # Iterate through temperature array.
+    for elem_y in range(0, values_array.shape[1]):
+        for elem_x in range(0, values_array.shape[2]):
+            # Calculate location of current node.
+            x = elem_x * params['GRIDSIZE'][0]
+            y = elem_y * params['GRIDSIZE'][1]
+            # Calculate distance (squared) to tumor center.
+            distance = (x - TUMOR_CENTER[0]) * (x - TUMOR_CENTER[0])
+            distance += (y - TUMOR_CENTER[1]) * (y - TUMOR_CENTER[1])
+            # Check if current point is inside tumor.
+            # If yes, set value to tumor specific value
+            if distance <= RADIUS*RADIUS:
+                values_array[dim2-1, elem_y, elem_x] = TUMOR_VALUE
+    # Create netCDF variable.
+    nNodes = []
+    nNodes.append('time')
+    for dim in range(len(values_array.shape), 0, -1):
+        nNodes.append('nNodes_' + str(dim-1))
+    init_values = nc_file.createVariable(NAME_VARIABLE, 'i', nNodes)
+    # Write NumPy Array to file.
+    init_values[0,] = values_array
+
 def create_init_file(params):
     filepath = params['NAME_INITFILE'] + '.nc'
     SPACE_DIM = params['SPACE_DIM']
@@ -409,6 +451,7 @@ def create_init_file(params):
     for key, value in brain.items():
         create_init_array(params, nc_file, region, brain[key], tumor[key],
                           names[key])
+    create_surface_array(params, nc_file, region, 0, 1, 'surface')
 
     nc_file.close()
 

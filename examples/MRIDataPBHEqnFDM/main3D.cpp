@@ -14,7 +14,7 @@ const int DIM = 3;
 int main(int argc, char *argv[]) {
     ScaFES::Parameters paramsCl(argc, argv);
     ScaFES::GridGlobal<DIM> gg(paramsCl);
-    std::vector<std::string> nameDatafield(9);
+    std::vector<std::string> nameDatafield(10);
     nameDatafield[0] = "rho";        /* density brain or tumor. */
     nameDatafield[1] = "c";          /* heat capacity. */
     nameDatafield[2] = "lambda";     /* conductivity brain or tumor. */
@@ -23,18 +23,19 @@ int main(int argc, char *argv[]) {
     nameDatafield[5] = "omega";      /* blood perfusion rate brain or tumor. */
     nameDatafield[6] = "T_blood";    /* blood temperature. */
     nameDatafield[7] = "q";          /* metabolic heat rate brain or tumor. */
-    nameDatafield[8] = "T";          /* Temperature. */
-    std::vector<int> stencilWidth(9, 0);
-    stencilWidth[8] = 1;
-    std::vector<bool> isKnownDf(9, true);
-    isKnownDf[8] = false;
-    std::vector<int> nLayers(9, 0);
-    std::vector<double> defaultValue(9, 0.0);
-    std::vector<ScaFES::WriteHowOften> writeToFile(9, ScaFES::WriteHowOften::NEVER);
-    writeToFile[8] = ScaFES::WriteHowOften::AT_END;
-    std::vector<bool> computeError(9, false);
-    std::vector<bool> checkConvergence(9, false);
-    checkConvergence[8] = true;
+    nameDatafield[8] = "surface";    /* vector to specify open skull. */
+    nameDatafield[9] = "T";          /* Temperature. */
+    std::vector<int> stencilWidth(10, 0);
+    stencilWidth[9] = 1;
+    std::vector<bool> isKnownDf(10, true);
+    isKnownDf[9] = false;
+    std::vector<int> nLayers(10, 0);
+    std::vector<double> defaultValue(10, 0.0);
+    std::vector<ScaFES::WriteHowOften> writeToFile(10, ScaFES::WriteHowOften::NEVER);
+    writeToFile[9] = ScaFES::WriteHowOften::AT_END;
+    std::vector<bool> computeError(10, false);
+    std::vector<bool> checkConvergence(10, false);
+    checkConvergence[9] = true;
     std::vector<double> geomparamsInit;
 
     boost::property_tree::ptree pt;
