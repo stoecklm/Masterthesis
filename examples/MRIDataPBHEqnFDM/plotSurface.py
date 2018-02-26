@@ -42,7 +42,9 @@ def plot_surface(filepath):
 
     filepath = os.path.splitext(filepath)[0]
     plot_title = filepath
+    filepath_heatmap = filepath
     filepath += '_py_surface.eps'
+    filepath_heatmap += '_py_heatmap.eps'
 
     fig = plt.figure()
     ax = fig.gca(projection='3d')
@@ -65,6 +67,15 @@ def plot_surface(filepath):
     # Save plot to file.
     print('Save figure to {}.'.format(filepath))
     plt.savefig(filepath)
+    # Plot heatmap.
+    plt.gcf().clear()
+    plt.title('Surface Temperature [deg C] for\n' + plot_title)
+    plt.xlabel('x')
+    plt.ylabel('y')
+    plt.imshow(a, cmap=cm.viridis, interpolation='nearest')
+    print('Save figure to {}.'.format(filepath_heatmap))
+    plt.colorbar()
+    plt.savefig(filepath_heatmap)
 
     print('Done.')
 
