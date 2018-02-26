@@ -108,12 +108,20 @@ def two_netcdf_files_volume(filepath, a_1, a_2, dim0, dim1, dim2):
     nc_file.close()
 
     max_diff = np.amax(np.absolute(a_3))
+    max_diff_index = np.unravel_index(np.argmax(np.absolute(a_3)), a_3.shape)
+    max_diff_index = max_diff_index[::-1]
     sum_diff = np.mean(np.absolute(a_3))
-    print('Volume:   max(abs(diff)) = {0}.'.format(max_diff))
+    print('Volume:   max(abs(diff)) = {0} at {1}.'.format(max_diff,
+                                                          max_diff_index))
     print('Volume:  mean(abs(diff)) = {0}.'.format(sum_diff))
     max_diff = np.amax(np.absolute(a_3[dim2-1,:,:]))
+    max_diff_index = np.unravel_index(np.argmax(np.absolute(a_3[dim2-1,:,:])),
+                                      a_3.shape)
+    max_diff_index = max_diff_index[::-1]
+    max_diff_index = max_diff_index[0], max_diff_index[1], dim2-1
     sum_diff = np.mean(np.absolute(a_3[dim2-1,:,:]))
-    print('Surface:  max(abs(diff)) = {0}.'.format(max_diff))
+    print('Surface:  max(abs(diff)) = {0} at {1}.'.format(max_diff,
+                                                          max_diff_index))
     print('Surface: mean(abs(diff)) = {0}.'.format(sum_diff))
 
     filepath = os.path.splitext(filepath)[0]
