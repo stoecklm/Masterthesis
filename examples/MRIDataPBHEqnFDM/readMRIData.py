@@ -1,12 +1,18 @@
 import csv
-import numpy as np
-import os
-import sys
-from scipy.interpolate import splprep, splev
+import math
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
+from numpy import linalg as LA
+import os
+import re
+from scipy.interpolate import splprep, splev
+import scipy.linalg
+import sys
 
-def plot_points(points, filepath):
+def plot_points(points, filename):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 
@@ -19,52 +25,30 @@ def plot_points(points, filepath):
                 markeredgecolor='k', marker='o', markersize=5, alpha=0.6)
 
     ax.legend([i for i in range(1, points.shape[0]+1)])
-    print('Save figure to {}.'.format(filepath))
-    plt.savefig(filepath)
+    print('Save figure to {}.eps.'.format(filename))
+    plt.savefig(filename + '.eps')
     plt.close()
-
-def get_R_x(angle):
-    theta_x = np.radians(angle)
-
-    R_x = np.array([[1, 0, 0],
-                    [0, np.cos(theta_x), -1.0*np.sin(theta_x)],
-                    [0, np.sin(theta_x), np.cos(theta_x)]])
-
-    return R_x
-
-def get_R_y(angle):
-    theta_y = np.radians(angle)
-
-    R_y = np.array([[np.cos(theta_y), 0, np.sin(theta_y)],
-                    [0, 1, 0],
-                    [-1.0*np.sin(theta_y), 0, np.cos(theta_y)]])
-
-    return R_y
-
-def get_R_z(angle):
-    theta_z = np.radians(angle)
-
-    R_z = np.array([[np.cos(theta_z), -1.0*np.sin(theta_z), 0],
-                    [np.sin(theta_z), np.cos(theta_z), 0],
-                    [0, 0, 1]])
-
-    return R_z
+    print('Done.')
 
 def print_length(points):
     for point in points:
+        print('Length of Points:')
         print((point[0]**2 + point[1]**2 + point[2]**2)**0.5)
 
 def move_points(points, move):
+    print('Move points.')
     for point in points:
         point[...] = point - move
 
+    print('Done.')
     return points
 
-def interpolation(pp, filepath):
+def interpolation(points, filename):
+    print('Doing interpolation.')
     # Add last point, since this value will be overwritten by splrep.
-    pts = np.zeros((pp.shape[0]+1,2))
-    pts[0:pp.shape[0],:] = pp[:,0:2]
-    pts[-1,:] = pp[-1,0:2]
+    pts = np.zeros((points.shape[0]+1,2))
+    pts[0:points.shape[0],:] = points[:,0:2]
+    pts[-1,:] = points[-1,0:2]
     # Interpolation
     tck, u = splprep(pts.T, u=None, s=0.0, per=1)
     u_new = np.linspace(u.min(), u.max(), 1000)
@@ -72,124 +56,173 @@ def interpolation(pp, filepath):
 
     plt.plot(pts[:,0], pts[:,1], 'ro')
     plt.plot(x_new, y_new, 'b--')
-    print('Save figure to {}.'.format(filepath))
-    plt.savefig(filepath)
+    print('Save figure to {}.eps'.format(filename))
+    plt.savefig(filename + '.eps')
     plt.close()
 
-def readMRIData(filepath):
-    case = os.path.dirname(filepath)
+    print('Done.')
+
+def read_intra_op_points(folderpath):
+    print('Read IntraOp points.')
+    filepath = os.path.join(folderpath, 'fiducials.csv')
     points = list()
     with open(filepath, newline='') as csvfile:
         reader = csv.reader(csvfile, delimiter=',', quotechar='|')
         for row in reader:
-            x = float(row[1])
-            y = float(row[2])
-            z = float(row[3])
-            xyz = [x, y, z]
-            points.append(xyz)
+            # Check if this line is a IntraOp Point or Tumor.
+            tmp = re.search('IntraOp', str(row[-3]))
+            try:
+                # If it does not fail, it is a IntraOp Point
+                tmp.group(0)
+                x = float(row[1])
+                y = float(row[2])
+                z = float(row[3])
+                xyz = [x, y, z]
+                points.append(xyz)
+            except AttributeError:
+                pass
 
-    p = np.array([np.asarray(points[0]),
-                  np.asarray(points[1]),
-                  np.asarray(points[2]),
-                  np.asarray(points[3]),
-                  np.asarray(points[4]),
-                  np.asarray(points[5]),
-                  np.asarray(points[6]),
-                  np.asarray(points[7])])
+    print('Done.')
+    points = np.asarray(points)
+    return points
 
-    t = np.asarray(points[8])
+def read_tumor_point(folderpath):
+    print('Read tumor point.')
+    filepath = os.path.join(folderpath, 'fiducials.csv')
+    xyz = list()
+    with open(filepath, newline='') as csvfile:
+        reader = csv.reader(csvfile, delimiter=',', quotechar='|')
+        for row in reader:
+            # Check if this line is a IntraOp Point or Tumor.
+            tmp = re.search('Tumor', str(row[-3]))
+            try:
+                # If it does not fail, it is the Tumor Center.
+                tmp.group(0)
+                x = float(row[1])
+                y = float(row[2])
+                z = float(row[3])
+                xyz = [x, y, z]
+            except AttributeError:
+                pass
 
-    print('Original set of Points:')
-    print(p)
-    print('Original tumor location:')
-    print(t)
-    print()
-    plot_points(p, case + '_org.eps')
-    interpolation(p, case + '_org_interpolate.eps')
+    print('Done.')
+    tumor = np.asarray(xyz)
+    return tumor
 
-    deg_x_min = 0
-    deg_y_min = 0
-    z_diff_min = 1000000000
-    for deg_x in range(-180, 0):
-        for deg_y in range(-180, 0):
-            R_x = get_R_x(deg_x)
-            R_y = get_R_y(deg_y)
-            R_z = get_R_z(0)
+def plot_lin_plane_fitting(points, filename):
+    print('Plot plane fitting.')
+    X = points[:,0]
+    Y = points[:,1]
+    Z = points[:,2]
+    data = np.c_[X,Y,Z]
+    # regular grid covering the domain of the data
+    mn = np.min(data, axis=0)
+    mx = np.max(data, axis=0)
+    X,Y = np.meshgrid(np.linspace(mn[0], mx[0], 20),
+                      np.linspace(mn[1], mx[1], 20))
+    # best-fit linear plane
+    A = np.c_[data[:,0], data[:,1], np.ones(data.shape[0])]
+    C,_,_,_ = scipy.linalg.lstsq(A, data[:,2])    # coefficients
 
-            pp = p
+    # evaluate it on grid
+    Z = C[0]*X + C[1]*Y + C[2]
 
-            pp = pp.dot(R_x)
-            pp = pp.dot(R_y)
-            pp = pp.dot(R_z)
-
-            z_min = np.amin(pp[:,2])
-            z_max = np.amax(pp[:,2])
-            z_diff = abs(z_max - z_min)
-            if abs(z_diff) < abs(z_diff_min):
-                z_diff_min = z_diff
-                deg_x_min = deg_x
-                deg_y_min = deg_y
-
-    print()
-    print('x angle:', deg_x_min)
-    print('y angle:', deg_y_min)
-    print('Diff between z_min and z_max:', z_diff_min)
-    print()
-
-    pp = p
-    pp = pp.dot(get_R_x(deg_x_min))
-    pp = pp.dot(get_R_y(deg_y_min))
-    pp = pp.dot(get_R_z(0))
-    print('Set of Points ater rotation:')
-    print(pp)
-    t = t.dot(get_R_x(deg_x_min))
-    t = t.dot(get_R_y(deg_y_min))
-    t = t.dot(get_R_z(0))
-    print('Tumor location after rotation:')
-    print(t)
-    print()
-
-    plot_points(pp, case + '_rotated_points.eps')
-    interpolation(pp, case + '_rotated_interpolate.eps')
-    print()
-
-    pp = move_points(pp, t)
-    print('Set of Points ater move:')
-    print(pp)
-    t = t - t
-    print('Tumor location after move:')
-    print(t)
-    print()
-
-    plot_points(pp, case + '_moved_points.eps')
-    interpolation(pp, case + '_moved_interpolate.eps')
-    print()
+    # plot points and fitted surface
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    ax.plot_surface(X, Y, Z, rstride=1, cstride=1, alpha=0.2)
+    ax.scatter(data[:,0], data[:,1], data[:,2], c='r', s=50)
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    ax.set_zlabel('Z')
+    ax.axis('equal')
+    ax.axis('tight')
+    print('Save figure to {}.eps'.format(filename))
+    plt.savefig(filename + '.eps')
+    plt.close()
 
     print('Done.')
 
+def lin_plane_fitting(points):
+    print('Plane fitting.')
+    X = points[:,0]
+    Y = points[:,1]
+    Z = points[:,2]
+    data = np.c_[X,Y,Z]
+    # regular grid covering the domain of the data
+    mn = np.min(data, axis=0)
+    mx = np.max(data, axis=0)
+    X,Y = np.meshgrid(np.linspace(mn[0], mx[0], 20),
+                      np.linspace(mn[1], mx[1], 20))
+    # best-fit linear plane
+    A = np.c_[data[:,0], data[:,1], np.ones(data.shape[0])]
+    C,_,_,_ = scipy.linalg.lstsq(A, data[:,2])    # coefficients
+
+    print('Done.')
+    return C
+
+def rotate_points(points):
+    print('Rotate points.')
+    C = lin_plane_fitting(points)
+    M = np.array([C[0], C[1], -1])
+    N = np.array([0, 0, 1])
+
+    costheta = M.dot(N)/(LA.norm(M)*LA.norm(N))
+
+    axis = np.cross(M, N) / LA.norm(np.cross(M, N))
+
+    c = costheta
+    s = np.sqrt(1-c*c)
+    C = 1-c
+    x = axis[0]
+    y = axis[1]
+    z = axis[2]
+
+    rmat = np.array([[ x*x*C+c,    x*y*C-z*s,  x*z*C+y*s ],
+                     [ y*x*C+z*s,  y*y*C+c,    y*z*C-x*s ],
+                     [ z*x*C-y*s,  z*y*C+x*s,  z*z*C+c   ]])
+
+    for point in points:
+        point[...] = np.dot(rmat, point)
+
+    print('Done.')
+    return points
 
 def main():
     filepath = ''
     # Check if path to csv file (i.e. results) is provided,
     # if file exists and if file has .csv extension.
     if len(sys.argv) > 1:
-        if os.path.isfile(sys.argv[1]) == True:
-            if os.path.splitext(sys.argv[1])[1] == '.csv':
+        if os.path.isdir(sys.argv[1]) == True:
+            tmp = os.path.join(os.sys.argv[1], 'fiducials.csv')
+            if os.path.isfile(tmp) == True:
                 filepath = sys.argv[1]
+                filepath = os.path.normpath(filepath)
             else:
-                print(sys.argv[1], 'does not have .csv extension.')
+                print(sys.argv[1], 'does not contain fiducials.csv.')
+                print('Aborting.')
+                exit()
         else:
             print(sys.argv[1], 'does not exist.')
+            print('Aborting.')
+            exit()
     else:
-        print('No command line argument for csv file provided.')
+        print('No command line argument for folder provided.')
+        print('Running test.')
+        filepath = 'test'
 
-    if filepath == '':
-        print('Usage: python3', sys.argv[0], '<PATH/TO/FILE>')
-        print('Aborting.')
-        exit()
-
-    readMRIData(filepath)
-
+    iop = read_intra_op_points(filepath)
+    print('Set of IntraOp points:')
+    print(iop)
+    t = read_tumor_point(filepath)
+    print('Tumor point:')
+    print(t)
+    plot_points(iop, filepath + '_org_points')
+    plot_lin_plane_fitting(iop, filepath + '_org_inter')
+    iop = rotate_points(iop)
+    plot_points(iop, filepath + '_rot_points')
+    plot_lin_plane_fitting(iop, filepath + '_rot_inter')
+    print(iop)
 
 if __name__ == '__main__':
     main()
