@@ -73,6 +73,7 @@ def plot_surface(filepath):
     plt.xlabel('x')
     plt.ylabel('y')
     plt.imshow(a, cmap=cm.viridis, interpolation='nearest')
+    plt.gca().invert_yaxis()
     print('Save figure to {}.'.format(filepath_heatmap))
     plt.colorbar()
     plt.savefig(filepath_heatmap)
