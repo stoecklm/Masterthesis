@@ -11,6 +11,9 @@ import re
 from scipy.interpolate import splprep, splev
 import scipy.linalg
 import sys
+import warnings
+warnings.filterwarnings(action="ignore", module="scipy",
+                        message="^internal gelsd")
 
 def plot_points(points, filename):
     fig = plt.figure()
@@ -35,13 +38,15 @@ def print_length(points):
         print('Length of Points:')
         print((point[0]**2 + point[1]**2 + point[2]**2)**0.5)
 
-def move_points(points, move):
+def move_points(points, tumor, move):
     print('Move points.')
     for point in points:
         point[...] = point - move
 
+    tumor = tumor - move
+
     print('Done.')
-    return points
+    return points, tumor
 
 def interpolation(points, filename):
     print('Doing interpolation.')
@@ -161,10 +166,10 @@ def lin_plane_fitting(points):
     print('Done.')
     return C
 
-def rotate_points(points):
-    print('Rotate points.')
+def rotate_points(points, tumor):
+    print('Rotate IntraOp points and tumor.')
     C = lin_plane_fitting(points)
-    M = np.array([C[0], C[1], -1])
+    M = np.array([-1.0*C[0], -1.0*C[1], 1])
     N = np.array([0, 0, 1])
 
     costheta = M.dot(N)/(LA.norm(M)*LA.norm(N))
@@ -185,8 +190,10 @@ def rotate_points(points):
     for point in points:
         point[...] = np.dot(rmat, point)
 
+    tumor = np.dot(rmat, tumor)
+
     print('Done.')
-    return points
+    return points, tumor
 
 def main():
     filepath = ''
@@ -211,6 +218,7 @@ def main():
         print('Running test.')
         filepath = 'test'
 
+    # Original data.
     iop = read_intra_op_points(filepath)
     print('Set of IntraOp points:')
     print(iop)
@@ -218,11 +226,26 @@ def main():
     print('Tumor point:')
     print(t)
     plot_points(iop, filepath + '_org_points')
-    plot_lin_plane_fitting(iop, filepath + '_org_inter')
-    iop = rotate_points(iop)
+    plot_lin_plane_fitting(iop, filepath + '_org_plane')
+    interpolation(iop, filepath + '_org_inter')
+    # Rotation of points.
+    iop, t = rotate_points(iop, t)
     plot_points(iop, filepath + '_rot_points')
-    plot_lin_plane_fitting(iop, filepath + '_rot_inter')
+    plot_lin_plane_fitting(iop, filepath + '_rot_plane')
+    interpolation(iop, filepath+ '_rot_inter')
+    print('Set of IntraOp points after moving:')
     print(iop)
+    print('Tumor point after moving:')
+    print(t)
+    # Move tumor to origin.
+    iop, t = move_points(iop, t, t)
+    plot_points(iop, filepath + '_move_points')
+    plot_lin_plane_fitting(iop, filepath + '_move_plane')
+    interpolation(iop, filepath+ '_move_inter')
+    print('Set of IntraOp points after moving:')
+    print(iop)
+    print('Tumor point after moving:')
+    print(t)
 
 if __name__ == '__main__':
     main()
