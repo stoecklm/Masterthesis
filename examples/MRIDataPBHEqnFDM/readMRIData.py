@@ -3,6 +3,7 @@ import math
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import matplotlib.path as mpath
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 from numpy import linalg as LA
@@ -48,8 +49,26 @@ def move_points(points, tumor, move):
     print('Done.')
     return points, tumor
 
-def interpolation(points, filename):
+def interpolation(points):
     print('Doing interpolation.')
+    # Add last point, since this value will be overwritten by splrep.
+    pts = np.zeros((points.shape[0]+1,2))
+    pts[0:points.shape[0],:] = points[:,0:2]
+    pts[-1,:] = points[-1,0:2]
+    # Interpolation
+    tck, u = splprep(pts.T, u=None, s=0.0, per=1)
+    u_new = np.linspace(u.min(), u.max(), 1000)
+    x_new, y_new = splev(u_new, tck, der=0)
+
+    a = np.zeros((1000,2))
+    a[:,0] = x_new
+    a[:,1] = y_new
+
+    print('Done.')
+    return a
+
+def plot_interpolation(points, filename):
+    print('Plot interpolation.')
     # Add last point, since this value will be overwritten by splrep.
     pts = np.zeros((points.shape[0]+1,2))
     pts[0:points.shape[0],:] = points[:,0:2]
@@ -65,7 +84,12 @@ def interpolation(points, filename):
     plt.savefig(filename + '.eps')
     plt.close()
 
+    a = np.zeros((1000,2))
+    a[:,0] = x_new
+    a[:,1] = y_new
+
     print('Done.')
+    return a
 
 def read_intra_op_points(folderpath):
     print('Read IntraOp points.')
@@ -195,6 +219,12 @@ def rotate_points(points, tumor):
     print('Done.')
     return points, tumor
 
+def get_interpolated_path(points):
+    return mpath.Path(interpolation(points))
+
+def get_path(points):
+    return mpath.Path(points[:,0:2])
+
 def main():
     filepath = ''
     # Check if path to csv file (i.e. results) is provided,
@@ -227,25 +257,28 @@ def main():
     print(t)
     plot_points(iop, filepath + '_org_points')
     plot_lin_plane_fitting(iop, filepath + '_org_plane')
-    interpolation(iop, filepath + '_org_inter')
+    plot_interpolation(iop, filepath + '_org_inter')
+    print()
     # Rotation of points.
     iop, t = rotate_points(iop, t)
     plot_points(iop, filepath + '_rot_points')
     plot_lin_plane_fitting(iop, filepath + '_rot_plane')
-    interpolation(iop, filepath+ '_rot_inter')
-    print('Set of IntraOp points after moving:')
+    plot_interpolation(iop, filepath + '_rot_inter')
+    print('Set of IntraOp points after rotation:')
     print(iop)
-    print('Tumor point after moving:')
+    print('Tumor point after rotation:')
     print(t)
+    print()
     # Move tumor to origin.
     iop, t = move_points(iop, t, t)
     plot_points(iop, filepath + '_move_points')
     plot_lin_plane_fitting(iop, filepath + '_move_plane')
-    interpolation(iop, filepath+ '_move_inter')
+    plot_interpolation(iop, filepath + '_move_inter')
     print('Set of IntraOp points after moving:')
     print(iop)
     print('Tumor point after moving:')
     print(t)
+    print()
 
 if __name__ == '__main__':
     main()
