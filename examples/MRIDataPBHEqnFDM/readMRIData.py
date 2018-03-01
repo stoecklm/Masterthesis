@@ -15,6 +15,8 @@ import sys
 import warnings
 warnings.filterwarnings(action="ignore", module="scipy",
                         message="^internal gelsd")
+warnings.filterwarnings(action="ignore", module="scipy",
+                        message="^Setting x")
 
 def plot_points(points, filename):
     fig = plt.figure()
@@ -49,6 +51,7 @@ def move_points(points, tumor, move):
     print('Done.')
     return points, tumor
 
+# https://stackoverflow.com/a/31466013
 def interpolation(points):
     print('Doing interpolation.')
     # Add last point, since this value will be overwritten by splrep.
@@ -67,6 +70,7 @@ def interpolation(points):
     print('Done.')
     return a
 
+# https://stackoverflow.com/a/31466013
 def plot_interpolation(points, filename):
     print('Plot interpolation.')
     # Add last point, since this value will be overwritten by splrep.
@@ -84,12 +88,7 @@ def plot_interpolation(points, filename):
     plt.savefig(filename + '.eps')
     plt.close()
 
-    a = np.zeros((1000,2))
-    a[:,0] = x_new
-    a[:,1] = y_new
-
     print('Done.')
-    return a
 
 def read_intra_op_points(folderpath):
     print('Read IntraOp points.')
@@ -138,28 +137,26 @@ def read_tumor_point(folderpath):
     tumor = np.asarray(xyz)
     return tumor
 
+# https://gist.github.com/amroamroamro/1db8d69b4b65e8bc66a6
 def plot_lin_plane_fitting(points, filename):
     print('Plot plane fitting.')
-    X = points[:,0]
-    Y = points[:,1]
-    Z = points[:,2]
-    data = np.c_[X,Y,Z]
-    # regular grid covering the domain of the data
+    data = np.c_[points[:,0], points[:,1], points[:,2]]
+    # Regular grid covering the domain of the data.
     mn = np.min(data, axis=0)
     mx = np.max(data, axis=0)
     X,Y = np.meshgrid(np.linspace(mn[0], mx[0], 20),
                       np.linspace(mn[1], mx[1], 20))
-    # best-fit linear plane
+    # Fit linear plane.
     A = np.c_[data[:,0], data[:,1], np.ones(data.shape[0])]
     C,_,_,_ = scipy.linalg.lstsq(A, data[:,2])    # coefficients
 
-    # evaluate it on grid
+    # Evaluate plane.
     Z = C[0]*X + C[1]*Y + C[2]
 
-    # plot points and fitted surface
+    # Plot points and fitted surface
     fig = plt.figure()
     ax = fig.gca(projection='3d')
-    ax.plot_surface(X, Y, Z, rstride=1, cstride=1, alpha=0.2)
+    ax.plot_wireframe(X, Y, Z, rstride=2, cstride=2)
     ax.scatter(data[:,0], data[:,1], data[:,2], c='r', s=50)
     plt.xlabel('X')
     plt.ylabel('Y')
@@ -172,6 +169,7 @@ def plot_lin_plane_fitting(points, filename):
 
     print('Done.')
 
+# https://gist.github.com/amroamroamro/1db8d69b4b65e8bc66a6
 def lin_plane_fitting(points):
     print('Plane fitting.')
     X = points[:,0]
@@ -190,13 +188,14 @@ def lin_plane_fitting(points):
     print('Done.')
     return C
 
+# https://stackoverflow.com/a/9423864
 def rotate_points(points, tumor):
     print('Rotate IntraOp points and tumor.')
     C = lin_plane_fitting(points)
     M = np.array([-1.0*C[0], -1.0*C[1], 1])
     N = np.array([0, 0, 1])
 
-    costheta = M.dot(N)/(LA.norm(M)*LA.norm(N))
+    costheta = M.dot(N) / (LA.norm(M)*LA.norm(N))
 
     axis = np.cross(M, N) / LA.norm(np.cross(M, N))
 
@@ -207,9 +206,9 @@ def rotate_points(points, tumor):
     y = axis[1]
     z = axis[2]
 
-    rmat = np.array([[ x*x*C+c,    x*y*C-z*s,  x*z*C+y*s ],
-                     [ y*x*C+z*s,  y*y*C+c,    y*z*C-x*s ],
-                     [ z*x*C-y*s,  z*y*C+x*s,  z*z*C+c   ]])
+    rmat = np.array([[x*x*C+c, x*y*C-z*s, x*z*C+y*s],
+                     [y*x*C+z*s, y*y*C+c, y*z*C-x*s],
+                     [z*x*C-y*s, z*y*C+x*s, z*z*C+c]])
 
     for point in points:
         point[...] = np.dot(rmat, point)
