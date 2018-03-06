@@ -1,7 +1,7 @@
-[Dimension]
-SPACE_DIM = 3
+[MRI]
+# Leave blank if no real data shall be used.
+Case = 1151711
 
-# Values from Bousselham et al. (2017).
 [Parameters]
 H = 10.0
 T_INF = 22.4
@@ -15,6 +15,16 @@ RADIUS = 0.021135
 DEPTH = 0.024
 # Diameter for hole in skull = HOLE_FACTOR * DIAMETER
 HOLE_FACTOR = 1.10
+
+# RHO = density of brain or tumor [kg/m^3]
+# C = specific heat capacity of brain or tumor [J/(kg K)]
+# LAMBDA = thermal conductivity of brain or tumor [W/(m K)]
+# RHO_BLOOD = density of blood in brain or tumor [kg/m^3]
+# C_BLOOD = specific heat capacity of blood in brain or tumor [J/(kg K)]
+# OMEGA = blood perfusion rate in brain or tumor [1/s]
+# T_BLOOD = blood (i.e. artery) temperature in brain or tumor [deg C]
+# Q = metabolic heat rate (i.e. volumetric heat flux) of brain or tumor [W/m^3]
+# T = start temperature of brain or tumor [deg C]
 
 [Brain]
 RHO = 1040.0
@@ -71,6 +81,9 @@ THRESHOLD = 1.0e-5
 # If 0 < value < 1, then it is assumend to be an ratio.
 CHECK_CONV_FIRST_AT_ITER = 0.5
 CHECK_CONV_AT_EVERY_N_ITER = 0.05
+
+[Dimension]
+SPACE_DIM = 3
 
 [Output]
 N_SNAPSHOTS = 1
