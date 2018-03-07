@@ -1,5 +1,5 @@
 /* ScaFES
- * Copyright (c) 2011-2017, ZIH, TU Dresden, Federal Republic of Germany.
+ * Copyright (c) 2011-2015, ZIH, TU Dresden, Federal Republic of Germany.
  * For details, see the files COPYING and LICENSE in the base directory
  * of the package.
  */
@@ -21,6 +21,7 @@
 #include <iostream>
 #include <vector>
 #include <tuple>
+#include <unordered_map>
 
 #include "ScaFES_Communicator.hpp"
 #include "ScaFES_Ntuple.hpp"

@@ -1,7 +1,7 @@
-1.0.0 (12/11/2013)
+1.0.0 (2013-11-12)
         - Initial version
 
-2.0.0 (07/04/2014)
+2.0.0 (2014-04-07)
         - Removed function pointers for initialisation of data fields
           from parameter list of class ScaFES::Problem.
         - Removed function pointers for the analytical solutions
@@ -63,12 +63,12 @@
           memory lump for the new resp. for the old iterate.
         - Replaced calls to "new CT" by calls to "std::vector<CT>".
 
-2.0.1 (09/25/2014)
+2.0.1 (2014-09-25)
         - Improved build and installation tests.
         - Updated doxygen documentation.
         - Fixed minor bugs wrt. build and installation process.
 
-2.1.0 (11/13/2014)
+2.1.0 (2014-11-13)
         - Fixed bug related to enabling / disabling optional modules
           like ADOL-C or NetCDF. Before, software could only be built
           in the configuration which was used during the creation of the
@@ -95,7 +95,7 @@
         - Renamed MPI related methods and moved those methods to the
           file ScaFES_Communicator.hpp.
 
-2.2.0 (11/20/2014)
+2.2.0 (2014-11-20)
         - Created shell script scripts/scafescc.sh in order to simplify the
           build process of a ScaFES application. Necessary parameters for
           building the application can be configured via environment variables
@@ -109,7 +109,7 @@
           the C++11 feature std::ignore = var; of <tuple>.
         - Fixed some minor bugs.
 
-2.3.0 (05/27/2015)
+2.3.0 (2015-05-27)
         - Improved description of build and installation process.
         - Added description how to install ScaFES using shell scripts prefixed by
           scafes*.
@@ -123,8 +123,8 @@
           Paths within scripts will be created dynamically.
         - Fixed "define HAVE_MPI".
         - Added new class "ScaFES::Environment".
-        - Add run modes "OPENMP_ONLY", "SERIAL", "LOADLEVELER_WITH_LLSUBMIT_CALL"
-          to shell script scafesrun.sh
+        - Added run modes "OPENMP_ONLY", "SERIAL",
+          "LOADLEVELER_WITH_LLSUBMIT_CALL" to shell script scafesrun.sh
         - Added ifdef sections wrt. BOOST, BOOST_SERIALIZATION.
         - Changed configure checks: Now, Boost.program_options, Boost.Regex will
           be checked only if Boost is wanted.
@@ -139,5 +139,77 @@
           parallel NetCDF and MPI in ScaFES_DataFile.hpp, ScaFES_DataFileApi.hpp.
         - Renamed folder "scafes" to "src".
 
-
-
+2.4.0 (2018-03-06)
+        - src/ScaFES_Problem.hpp: Added methods for accessing known data fields
+          at the last and the current time step in order to support the usage
+          of FD methods with Neumann boundary conditions. Mixed Dirichlet /
+          Neumann problems need values from the last and current time step.
+          Added calls to methods swapPointer() and updateTime() for known data
+          fields in evalUpdate() methods.
+          Added 2nd memory lump for known data fields.
+        - src/ScaFES_Problem.hpp: Added method initDfsFromFile() initializing
+          known and unknown data fields from a NetCDF file.
+        - src/ScaFES_Problem.hpp: Added faster implementation of method
+          setVectDfDepToDfIndep().
+        - src/ScaFES_Problem.hpp: Updated NetCDF write functions such that
+          this method will only be called if values are written to file.
+        - src/ScaFES_Problem.hpp: Fixed bug related to template parameter float.
+          Problems could not be initialized with float as template parameters
+          since ADOL-C requires double.
+        - src/ScaFES_DataField.hpp: Added method checkConv() in order
+          to calculate convergence for data fields in each iteration step.
+          If all data fields are converged, then iteration will be aborted.
+        - ScaFES_DataFile.hpp: Added case AT_END to ScaFES::WriteHowOften.
+          in order to write NetCDF file only at the last timestep.
+-       - src/ScaFES_Problem.hpp: Fixed bug in case only one unknown
+          data field and no known data field are used.
+        - src/ScaFES_Parameters.hpp: Added the following command line options:
+            --initfile=<string>
+              Sets the name of the initialization file.
+            --initKnownDfs=<0/1>
+              Sets if known data fields should be initialized from a NetCDF file.
+            --threshold=<double>
+              Sets the threshold for convergence check.
+            --checkConvFirstAtIter=<int>
+              Sets the number of iteration when convergence should
+              be checked for the first time.
+            --checkConvAtEveryNIter=<int>
+              Sets the number of iterations between two convergence checks.
+        - scripts/scafesrun.sh: Added the following SCAFESRUN environment
+          variables:
+            - SCAFESRUN_NAME_INITFILE=<string> (default="")
+              Name of the initialization file / NetCDF file
+            - SCAFESRUN_INIT_KNOWNDFS=<yes/no> (default="NO")
+              Should known datafields be initialized from the init file?.
+            - SCAFESRUN_THRESHOLD=<double> (default=1e-5)
+              Threshold for convergence check
+            - SCAFESRUN_CHECK_CONV_FIRST_AT_ITER=<int> (default=1)
+              Number of iteration when convergence should be checked
+              for the first time.
+            - SCAFESRUN_CHECK_CONV_AT_EVERY_N_ITER=<int> (default=1)
+              Number of iterations between two convergence checks.
+            - SCAFESRUN_NAME_RESULTFILE=<string>
+              Name of the result file / NetCDF file
+        - src/ScaFES_DataFileApi.hpp: Added methods for reading in data fields
+          from a file using NetCDF functions.
+          This initialization works in serial and in parallel.
+        - BTS_scripts/BTS_*.sh: Cleaned up bash scripts and updated scripts
+          to buildtests version 5.0.2.
+        - jenkins/*.sh: Added scripts based on buildtests version 5
+          for simplifying Jenkins related tasks.
+        - Build system: Gave up distinction between to_distribute and
+          to_develop versions of Makefile.am and configure.ac.
+        - tests/unit: Added unit tests for most of the source files in folder
+          src based on the testing framework GoogleTest.
+        - tests/system/HeatEqnFDMNeumann: Added system test
+          for the verification of the 1-D Heat equation problem with Neumann
+          boundary conditions at the right boundary.
+        - tests/system/Empty: Added system test for measuring the
+          performance overhead introduced by the framework.
+        - AUTHORS: Described contributions of authors in more detail.
+        - src/ScaFES_Problem.hpp: Fixed some minor bugs related to ADOL-C.
+        - src/ScaFES_BufferDummy.hpp: Fixed bug: Added includes using guards
+          related to Boost serialization. Reason: BOOST_PFTO does not exist
+          anymore beginning from Boost version 1.59.0.
+        - src/ScaFES_DataFileApi.hpp: Fixed bug related to inclusion
+          of headers for parallel NetCDF.

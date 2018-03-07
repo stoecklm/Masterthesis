@@ -1,5 +1,5 @@
 /* ScaFES
- * Copyright (c) 2011-2018, ZIH, TU Dresden, Federal Republic of Germany.
+ * Copyright (c) 2011-2016, ZIH, TU Dresden, Federal Republic of Germany.
  * For details, see the files COPYING and LICENSE in the base directory
  * of the package.
  */

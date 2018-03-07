@@ -723,12 +723,19 @@ protected:
 
     /*------------------------------------------------------------------------*/
     /** Writes all data fields to one NetCDF file depending
-     * on the parameter of the constructor. */
+     * on the parameter of the constructor.
+     * \param timeIter Current time step */
     void writeDfsToFile(const int& timeIter);
 
-    /*------------------------------------------------------------------------*/
-    /* Init all unknown data fields from one NetCDF. */
+    /** Initializes all unknown data fields from one NetCDF.
+     *  \param timeIter Current time step
+     *  \remarks This method is deprecated and will be removed in the future.
+     *  Please use instead the method \c readDfsFromFile .*/
     void initDfsFromFile(const int& timeIter);
+
+    /** Reads all unknown data fields from one NetCDF.
+     * \param timeIter Current time step */
+    void readDfsFromFile(const int& timeIter);
 
     /*------------------------------------------------------------------------*/
     /*------------------------------------------------------------------------*/
@@ -1462,7 +1469,7 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
     int nUnknownDfs = 0;
     for (int ii = 0; ii < nDataFields; ++ii)
     {
-        if (!this->isKnownDf().at(ii))
+        if (!(this->isKnownDf().at(ii)))
         {
             ++nUnknownDfs;
         }
@@ -1894,38 +1901,38 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
         this->globalGrid().discreteDomain().nNodes(), tmpMemNormal);
 
     /*------------------------------------------------------------------------*/
-    if (this->mParams.readInitFile() == true)
+    if (this->mParams.readInitFile())
     {
-        /* Create Variables for mInitFile. */
+        /* Create variables. */
         /* File name. */
         std::ostringstream initStringstream;
         initStringstream << this->params().nameInitFile();
 
-        /* Number of variables to init. */
-        int nDataFieldsToInit = 0;
+        /* Number of variables to initialize. */
+        int nDataFieldsToRead = 0;
         for (std::size_t ii = 0; ii < this->isKnownDf().size(); ++ii)
         {
-            if (this->isKnownDf().at(ii) == false)
+            if (!(this->isKnownDf().at(ii)))
             {
-                ++nDataFieldsToInit;
+                ++nDataFieldsToRead;
             }
-            if (this->isKnownDf().at(ii) == true
-                && this->params().initKnownDfs() == true)
+            if (this->isKnownDf().at(ii)
+                && this->params().initKnownDfs())
             {
-                ++nDataFieldsToInit;
+                ++nDataFieldsToRead;
             }
         }
         /* Name of variables. */
         std::vector<std::string> initNames;
-        initNames.reserve(nDataFieldsToInit);
+        initNames.reserve(nDataFieldsToRead);
         for (std::size_t ii = 0; ii < this->isKnownDf().size(); ++ii)
         {
-            if (this->isKnownDf().at(ii) == false)
+            if (!(this->isKnownDf().at(ii)))
             {
                 initNames.push_back(this->mNameDataField[ii]);
             }
-            if (this->isKnownDf().at(ii) == true
-                && this->params().initKnownDfs() == true)
+            if (this->isKnownDf().at(ii)
+                && this->params().initKnownDfs())
             {
                 initNames.push_back(this->mNameDataField[ii]);
             }
@@ -1933,21 +1940,21 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
 
         /* Normal grid memory. */
         std::vector<ScaFES::GridSub<DIM>> initMemNormal;
-        initMemNormal.reserve(nDataFieldsToInit);
+        initMemNormal.reserve(nDataFieldsToRead);
         idxUnknownDf = 0;
         int idxKnownDf = 0;
         for (std::size_t ii = 0; ii < this->isKnownDf().size(); ++ii)
         {
             if (0 == nLayers.at(ii))
             {
-                if (this->isKnownDf().at(ii) == false)
+                if (!(this->isKnownDf().at(ii)))
                 {
                     initMemNormal.push_back(
                         this->vectUnknownDfsDomNew()[idxUnknownDf].memNormal());
                     ++idxUnknownDf;
                 }
-                if (this->isKnownDf().at(ii) == true
-                    && this->params().initKnownDfs() == true)
+                if (this->isKnownDf().at(ii)
+                    && this->params().initKnownDfs())
                 {
                     initMemNormal.push_back(
                         this->vectKnownDfsDomNew()[idxKnownDf].memNormal());
@@ -1961,14 +1968,14 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
         {
             if (0 < nLayers.at(ii))
             {
-                if (this->isKnownDf().at(ii) == false)
+                if (!(this->isKnownDf().at(ii)))
                 {
                     initMemNormal.push_back(
                         this->vectUnknownDfsBdryNew()[idxUnknownDf].memNormal());
                     ++idxUnknownDf;
                 }
-                if (this->isKnownDf().at(ii) == true
-                    && this->params().initKnownDfs() == true)
+                if (this->isKnownDf().at(ii)
+                    && this->params().initKnownDfs())
                 {
                     initMemNormal.push_back(
                         this->vectKnownDfsBdryNew()[idxKnownDf].memNormal());
@@ -1977,7 +1984,8 @@ inline Problem<OWNPRBLM, CT, DIM>::Problem(
             }
         }
 
-        /* Init member varibale. */
+        /* Create new data file for the initialization of the data fields
+         * based on the information created above. */
         this->mInitFile = ScaFES::DataFile<CT, DIM>(
             initStringstream.str(), initNames, this->params().myWorld(),
             this->globalGrid().discreteDomain().nNodes(), initMemNormal);
@@ -2758,7 +2766,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalInitPbPhase()
 
     int timeIter = 0;
 
-    if (mParams.readInitFile() == false)
+    if (!this->mParams.readInitFile())
     {
         if (this->useAsynchronMode())
         {
@@ -2783,7 +2791,8 @@ inline void Problem<OWNPRBLM, CT, DIM>::evalInitPbPhase()
     }
     else
     {
-        this->initDfsFromFile(timeIter);
+        /* All data fields will be read from a file. */
+        this->readDfsFromFile(timeIter);
     }
 
     for (std::size_t ii = 0; ii < this->mVectUnknownDfsDomNew.size(); ++ii)
@@ -4262,7 +4271,8 @@ inline void Problem<OWNPRBLM, CT, DIM>::writeDfsToFile(const int& timeIter)
     {
         std::cout << this->mParams.getPrefix()
                   << " * Write data fields to file "
-                  << mCommonFile.nameDataFile() << " ..." << std::endl;
+                  << mCommonFile.nameDataFile()
+                  << "at time step " << timeIter << " ..." << std::endl;
     }
     this->mParams.decreaseLevel();
 
@@ -4389,7 +4399,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::writeDfsToFile(const int& timeIter)
          * in this timestep. */
         for (int ii = 0; ii < nDataFieldsToWrite; ++ii)
         {
-            if (writeData.at(ii) == true)
+            if (writeData.at(ii))
             {
                 this->mCommonFile.write(tmpElemData, writeData, timeIter);
                 break;
@@ -4410,6 +4420,12 @@ inline void Problem<OWNPRBLM, CT, DIM>::writeDfsToFile(const int& timeIter)
 template <class OWNPRBLM, typename CT, std::size_t DIM>
 inline void Problem<OWNPRBLM, CT, DIM>::initDfsFromFile(const int& timeIter)
 {
+    this->readDfsFromFile(timeIter);
+}
+/*----------------------------------------------------------------------------*/
+template <class OWNPRBLM, typename CT, std::size_t DIM>
+inline void Problem<OWNPRBLM, CT, DIM>::readDfsFromFile(const int& timeIter)
+{
     ScaFES::Timer timerSync;
     ScaFES::Timer timerPhase;
 
@@ -4417,45 +4433,46 @@ inline void Problem<OWNPRBLM, CT, DIM>::initDfsFromFile(const int& timeIter)
         (0 < this->params().indentDepth()))
     {
         std::cout << this->mParams.getPrefix()
-                  << " * Init data fields from file "
-                  << mInitFile.nameDataFile() << " ..." << std::endl;
+                  << " * Read data fields from file "
+                  << this->mInitFile.nameDataFile()
+                  << "at time step " << timeIter << " ..." << std::endl;
     }
     this->mParams.decreaseLevel();
 
     timerPhase.restart();
 
-    int nDataFieldsToInit = 0;
+    int nDataFieldsToRead = 0;
     for (std::size_t ii = 0; ii < this->isKnownDf().size(); ++ii)
     {
-        if (this->isKnownDf().at(ii) == false)
+        if (!(this->isKnownDf().at(ii)))
         {
-            ++nDataFieldsToInit;
+            ++nDataFieldsToRead;
         }
-        if (this->isKnownDf().at(ii) == true
-            && this->params().initKnownDfs() == true)
+        if (this->isKnownDf().at(ii)
+            && this->params().initKnownDfs())
         {
-            ++nDataFieldsToInit;
+            ++nDataFieldsToRead;
         }
     }
 
-    if (0 < nDataFieldsToInit)
+    if (0 < nDataFieldsToRead)
     {
         std::vector<CT*> tmpElemData;
-        tmpElemData.reserve(nDataFieldsToInit);
+        tmpElemData.reserve(nDataFieldsToRead);
         int idxUnknownDf = 0;
         int idxKnownDf = 0;
         for (std::size_t ii = 0; ii < this->isKnownDf().size(); ++ii)
         {
             if (0 == this->nLayers().at(ii))
             {
-                if (this->isKnownDf().at(ii) == false)
+                if (!(this->isKnownDf().at(ii)))
                 {
                     tmpElemData.push_back(
                         this->vectUnknownDfsDomNew()[idxUnknownDf].elemData());
                     ++idxUnknownDf;
                 }
-                if (this->isKnownDf().at(ii) == true
-                    && this->params().initKnownDfs() == true)
+                if (this->isKnownDf().at(ii)
+                    && this->params().initKnownDfs())
                 {
                     tmpElemData.push_back(
                         this->vectKnownDfsDomNew()[idxKnownDf].elemData());
@@ -4469,14 +4486,14 @@ inline void Problem<OWNPRBLM, CT, DIM>::initDfsFromFile(const int& timeIter)
         {
             if (0 < this->nLayers().at(ii))
             {
-                if (this->isKnownDf().at(ii) == false)
+                if (!(this->isKnownDf().at(ii)))
                 {
                     tmpElemData.push_back(
                         this->vectUnknownDfsBdryNew()[idxUnknownDf].elemData());
                     ++idxUnknownDf;
                 }
-                if (this->isKnownDf().at(ii) == true
-                    && this->params().initKnownDfs() == true)
+                if (this->isKnownDf().at(ii)
+                    && this->params().initKnownDfs())
                 {
                     tmpElemData.push_back(
                         this->vectKnownDfsBdryNew()[idxKnownDf].elemData());
@@ -4493,47 +4510,47 @@ inline void Problem<OWNPRBLM, CT, DIM>::initDfsFromFile(const int& timeIter)
         (0 < this->params().indentDepth()))
     {
         std::cout << this->mParams.getPrefix()
-                  << "   Initialized."
+                  << "   Read."
                   << std::endl;
     }
 
     timerSync.restart();
     /*------------------------------------------------------------------------*/
-    for (std::size_t ii = 0; ii < mVectUnknownDfsDomNew.size(); ++ii)
+    for (std::size_t ii = 0; ii < this->mVectUnknownDfsDomNew.size(); ++ii)
     {
-        mVectUnknownDfsDomNew[ii].copyValuesFromMemCommToSendBuffer(timeIter);
+        this->mVectUnknownDfsDomNew[ii].copyValuesFromMemCommToSendBuffer(timeIter);
     }
-    for (std::size_t ii = 0; ii < mVectGradUnknownDfsDomNew.size(); ++ii)
+    for (std::size_t ii = 0; ii < this->mVectGradUnknownDfsDomNew.size(); ++ii)
     {
-        mVectGradUnknownDfsDomNew[ii].copyValuesFromMemCommToSendBuffer(timeIter);
+        this->mVectGradUnknownDfsDomNew[ii].copyValuesFromMemCommToSendBuffer(timeIter);
     }
-    for (std::size_t ii = 0; ii < mVectUnknownDfsDomNew.size(); ++ii)
+    for (std::size_t ii = 0; ii < this->mVectUnknownDfsDomNew.size(); ++ii)
     {
-        mVectUnknownDfsDomNew[ii].exchangeValuesInBuffers(timeIter);
+        this->mVectUnknownDfsDomNew[ii].exchangeValuesInBuffers(timeIter);
     }
-    for (std::size_t ii = 0; ii < mVectGradUnknownDfsDomNew.size(); ++ii)
+    for (std::size_t ii = 0; ii < this->mVectGradUnknownDfsDomNew.size(); ++ii)
     {
-        mVectGradUnknownDfsDomNew[ii].exchangeValuesInBuffers(timeIter);
-    }
-    /*------------------------------------------------------------------------*/
-    for (std::size_t ii = 0; ii < mVectUnknownDfsDomNew.size(); ++ii)
-    {
-        mVectUnknownDfsDomNew[ii].waitAll();
-    }
-    for (std::size_t ii = 0; ii < mVectGradUnknownDfsDomNew.size(); ++ii)
-    {
-        mVectGradUnknownDfsDomNew[ii].waitAll();
-    }
-    for (std::size_t ii = 0; ii < mVectUnknownDfsDomNew.size(); ++ii)
-    {
-        mVectUnknownDfsDomNew[ii].copyValuesFromReceiveBufferToMemGhost(timeIter);
-    }
-    for (std::size_t ii = 0; ii < mVectGradUnknownDfsDomNew.size(); ++ii)
-    {
-        mVectGradUnknownDfsDomNew[ii].copyValuesFromReceiveBufferToMemGhost(timeIter);
+        this->mVectGradUnknownDfsDomNew[ii].exchangeValuesInBuffers(timeIter);
     }
     /*------------------------------------------------------------------------*/
-    if (this->params().initKnownDfs() == true)
+    for (std::size_t ii = 0; ii < this->mVectUnknownDfsDomNew.size(); ++ii)
+    {
+        this->mVectUnknownDfsDomNew[ii].waitAll();
+    }
+    for (std::size_t ii = 0; ii < this->mVectGradUnknownDfsDomNew.size(); ++ii)
+    {
+        this->mVectGradUnknownDfsDomNew[ii].waitAll();
+    }
+    for (std::size_t ii = 0; ii < this->mVectUnknownDfsDomNew.size(); ++ii)
+    {
+        this->mVectUnknownDfsDomNew[ii].copyValuesFromReceiveBufferToMemGhost(timeIter);
+    }
+    for (std::size_t ii = 0; ii < this->mVectGradUnknownDfsDomNew.size(); ++ii)
+    {
+        this->mVectGradUnknownDfsDomNew[ii].copyValuesFromReceiveBufferToMemGhost(timeIter);
+    }
+    /*------------------------------------------------------------------------*/
+    if (this->params().initKnownDfs())
     {
         for (std::size_t ii = 0; ii < this->mVectKnownDfsDomNew.size(); ++ii)
         {

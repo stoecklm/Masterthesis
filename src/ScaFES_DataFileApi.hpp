@@ -1,5 +1,5 @@
 /* ScaFES
- * Copyright (c) 2011-2017, ZIH, TU Dresden, Federal Republic of Germany.
+ * Copyright (c) 2011-2015, 2018, ZIH, TU Dresden, Federal Republic of Germany.
  * For details, see the files COPYING and LICENSE in the base directory
  * of the package.
  */
@@ -47,14 +47,14 @@ const int DATA_FILE_VERSION = 3;
 /**
 * \class DataFile
 * @brief The class template \c DataFile is responsible for writing
-* (per default: in parallel) a data field to a given file in the NetCDf
+* (per default: in parallel) a data field to a given file in the NetCDF
 * output format.
 *
-* The call to the NetCDF creation of the data file is not set
-* within the constructor.
-* Instead, it will be created if the user calls the method \c write() the
-* first time. Thus, in case that no data will be written to the output
-* (using the method \c write()), then no data file will be created, too.
+* Note that the NetCDF creation of the data file is not done within the
+* \c DataFile constructor. Instead, a new file will be created if the method
+* \c write() has been called for the first time.
+* Thus, in case that no data should be written to the output (using the method
+* \c write()), then no file will be created.
 *
 * \n The command \code ncdump -h <netcdffile>\endcode provides some information
 * about the stored data fields and parameters.
@@ -80,18 +80,18 @@ const int DATA_FILE_VERSION = 3;
 template <typename TT, std::size_t DIM> class DataFile
 {
 public:
-    /*----------------------------------------------------------------------
+    /*--------------------------------------------------------------------------
     | TYPE DEFINITIONS.
-    ----------------------------------------------------------------------*/
+    --------------------------------------------------------------------------*/
     /** Re-export typename TT STL-like. */
     typedef TT value_type;
 
     /** Type definition for integer d-dimensional tuple. */
     typedef Ntuple<int, DIM> IntNtuple;
 
-    /*----------------------------------------------------------------------
+    /*--------------------------------------------------------------------------
     | LIFE CYCLE METHODS.
-    ----------------------------------------------------------------------*/
+    --------------------------------------------------------------------------*/
     /** Creates the default constructor. */
     DataFile();
 
@@ -113,9 +113,9 @@ public:
     /** Creates own destructor: Closes the file. */
     ~DataFile();
 
-    /*----------------------------------------------------------------------
+    /*--------------------------------------------------------------------------
     | GETTER METHODS.
-    ----------------------------------------------------------------------*/
+    --------------------------------------------------------------------------*/
     /** Returns the name of the data file. */
     std::string const& nameDataFile() const;
 
@@ -146,9 +146,9 @@ public:
     /** Returns the number of elements stored in the memory \c mNcMemory. */
     int const& nElemsNcMem() const;
 
-    /*----------------------------------------------------------------------
+    /*--------------------------------------------------------------------------
     | WORK METHODS.
-    ----------------------------------------------------------------------*/
+    --------------------------------------------------------------------------*/
     /** Creates the data file and sets the file layout of the
      *  underlying data field (depending on the template type). */
     void create();
@@ -162,20 +162,20 @@ public:
      *  from the file at the given time step. */
     void read(std::vector<TT*>& elemData, int const& timestep);
 
-    /** Inits the elements in the memory to which the pointer points to
+    /** Initializes the elements in the memory to which the pointer points to
      *  from the file. */
     void init(std::vector<TT*>& elemData);
 
 private:
-    /*----------------------------------------------------------------------
+    /*--------------------------------------------------------------------------
     | TYPE DEFINITIONS.
-    ----------------------------------------------------------------------*/
+    --------------------------------------------------------------------------*/
     /** Type of error variables of NetCDF lib. */
     typedef decltype(NC_NOERR) NCErrorType;
 
-    /*----------------------------------------------------------------------
+    /*--------------------------------------------------------------------------
     | STATIC VARIABLES AND METHODS.
-    ----------------------------------------------------------------------*/
+    --------------------------------------------------------------------------*/
     /** A map containing all error messages. */
     static std::unordered_map<NCErrorType, std::string> mNCErrorStrings;
 
@@ -187,9 +187,9 @@ private:
     static void wrapNCCall(NCErrorType const& status, std::string const& file,
                            int const& line);
 
-    /*----------------------------------------------------------------------
+    /*--------------------------------------------------------------------------
     | MEMBER VARIABLES.
-    ----------------------------------------------------------------------*/
+    --------------------------------------------------------------------------*/
     /** Name of NetCDF data file. */
     std::string mNameDataFile;
 
@@ -310,11 +310,13 @@ mNCErrorStrings[NC_EAXISTYPE] = "Unknown axis type.";
 /*----------------------------------------------------------------------------*/
 template <typename TT, std::size_t DIM> inline DataFile<TT, DIM>::~DataFile()
 {
+    int status = 0;
     if (this->mIsOpen)
     {
         if (0 < this->mIdFile)
         {
-            wrapNCCall(nc_close(this->mIdFile), __FILE__, __LINE__);
+            status = ::nc_close(this->mIdFile);
+            this->wrapNCCall(status, __FILE__, __LINE__);
         }
     }
 }
@@ -325,63 +327,63 @@ template <typename TT, std::size_t DIM> inline DataFile<TT, DIM>::~DataFile()
 template <typename TT, std::size_t DIM>
 inline std::string const& DataFile<TT, DIM>::nameDataFile() const
 {
-    return mNameDataFile;
+    return this->mNameDataFile;
 }
 /*----------------------------------------------------------------------------*/
 template <typename TT, std::size_t DIM>
 inline std::vector<std::string> const& DataFile<TT, DIM>::nameVariables() const
 {
-    return mNameVariables;
+    return this->mNameVariables;
 }
 /*----------------------------------------------------------------------------*/
 template <typename TT, std::size_t DIM>
 inline int const& DataFile<TT, DIM>::idFile() const
 {
-    return mIdFile;
+    return this->mIdFile;
 }
 /*----------------------------------------------------------------------------*/
 template <typename TT, std::size_t DIM>
 inline std::vector<std::vector<int>> const&
 DataFile<TT, DIM>::idVariable() const
 {
-    return mIdVariable;
+    return this->mIdVariable;
 }
 /*----------------------------------------------------------------------------*/
 template <typename TT, std::size_t DIM>
 inline bool const& DataFile<TT, DIM>::isOpen() const
 {
-    return mIsOpen;
+    return this->mIsOpen;
 }
 /*----------------------------------------------------------------------------*/
 template <typename TT, std::size_t DIM>
 inline int const& DataFile<TT, DIM>::nWritesCurr() const
 {
-    return mNwritesCurr;
+    return this->mNwritesCurr;
 }
 /*----------------------------------------------------------------------------*/
 template <typename TT, std::size_t DIM>
 inline std::vector<GridSub<DIM>> const& DataFile<TT, DIM>::memNormal() const
 {
-    return mMemNormal;
+    return this->mMemNormal;
 }
 /*----------------------------------------------------------------------------*/
 template <typename TT, std::size_t DIM>
 inline std::vector<TT*> const& DataFile<TT, DIM>::elemData() const
 {
-    return mElemData;
+    return this->mElemData;
 }
 /*----------------------------------------------------------------------------*/
 template <typename TT, std::size_t DIM>
 inline TT const& DataFile<TT, DIM>::elemData(int const& jj,
                                              int const& idx) const
 {
-    return mElemData[jj][idx];
+    return this->mElemData[jj][idx];
 }
 /*----------------------------------------------------------------------------*/
 template <typename TT, std::size_t DIM>
 inline int const& DataFile<TT, DIM>::nElemsNcMem() const
 {
-    return mNelemsNcMem;
+    return this->mNelemsNcMem;
 }
 
 /*******************************************************************************
@@ -402,38 +404,35 @@ template <typename TT, std::size_t DIM> void DataFile<TT, DIM>::create()
     #ifdef SCAFES_HAVE_NETCDF_PAR
     // Flag NC_NETCDF4 specifies that HDF5 library is used for parallel I/O //
     MPI_Info info = MPI_INFO_NULL;
-    status = nc_create_par(mNameDataFile.c_str(), NC_NETCDF4 | NC_MPIIO,
-                           mMyWorld.myWorld(), info, &mIdFile);
-
-    wrapNCCall(status, __FILE__, __LINE__);
+    status = ::nc_create_par(this->mNameDataFile.c_str(), NC_NETCDF4 | NC_MPIIO,
+                           this->mMyWorld.myWorld(), info, &(this->mIdFile));
+    this->wrapNCCall(status, __FILE__, __LINE__);
     #else
-    status = nc_create(nameDataFile().c_str(), NC_FORMAT_NETCDF4, &mIdFile);
-
-    wrapNCCall(status, __FILE__, __LINE__);
+    status = ::nc_create(nameDataFile().c_str(), NC_FORMAT_NETCDF4, &(this->mIdFile));
+    this->wrapNCCall(status, __FILE__, __LINE__);
     #endif
 #else // Case MPI not available.
-    status = nc_create(nameDataFile().c_str(), NC_FORMAT_NETCDF4, &mIdFile);
-
-    wrapNCCall(status, __FILE__, __LINE__);
+    status = ::nc_create(nameDataFile().c_str(), NC_FORMAT_NETCDF4, &(this->mIdFile));
+    this->wrapNCCall(status, __FILE__, __LINE__);
 #endif
 
     this->mIsOpen = true;
 
     // Add the new variable "version" to an open netCDF dataset in define mode.
     // Variable is of type NC_INT and a scalar.
-    wrapNCCall(nc_def_var(mIdFile, "version", NC_INT, 0, 0, &versionID),
-               __FILE__, __LINE__);
+    status = ::nc_def_var(this->mIdFile, "version", NC_INT, 0, 0, &versionID),
+    this->wrapNCCall(status, __FILE__, __LINE__);
 
     /*------------------------------------------------------------------------*/
     // Create the local memory mNcMemory for writing the data to the file once:
     // Here: During the creation process.
-    mNelemsNcMem = memNormal().at(0).nNodesTotal();
+    this->mNelemsNcMem = this->memNormal().at(0).nNodesTotal();
 
-    if (0 < mNelemsNcMem)
+    if (0 < this->mNelemsNcMem)
     {
         // Initialise memory at all nodes in order to be sure that
         // there is no dump in the memory.
-        mNcMemory = std::vector<double>(mNelemsNcMem, 0.0);
+        this->mNcMemory = std::vector<double>(this->mNelemsNcMem, 0.0);
     }
 
     /*------------------------------------------------------------------------*/
@@ -445,36 +444,37 @@ template <typename TT, std::size_t DIM> void DataFile<TT, DIM>::create()
         std::ostringstream oss;
         oss << tmpName << "_" << ii;
         std::string nameOfDim(oss.str());
-        status = nc_def_dim(mIdFile, nameOfDim.c_str(), mNnodes.elem(ii),
+        status = ::nc_def_dim(this->mIdFile, nameOfDim.c_str(), mNnodes.elem(ii),
                             &mIdDims[DIM - ii]);
-        wrapNCCall(status, __FILE__, __LINE__);
+        this->wrapNCCall(status, __FILE__, __LINE__);
     }
 
-    status = nc_def_dim(mIdFile, "time", NC_UNLIMITED, &mIdDims[0]);
-    wrapNCCall(status, __FILE__, __LINE__);
+    status = ::nc_def_dim(this->mIdFile, "time", NC_UNLIMITED, &mIdDims[0]);
+    this->wrapNCCall(status, __FILE__, __LINE__);
 
     int vID;
 
     int tmpIdDims[DIM + 1];
     for (std::size_t ii = 0; ii < DIM + 1; ++ii)
     {
-        tmpIdDims[ii] = mIdDims[ii];
+        tmpIdDims[ii] = this->mIdDims[ii];
     }
     for (std::size_t ii = 0; ii < mNameVariables.size(); ++ii)
     {
-        status = nc_def_var(mIdFile, (mNameVariables[ii]).c_str(), NC_DOUBLE,
+        status = ::nc_def_var(this->mIdFile, (mNameVariables[ii]).c_str(), NC_DOUBLE,
                             DIM + 1, tmpIdDims, &vID);
 
-        wrapNCCall(status, __FILE__, __LINE__);
-        mIdVariable[ii].push_back(vID);
+        this->wrapNCCall(status, __FILE__, __LINE__);
+        this->mIdVariable[ii].push_back(vID);
     }
 
-    wrapNCCall(nc_enddef(mIdFile), __FILE__, __LINE__);
+    status = ::nc_enddef(this->mIdFile);
+    this->wrapNCCall(status, __FILE__, __LINE__);
 
     /*------------------------------------------------------------------------*/
     // Write the version number to file.
-    wrapNCCall(nc_put_var_int(mIdFile, versionID, &version), __FILE__,
-               __LINE__);
+    status = ::nc_put_var_int(this->mIdFile, versionID, &version);
+    this->wrapNCCall(status, __FILE__, __LINE__);
 }
 /*----------------------------------------------------------------------------*/
 template <typename TT, std::size_t DIM>
@@ -489,7 +489,7 @@ void DataFile<TT, DIM>::write(std::vector<TT*> const& elemData,
 
     int status = 0;
 
-    // Update pointers to memory of data fiels which should be written to file.
+    // Update pointers to memory of data fields which should be written to file.
     // Remark: Pointers must be updated each time step because the old
     // and the new iterate are swapped in each time step.
     for (std::size_t ii = 0; ii < elemData.size(); ++ii)
@@ -497,7 +497,8 @@ void DataFile<TT, DIM>::write(std::vector<TT*> const& elemData,
         this->mElemData[ii] = elemData[ii];
     }
 
-    // Create the file if it was not done before.
+    /*------------------------------------------------------------------------*/
+    // Create the file if it was not already done before.
     if (!(this->mIsOpen))
     {
         this->create();
@@ -505,38 +506,40 @@ void DataFile<TT, DIM>::write(std::vector<TT*> const& elemData,
     #ifdef SCAFES_HAVE_NETCDF_PAR
         for (std::size_t ii = 0; ii < this->nameVariables().size(); ++ii)
         {
-            status = nc_var_par_access(this->mIdFile, this->mIdVariable[ii][0],
+            status = ::nc_var_par_access(this->mIdFile, this->mIdVariable[ii][0],
                                        NC_COLLECTIVE);
-            wrapNCCall(status, __FILE__, __LINE__);
+            this->wrapNCCall(status, __FILE__, __LINE__);
         }
     #endif
 #endif
     }
 
     const int nDimensions = 1 + DIM;
-    IntNtuple idxNodeFirst = memNormal().at(0).idxNodeFirstSub();
-    IntNtuple nNodes = memNormal().at(0).nNodesSub();
+    IntNtuple idxNodeFirst = this->memNormal().at(0).idxNodeFirstSub();
+    IntNtuple nNodes = this->memNormal().at(0).nNodesSub();
 
+    /*------------------------------------------------------------------------*/
     // Set dimensions and transform member variables to NC input format.
     std::size_t elemFirst[nDimensions];
     std::size_t nElems[nDimensions];
-    elemFirst[0] = mNwritesCurr; // Has to start with 0.
+    elemFirst[0] = this->mNwritesCurr; // Has to start with 0.
     ++(this->mNwritesCurr);
 
     for (int ii = 1; ii < nDimensions; ++ii)
     {
-        elemFirst[ii] = (unsigned long int)idxNodeFirst.elem(DIM - ii);
+        elemFirst[ii] = static_cast<unsigned long int>(idxNodeFirst.elem(DIM - ii));
     }
 
     nElems[0] = 1;
     for (int ii = 1; ii < nDimensions; ++ii)
     {
-        nElems[ii] = (unsigned long int)nNodes.elem(DIM - ii);
+        nElems[ii] = static_cast<unsigned long int>(nNodes.elem(DIM - ii));
     }
 
     double* ptrToMem = 0;
     TT value = 0;
 
+    /*------------------------------------------------------------------------*/
     for (std::size_t ii = 0; ii < this->nameVariables().size(); ++ii)
     {
         // Reset pointer to memory for each data field.
@@ -558,9 +561,9 @@ void DataFile<TT, DIM>::write(std::vector<TT*> const& elemData,
             }
             // mIdVariable[0] means real_part!
             status =
-                nc_put_vara_double(this->mIdFile, this->mIdVariable[ii][0],
+                ::nc_put_vara_double(this->mIdFile, this->mIdVariable[ii][0],
                                    elemFirst, nElems, this->mNcMemory.data());
-            wrapNCCall(status, __FILE__, __LINE__);
+            this->wrapNCCall(status, __FILE__, __LINE__);
         }
     }
 }
@@ -589,34 +592,42 @@ void DataFile<TT, DIM>::read(std::vector<TT*>& elemData, int const& /*timestep*/
     // Open the file with read-only access if it was not done before.
     if (!(this->mIsOpen))
     {
-        status = nc_open(mNameDataFile.c_str(), NC_NOWRITE, &mIdFile);
-        wrapNCCall(status, __FILE__, __LINE__);
-        mIsOpen = true;
+        status = ::nc_open(this->mNameDataFile.c_str(), NC_NOWRITE, &(this->mIdFile));
+        this->wrapNCCall(status, __FILE__, __LINE__);
+        this->mIsOpen = true;
     }
 
     /*------------------------------------------------------------------------*/
     // Read in version number.
-    status = nc_get_att_int(mIdFile, NC_GLOBAL, "version", &version);
+    status = ::nc_get_att_int(this->mIdFile, NC_GLOBAL, "version", &version);
     if (status != NC_NOERR)
     {
-        status = nc_inq_varid(mIdFile, "version", &idVersion);
+        status = ::nc_inq_varid(this->mIdFile, "version", &idVersion);
         if (status != NC_NOERR)
         {
             version = 0;
         }
         else
         {
-            nc_get_var_int(mIdFile, idVersion, &version);
+            status = ::nc_get_var_int(this->mIdFile, idVersion, &version);
+            this->wrapNCCall(status, __FILE__, __LINE__);
         }
+    }
+    for (std::size_t ii = 0; ii < this->mNameVariables.size(); ++ii)
+    {
+        this->mIdVariable[ii].push_back(0);
     }
 
     /*------------------------------------------------------------------------*/
-    // Get the varid of the data variable, based on its name.
+    // Get the var id of the data variable, based on its name.
     for (std::size_t ii = 0; ii < elemData.size(); ++ii)
     {
-        status = nc_inq_varid(mIdFile, mNameVariables[ii].c_str(),
-                              &(mIdVariable[ii][0]));
-        wrapNCCall(status, __FILE__, __LINE__);
+        status = ::nc_inq_varid(this->mIdFile, this->mNameVariables[ii].c_str(),
+                              &(this->mIdVariable[ii][0]));
+        this->wrapNCCall(status, __FILE__, __LINE__);
+    std::cout << " elementdata = " << elemData.size() << std::endl;
+    std::cout << " nameVariables = " << this->mNameVariables[ii].c_str() << std::endl;
+    std::cout << " mIdVariable = " << this->mIdVariable[ii][0] << std::endl;
     }
 
     /*------------------------------------------------------------------------*/
@@ -627,14 +638,12 @@ void DataFile<TT, DIM>::read(std::vector<TT*>& elemData, int const& /*timestep*/
         std::ostringstream oss;
         oss << tmpName << "_" << ii;
         std::string nameOfDim(oss.str());
-        status = nc_inq_dimid(mIdFile, nameOfDim.c_str(), &mIdDims[DIM - ii]);
+        status = ::nc_inq_dimid(this->mIdFile, nameOfDim.c_str(), &(this->mIdDims[DIM - ii]));
+        this->wrapNCCall(status, __FILE__, __LINE__);
+        status = ::nc_inq_dimlen(this->mIdFile, this->mIdDims[DIM - ii], &(nElems[ii]));
+        this->wrapNCCall(status, __FILE__, __LINE__);
 
-        wrapNCCall(status, __FILE__, __LINE__);
-        status = nc_inq_dimlen(mIdFile, mIdDims[DIM - ii], &(nElems[ii]));
-
-        wrapNCCall(status, __FILE__, __LINE__);
-
-        if (memNormal().at(0).nNodes().elem(ii) != static_cast<int>(nElems[ii]))
+        if (this->memNormal().at(0).nNodes().elem(ii) != static_cast<int>(nElems[ii]))
         {
             std::cerr << " Grid dimensions does not fit to given grid. "
                       << std::endl;
@@ -642,11 +651,11 @@ void DataFile<TT, DIM>::read(std::vector<TT*>& elemData, int const& /*timestep*/
         }
     }
 
-    wrapNCCall(nc_inq_dimid(mIdFile, "time", &mIdDims[0]), __FILE__, __LINE__);
+    status = ::nc_inq_dimid(this->mIdFile, "time", &(this->mIdDims[0]));
+    this->wrapNCCall(status, __FILE__, __LINE__);
 
-    status = nc_inq_dimlen(mIdFile, mIdDims[0], &(nElems[nDimensions - 1]));
-
-    wrapNCCall(status, __FILE__, __LINE__);
+    status = ::nc_inq_dimlen(this->mIdFile, this->mIdDims[0], &(nElems[nDimensions - 1]));
+    this->wrapNCCall(status, __FILE__, __LINE__);
 
     /*------------------------------------------------------------------------*/
     /* Read data. */
@@ -658,9 +667,9 @@ void DataFile<TT, DIM>::read(std::vector<TT*>& elemData, int const& /*timestep*/
     for (std::size_t ii = 0; ii < this->nameVariables().size(); ++ii)
     {
         // mIdVariable[0] means real_part!
-        status = nc_get_var_double(this->mIdFile, this->mIdVariable[ii][0],
+        status = ::nc_get_var_double(this->mIdFile, this->mIdVariable[ii][0],
                                    this->mNcMemory.data());
-        wrapNCCall(status, __FILE__, __LINE__);
+        this->wrapNCCall(status, __FILE__, __LINE__);
 
         ptrToMem = this->mNcMemory.data();
         //#pragma omp parallel for
@@ -706,44 +715,43 @@ void DataFile<TT, DIM>::init(std::vector<TT*>& elemData)
 #ifdef SCAFES_HAVE_MPI
     #ifdef SCAFES_HAVE_NETCDF_PAR
         MPI_Info info = MPI_INFO_NULL;
-        status = nc_open_par(mNameDataFile.c_str(), NC_NOWRITE | NC_MPIIO,
-                             mMyWorld.myWorld(), info, &mIdFile);
+        status = ::nc_open_par(this->mNameDataFile.c_str(), NC_NOWRITE | NC_MPIIO,
+                             this->mMyWorld.myWorld(), info, &(this->mIdFile));
     #else
-        std::cerr << "\nERROR: Cannot read file in parallel without "
-                  << "parallel netCDF (PnetCDF)." << std::endl;
-        status = nc_open(mNameDataFile.c_str(), NC_NOWRITE, &mIdFile);
+        std::cout << "\nWARNING: Read file in serial." << std::endl;
+        status = ::nc_open(this->mNameDataFile.c_str(), NC_NOWRITE, &(this->mIdFile));
     #endif
 #else
-        status = nc_open(mNameDataFile.c_str(), NC_NOWRITE, &mIdFile);
+        status = ::nc_open(this->mNameDataFile.c_str(), NC_NOWRITE, &(this->mIdFile));
 #endif
-        wrapNCCall(status, __FILE__, __LINE__);
-        mIsOpen = true;
+        this->wrapNCCall(status, __FILE__, __LINE__);
+        this->mIsOpen = true;
     }
 
     /*------------------------------------------------------------------------*/
     // Read in version number.
-    status = nc_get_att_int(mIdFile, NC_GLOBAL, "version", &version);
+    status = ::nc_get_att_int(this->mIdFile, NC_GLOBAL, "version", &version);
     if (status != NC_NOERR)
     {
-        status = nc_inq_varid(mIdFile, "version", &idVersion);
+        status = ::nc_inq_varid(this->mIdFile, "version", &idVersion);
         if (status != NC_NOERR)
         {
             version = 0;
         }
         else
         {
-            nc_get_var_int(mIdFile, idVersion, &version);
+            nc_get_var_int(this->mIdFile, idVersion, &version);
         }
     }
 
     /*------------------------------------------------------------------------*/
     // Initialise memory at all nodes in order to be sure that
     // there is no dump in the memory.
-    mNelemsNcMem = memNormal().at(0).nNodesTotal();
+    this->mNelemsNcMem = this->memNormal().at(0).nNodesTotal();
 
-    if (0 < mNelemsNcMem)
+    if (0 < this->mNelemsNcMem)
     {
-        mNcMemory = std::vector<double>(mNelemsNcMem, 0.0);
+        this->mNcMemory = std::vector<double>(this->mNelemsNcMem, 0.0);
     }
 
     /*------------------------------------------------------------------------*/
@@ -751,9 +759,9 @@ void DataFile<TT, DIM>::init(std::vector<TT*>& elemData)
     for (std::size_t ii = 0; ii < elemData.size(); ++ii)
     {
         mIdVariable[ii].reserve(1);
-        status = nc_inq_varid(mIdFile, mNameVariables[ii].c_str(),
-                              &(mIdVariable[ii][0]));
-        wrapNCCall(status, __FILE__, __LINE__);
+        status = ::nc_inq_varid(this->mIdFile, this->mNameVariables[ii].c_str(),
+                              &(this->mIdVariable[ii][0]));
+        this->wrapNCCall(status, __FILE__, __LINE__);
     }
 
     /*------------------------------------------------------------------------*/
@@ -764,40 +772,40 @@ void DataFile<TT, DIM>::init(std::vector<TT*>& elemData)
         std::ostringstream oss;
         oss << tmpName << "_" << ii;
         std::string nameOfDim(oss.str());
-        status = nc_inq_dimid(mIdFile, nameOfDim.c_str(), &mIdDims[DIM - ii]);
+        status = ::nc_inq_dimid(this->mIdFile, nameOfDim.c_str(), &(this->mIdDims[DIM - ii]));
 
-        wrapNCCall(status, __FILE__, __LINE__);
-        status = nc_inq_dimlen(mIdFile, mIdDims[DIM - ii], &(nElems[ii]));
+        this->wrapNCCall(status, __FILE__, __LINE__);
+        status = ::nc_inq_dimlen(this->mIdFile, this->mIdDims[DIM - ii], &(nElems[ii]));
 
-        wrapNCCall(status, __FILE__, __LINE__);
+        this->wrapNCCall(status, __FILE__, __LINE__);
 
-        if (memNormal().at(0).nNodes().elem(ii) != static_cast<int>(nElems[ii]))
+        if (this->memNormal().at(0).nNodes().elem(ii) != static_cast<int>(nElems[ii]))
         {
             std::cerr << " Grid dimensions does not fit to given grid. "
                       << std::endl;
             break;
         }
     }
-    status = nc_inq_dimid(mIdFile, "time", &mIdDims[0]);
-    wrapNCCall(status, __FILE__, __LINE__);
+    status = ::nc_inq_dimid(this->mIdFile, "time", &(this->mIdDims[0]));
+    this->wrapNCCall(status, __FILE__, __LINE__);
 
-    status = nc_inq_dimlen(mIdFile, mIdDims[0], &(nElems[nDimensions - 1]));
-    wrapNCCall(status, __FILE__, __LINE__);
+    status = ::nc_inq_dimlen(this->mIdFile, this->mIdDims[0], &(nElems[nDimensions - 1]));
+    this->wrapNCCall(status, __FILE__, __LINE__);
 
     /*------------------------------------------------------------------------*/
     // Set dimensions and transform member variables to NC input format.
-    IntNtuple idxNodeFirst = memNormal().at(0).idxNodeFirstSub();
-    IntNtuple nNodes = memNormal().at(0).nNodesSub();
+    IntNtuple idxNodeFirst = this->memNormal().at(0).idxNodeFirstSub();
+    IntNtuple nNodes = this->memNormal().at(0).nNodesSub();
 
     for (int ii = 1; ii < nDimensions; ++ii)
     {
-        elemFirst[ii] = (unsigned long int)idxNodeFirst.elem(DIM - ii);
+        elemFirst[ii] = static_cast<unsigned long int>(idxNodeFirst.elem(DIM - ii));
     }
 
     nElems[0] = 1;
     for (int ii = 1; ii < nDimensions; ++ii)
     {
-        nElems[ii] = (unsigned long int)nNodes.elem(DIM - ii);
+        nElems[ii] = static_cast<unsigned long int>(nNodes.elem(DIM - ii));
     }
 
     /*------------------------------------------------------------------------*/
@@ -812,14 +820,14 @@ void DataFile<TT, DIM>::init(std::vector<TT*>& elemData)
         // mIdVariable[0] means real_part!
 #ifdef SCAFES_HAVE_MPI
     #ifdef SCAFES_HAVE_NETCDF_PAR
-        status = nc_var_par_access(this->mIdFile, this->mIdVariable[ii][0],
+        status = ::nc_var_par_access(this->mIdFile, this->mIdVariable[ii][0],
                                    NC_COLLECTIVE);
-        wrapNCCall(status, __FILE__, __LINE__);
+        this->wrapNCCall(status, __FILE__, __LINE__);
     #endif
 #endif
-        status = nc_get_vara_double(this->mIdFile, this->mIdVariable[ii][0],
+        status = ::nc_get_vara_double(this->mIdFile, this->mIdVariable[ii][0],
                                     elemFirst, nElems, this->mNcMemory.data());
-        wrapNCCall(status, __FILE__, __LINE__);
+        this->wrapNCCall(status, __FILE__, __LINE__);
 
         ptrToMem = this->mNcMemory.data();
         //#pragma omp parallel for
@@ -835,8 +843,8 @@ void DataFile<TT, DIM>::init(std::vector<TT*>& elemData)
             ++ptrToMem;
         }
     }
-    status = nc_close(this->mIdFile);
-    wrapNCCall(status, __FILE__, __LINE__);
+    status = ::nc_close(this->mIdFile);
+    this->wrapNCCall(status, __FILE__, __LINE__);
     this->mIsOpen = false;
 }
 /*----------------------------------------------------------------------------*/
@@ -852,7 +860,7 @@ void DataFile<TT, DIM>::wrapNCCall(int const& status, std::string const& file,
     // print useful error message
     std::cout << file << ":" << line << "\t NetCDF status code = " << status
               << ", \"";
-    if (mNCErrorStrings.count(status) == 0)
+    if (0 == mNCErrorStrings.count(status))
     {
         std::cout << "Unknown error.";
     }

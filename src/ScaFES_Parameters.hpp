@@ -793,7 +793,7 @@ inline Parameters::Parameters(int argc, char* argv[])
         else
         {
             this->mTau = 1.0;
-            std::cout << "REMARK: No time step width tau was specified.\n"
+            std::cerr << "REMARK: No time step width tau was specified.\n"
                          " Set tau=1.0 and proceeded. \n\n";
             std::cerr << "\nREMARK: Use --tau=<real value>.\n\n";
         }

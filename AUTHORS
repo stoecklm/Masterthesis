@@ -1,18 +1,74 @@
-MAINTAINER
-==========
+CONTRIBUTING AUTHORS (sorted alphabetically)
+============================================
 Kim Feldhoff (TU Dresden, ZIH) - kim.feldhoff AT tu-dresden.de
-
+    * Revised all source files.
+    * Added ADOL-C support.
+    * Maintained files.
+    * Created most of the unit tests.
+    * Created most of the system tests.
+    * Created examples HeatEqnFDM, LameNavierEqnFDM, LameNavierEqnFDMFirstOrder
+      WaveEqnFDM.
 
 OTHER CONTRIBUTING AUTHORS (sorted alphabetically)
 ==================================================
 Martin Flehmig (TU Dresden, ZIH) <martin.flehmig AT tu-dresden.de>
+    * Contributed to most of the files of the starting version.
 Sebastian Hegler (TU Dresden, IfN) <sebastian.hegler AT tu-dresden.de>
+    * Reviewed source files.
+    * Added example EMFDTD.
+    * Added some integration tests.
 Ulf Markwardt (TU Dresden, ZIH) <ulf.markwardt AT tu-dresden.de>
+    * Contributed to most of the files of the starting version.
 Christoph Statz (TU Dresden, IfN) <christoph.statz AT tu-dresden.de>
+    * Contributed to example EMFDTD.
 Martin Stoeckl (TU Dresden, Student) <martin.stoeckl AT mailbox.tu-dresden.de>
+    * src/ScaFES_Problem.hpp: Added method initDfsFromFile() initializing
+      known and unknown data fields from a NetCDF file.
+    * src/ScaFES_Problem.hpp: Updated NetCDF write functions such that
+      this method will only be called if values are written to file.
+    * src/ScaFES_Problem.hpp: Fixed bug related to template parameter float.
+    * src/ScaFES_DataField.hpp: Added method checkConv() in order
+      to calculate convergence for data fields in each iteration step.
+    * ScaFES_DataFile.hpp: Added case AT_END to ScaFES::WriteHowOften.
+      in order to write NetCDF file only at the last timestep.
+-   * src/ScaFES_Problem.hpp: Fixed bug in case only one unknown
+      data field and no known data field are used.
+        - src/ScaFES_Parameters.hpp: Added the following command line options:
+            --initfile=<string>
+              Sets the name of the initialization file.
+            --initKnownDfs=<0/1>
+              Sets if known data fields should be initialized from a NetCDF file.
+            --threshold=<double>
+              Sets the threshold for convergence check.
+            --checkConvFirstAtIter=<int>
+              Sets the number of iteration when convergence should
+              be checked for the first time.
+            --checkConvAtEveryNIter=<int>
+              Sets the number of iterations between two convergence checks.
+    * scripts/scafesrun.sh: Added the following SCAFESRUN environment
+      variables:
+            - SCAFESRUN_NAME_INITFILE=<string> (default="")
+              Name of the initialization file / NetCDF file
+            - SCAFESRUN_INIT_KNOWNDFS=<yes/no> (default="NO")
+              Should known datafields be initialized from the init file?.
+            - SCAFESRUN_THRESHOLD=<double> (default=1e-5)
+              Threshold for convergence check
+            - SCAFESRUN_CHECK_CONV_FIRST_AT_ITER=<int> (default=1)
+              Number of iteration when convergence should be checked
+              for the first time.
+            - SCAFESRUN_CHECK_CONV_AT_EVERY_N_ITER=<int> (default=1)
+              Number of iterations between two convergence checks.
+            - SCAFESRUN_NAME_RESULTFILE=<string>
+              Name of the result file / NetCDF file
+    * src/ScaFES_DataFileApi.hpp: Added methods for reading in data fields
+      from a file using NetCDF functions.
+      This initialization works in serial and in parallel.
+    * src/ScaFES_DataFileApi.hpp: Fixed bug related to inclusion
+      of headers for parallel NetCDF.
 
 
 ACKNOWLEDGEMENTS
 ================
-The software was funded by the Federal Ministry of Education and Research 
-(BMBF) within the project HPC-FLiS under the support code 01 IH 11 009.
+The software was funded in parts by the Federal Ministry of Education 
+and Research (BMBF) within the project HPC-FLiS under the support 
+code 01 IH 11 009.

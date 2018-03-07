@@ -1,5 +1,5 @@
 /* ScaFES
- * Copyright (c) 2011-2015, 2017-2018, ZIH, TU Dresden, Federal Republic of Germany.
+ * Copyright (c) 2011-2015, ZIH, TU Dresden, Federal Republic of Germany.
  * For details, see the files COPYING and LICENSE in the base directory
  * of the package.
  */
@@ -153,7 +153,7 @@ public:
     /** Returns the grid incl. ghost nodes of the data field. */
     const ScaFES::Grid<DIM>& memAll() const;
 
-    /** Returns the normal grid of the data field. */
+    /** Returns the normal grid (without any ghost nodes) of the data field. */
     const ScaFES::GridSub<DIM>& memNormal() const;
 
     /** Returns the number of layers at the boundary. */
@@ -1075,7 +1075,10 @@ DataField<CT, DIM>::hasSameValues(const ScaFES::DataField<CT, DIM>& second,
              it < et; ++it)
         {
             idxNode = it.idxNode();
-            tmpDiff = ::fabs(df1(idxNode) - second(idxNode));
+            //if (std::is_same<CT, double>::value)
+            //{
+                tmpDiff = ::fabs(this->operator()(idxNode) - second(idxNode));
+            //}
 
             if (tmpDiff > eps)
             {
@@ -1334,7 +1337,7 @@ inline double DataField<CT, DIM>::normLinf() const
     {
         for (int kk = 0; kk < this->nColumns(); ++kk)
         {
-            if (res < fabs(this->elemData(it.idxScalarNode() + kk)))
+            if (res < ::fabs(this->elemData(it.idxScalarNode() + kk)))
             {
                 res = this->elemData(it.idxScalarNode() + kk);
             }
@@ -1389,7 +1392,7 @@ void DataField<CT, DIM>::setValuesAtMemAll(const ScaFES::DataField<CT, DIM>& df)
     {
         std::cout << mParams->getPrefix()
                   << " * Set values of " << df.name() << " to " << this->name()
-                  << " at memAll..." << std::endl;
+                  << " at memAll... " << std::endl;
     }
     this->mParams->decreaseLevel();
 
@@ -1441,7 +1444,7 @@ double DataField<CT, DIM>::compErrLinf(const ScaFES::DataField<CT, DIM>& df)
     {
         std::cout << mParams->getPrefix()
                   << " * Compute Linf error(" << name() << ", " << df.name()
-                  << ")..." << std::endl;
+                  << ")... " << std::endl;
     }
     this->mParams->decreaseLevel();
     ScaFES_IntNtuple idxNode;

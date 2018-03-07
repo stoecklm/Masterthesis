@@ -1,5 +1,5 @@
 /* ScaFES
- * Copyright (c) 2011-2015, ZIH, TU Dresden, Federal Republic of Germany.
+ * Copyright (c) 2011-2015, 2017, ZIH, TU Dresden, Federal Republic of Germany.
  * For details, see the files COPYING and LICENSE in the base directory
  * of the package.
  */
@@ -17,7 +17,15 @@
 
 #include <vector>
 
+#ifdef SCAFES_HAVE_BOOST
+#include <boost/version.hpp>
+#endif
+
 #ifdef SCAFES_HAVE_BOOST_SERIALIZATION
+#include <boost/version.hpp>
+#if BOOST_VERSION < 105900
+    #include <boost/serialization/pfto.hpp>
+#endif
 #include <boost/serialization/vector.hpp>
 #endif
 
@@ -393,8 +401,10 @@ namespace serialization
     /** Designed to set the boost serialization version of a class template. */
     template <typename TT> struct version<ScaFES::Buffer<TT>>
     {
+#if BOOST_VERSION < 105900
         /** Sets the version number for serialization. */
         BOOST_STATIC_CONSTANT(unsigned BOOST_PFTO int, value = 2);
+#endif
     };
 } // namespace serialization
 } // namespace boost
