@@ -32,7 +32,12 @@ def plot_3d_surface(a, params, title, filepath):
     ax.zaxis.set_major_locator(LinearLocator(10))
     ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
     # Add a color bar which maps values to colors.
-    fig.colorbar(surf, orientation='vertical', shrink=0.5, aspect=20)
+    ticks = np.linspace(a.min(), a.max(), 11)
+    fig.colorbar(surf, ticks=ticks, orientation='vertical', shrink=0.75,
+                 aspect=20)
+    # Invert z axis since the relevant part is colder than the other part
+    # and therefore hard to see.
+    ax.invert_zaxis()
     # Save plot to file.
     print('Save figure to {}.'.format(filepath))
     plt.savefig(filepath)
@@ -65,7 +70,9 @@ def plot_heatmap(a, params, title, filepath):
     ax.set_xlabel('x in m')
     ax.set_ylabel('y in m')
     # Add a color bar which maps values to colors.
-    fig.colorbar(heatmap, orientation='vertical', shrink=0.5, aspect=20)
+    ticks = np.linspace(a.min(), a.max(), 11)
+    fig.colorbar(heatmap, ticks=ticks, orientation='vertical', shrink=0.75,
+                 aspect=20)
     # Equal gridsize.
     plt.gca().set_aspect('equal', adjustable='box')
     # Save plot to file.
@@ -96,7 +103,9 @@ def plot_tumor(a, params, title, filepath):
     ax.set_xlabel('x in m')
     ax.set_ylabel('z in m')
     # Add a color bar which maps values to colors.
-    fig.colorbar(heatmap, orientation='vertical', shrink=0.5, aspect=20)
+    ticks = np.linspace(a.min(), a.max(), 11)
+    fig.colorbar(heatmap, ticks=ticks, orientation='vertical', shrink=0.75,
+                 aspect=20)
     # Equal gridsize.
     plt.gca().set_aspect('equal', adjustable='box')
     # Save plot to file.
@@ -130,10 +139,6 @@ def plot_surface(filepath, params):
         print('Aborting.')
         exit()
 
-    # Create numpy array and save surface data from netCDF file to it.
-    temperature = np.zeros((dim1, dim0))
-    temperature[:,:] = T[(time-1):time,(dim2-1),:,:]
-
     filepath = os.path.splitext(filepath)[0]
     title = filepath
     filepath_heatmap = filepath
@@ -141,6 +146,10 @@ def plot_surface(filepath, params):
     filepath += '_py_surface.eps'
     filepath_heatmap += '_py_heatmap.eps'
     filepath_tumor += '_py_tumor.eps'
+
+    # Create numpy array and save surface data from netCDF file to it.
+    temperature = np.zeros((dim1, dim0))
+    temperature[:,:] = T[(time-1):time,(dim2-1),:,:]
 
     plot_3d_surface(temperature, params, title, filepath)
     plot_heatmap(temperature, params, title, filepath_heatmap)
