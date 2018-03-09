@@ -240,6 +240,16 @@ def calc_variables(params):
     params['DELTA_TIME'] = (params['END_TIME'] - params['START_TIME']) \
                            / params['N_TIMESTEPS']
 
+    # Calculate location of tumor center.
+    TUMOR_CENTER = []
+    TUMOR_CENTER.append((params['COORD_NODE_LAST'][0] \
+                         - params['COORD_NODE_FIRST'][0]) / 2.0)
+    TUMOR_CENTER.append((params['COORD_NODE_LAST'][1] \
+                         - params['COORD_NODE_FIRST'][1]) / 2.0)
+    TUMOR_CENTER.append(params['COORD_NODE_LAST'][2]
+                        - params['PARAMETERS']['depth'])
+    params['TUMOR_CENTER'] = TUMOR_CENTER
+
     # Calc CHECK_CONV parameters if they are a ratio.
     if params['CHECK_CONV_FIRST_AT_ITER'] < 1:
         params['CHECK_CONV_FIRST_AT_ITER'] = params['CHECK_CONV_FIRST_AT_ITER'] \
@@ -308,20 +318,16 @@ def check_stability(params):
 def create_region_array(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
                         NAME_VARIABLE):
     RADIUS = params['PARAMETERS']['diameter']/2
-    TUMOR_CENTER = []
     # Get file/grid dimensions.
     dim0 = params['N_NODES'][0]
     dim1 = params['N_NODES'][1]
     dim2 = params['N_NODES'][2]
+    # Get tumor center location.
+    TUMOR_CENTER = params['TUMOR_CENTER']
     # Resize temperature array.
     num_elem = dim0 * dim1 * dim2
     values_array = BRAIN_VALUE \
                    * np.ones(num_elem, dtype=int).reshape(dim2, dim1, dim0)
-    # Calculate location of tumor center.
-    TUMOR_CENTER.append(params['COORD_NODE_LAST'][0]/2.0)
-    TUMOR_CENTER.append(params['COORD_NODE_LAST'][1]/2.0)
-    TUMOR_CENTER.append(params['COORD_NODE_LAST'][2]
-                        - params['PARAMETERS']['depth'])
     # Iterate through temperature array.
     for elem_z in range(0, values_array.shape[0]):
         for elem_y in range(0, values_array.shape[1]):
@@ -403,18 +409,16 @@ def create_surface_array(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
                          NAME_VARIABLE):
     RADIUS = (params['PARAMETERS']['diameter'] \
               * params['PARAMETERS']['hole_factor'])/2
-    TUMOR_CENTER = []
     # Get file/grid dimensions.
     dim0 = params['N_NODES'][0]
     dim1 = params['N_NODES'][1]
     dim2 = params['N_NODES'][2]
+    # Get tumor center location.
+    TUMOR_CENTER = params['TUMOR_CENTER']
     # Resize array.
     num_elem = dim0 * dim1 * dim2
     values_array = BRAIN_VALUE \
                    * np.ones(num_elem, dtype=int).reshape(dim2, dim1, dim0)
-    # Calculate location of tumor center.
-    TUMOR_CENTER.append(params['COORD_NODE_LAST'][0]/2.0)
-    TUMOR_CENTER.append(params['COORD_NODE_LAST'][1]/2.0)
     # Iterate through array.
     for elem_y in range(0, values_array.shape[1]):
         for elem_x in range(0, values_array.shape[2]):
@@ -448,18 +452,16 @@ def create_surface_from_mri(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
     path = get_interpolated_path(iop)
     #path = get_path(iop)
 
-    TUMOR_CENTER = []
     # Get file/grid dimensions.
     dim0 = params['N_NODES'][0]
     dim1 = params['N_NODES'][1]
     dim2 = params['N_NODES'][2]
+    # Get tumor center location.
+    TUMOR_CENTER = params['TUMOR_CENTER']
     # Resize array.
     num_elem = dim0 * dim1 * dim2
     values_array = BRAIN_VALUE \
                    * np.ones(num_elem, dtype=int).reshape(dim2, dim1, dim0)
-    # Calculate location of tumor center.
-    TUMOR_CENTER.append(params['COORD_NODE_LAST'][0]/2.0)
-    TUMOR_CENTER.append(params['COORD_NODE_LAST'][1]/2.0)
     # Iterate through array.
     for elem_y in range(0, dim1):
         for elem_x in range(0, dim0):
