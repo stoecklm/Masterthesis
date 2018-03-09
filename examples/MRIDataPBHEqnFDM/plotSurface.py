@@ -36,12 +36,62 @@ def plot_3d_surface(a, params, title, filepath):
     # Save plot to file.
     print('Save figure to {}.'.format(filepath))
     plt.savefig(filepath)
+    plt.gcf().clear()
+    plt.close()
 
-def plot_heatmap():
-    pass
+def plot_heatmap(a, params, title, filepath):
+    COORD_NODE_FIRST = params['COORD_NODE_FIRST']
+    COORD_NODE_LAST = params['COORD_NODE_LAST']
+    DIM = params['N_NODES']
+    x, y = np.meshgrid(np.linspace(COORD_NODE_FIRST[0], COORD_NODE_LAST[0],
+                                   DIM[0]),
+                       np.linspace(COORD_NODE_FIRST[1], COORD_NODE_LAST[1],
+                                   DIM[1]))
+    # Plot heatmap.
+    fig, ax = plt.subplots()
+    heatmap = ax.pcolormesh(x, y, a, cmap=cm.viridis, rasterized=True)
+    # Title.
+    fig.suptitle('Heatmap in deg C for\n' + title, fontsize=12)
+    # Label for axis.
+    ax.set_xlabel('x in m')
+    ax.set_ylabel('y in m')
+    #
+    ax.axis('equal')
+    # Add a color bar which maps values to colors.
+    fig.colorbar(heatmap, orientation='vertical', shrink=0.5, aspect=20)
+    # Equal gridsize.
+    plt.gca().set_aspect('equal', adjustable='box')
+    # Save plot to file.
+    print('Save figure to {}.'.format(filepath))
+    plt.savefig(filepath)
+    plt.gcf().clear()
+    plt.close()
 
-def plot_tumor():
-    pass
+def plot_tumor(a, params, title, filepath):
+    COORD_NODE_FIRST = params['COORD_NODE_FIRST']
+    COORD_NODE_LAST = params['COORD_NODE_LAST']
+    DIM = params['N_NODES']
+    x, z = np.meshgrid(np.linspace(COORD_NODE_FIRST[0], COORD_NODE_LAST[0],
+                                   DIM[0]),
+                       np.linspace(COORD_NODE_FIRST[2], COORD_NODE_LAST[2],
+                                   DIM[2]))
+    # Plot heatmap.
+    fig, ax = plt.subplots()
+    heatmap = ax.pcolormesh(x, z, a, cmap=cm.viridis, rasterized=True)
+    # Title.
+    fig.suptitle('Heatmap in deg C for\n' + title, fontsize=12)
+    # Customize z axis.
+    ax.set_xlabel('x in m')
+    ax.set_ylabel('z in m')
+    # Add a color bar which maps values to colors.
+    fig.colorbar(heatmap, orientation='vertical', shrink=0.5, aspect=20)
+    # Equal gridsize.
+    plt.gca().set_aspect('equal', adjustable='box')
+    # Save plot to file.
+    print('Save figure to {}.'.format(filepath))
+    plt.savefig(filepath)
+    plt.gcf().clear()
+    plt.close()
 
 def plot_surface(filepath, params):
     print('Plotting {0}.'.format(filepath))
@@ -72,15 +122,24 @@ def plot_surface(filepath, params):
     temperature = np.zeros((dim1, dim0))
     temperature[:,:] = T[(time-1):time,(dim2-1),:,:]
 
-    nc_file.close()
 
     filepath = os.path.splitext(filepath)[0]
     title = filepath
     filepath_heatmap = filepath
+    filepath_tumor = filepath
     filepath += '_py_surface.eps'
     filepath_heatmap += '_py_heatmap.eps'
+    filepath_tumor += '_py_tumor.eps'
 
     plot_3d_surface(temperature, params, title, filepath)
+    plot_heatmap(temperature, params, title, filepath_heatmap)
+
+    temperature = np.zeros((dim2, dim0))
+    temperature[:,:] = T[(time-1):time,:,int(dim1/2),:]
+
+    plot_tumor(temperature, params, title, filepath_tumor)
+
+    nc_file.close()
 
     print('Done.')
 
