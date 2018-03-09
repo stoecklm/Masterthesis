@@ -452,12 +452,23 @@ def create_surface_from_mri(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
     path = get_interpolated_path(iop)
     #path = get_path(iop)
 
+    # Get tumor center location.
+    TUMOR_CENTER = params['TUMOR_CENTER']
+
+    # Get points to define open skull.
+    pts = interpolation(iop)
+    # mm to m.
+    pts[:,0] /= 1000
+    pts[:,1] /= 1000
+    # Transform/move points according to new coordinate system.
+    pts[:,0] += TUMOR_CENTER[0]
+    pts[:,1] += TUMOR_CENTER[1]
+    params['HOLE'] = pts
+
     # Get file/grid dimensions.
     dim0 = params['N_NODES'][0]
     dim1 = params['N_NODES'][1]
     dim2 = params['N_NODES'][2]
-    # Get tumor center location.
-    TUMOR_CENTER = params['TUMOR_CENTER']
     # Resize array.
     num_elem = dim0 * dim1 * dim2
     values_array = BRAIN_VALUE \
@@ -647,7 +658,7 @@ def main():
     set_environment_variables(params)
     start_simulation(params, run_script)
     if params['NAME_RESULTFILE'] != '' and params['SPACE_DIM'] == 3:
-        plot_surface(params['NAME_RESULTFILE'])
+        plot_surface(params['NAME_RESULTFILE'], params)
         mean_surface_temperature(params['NAME_RESULTFILE'])
         mean_tumor_temperature(params['NAME_RESULTFILE'])
 

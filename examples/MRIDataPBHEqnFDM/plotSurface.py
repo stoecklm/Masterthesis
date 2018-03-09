@@ -43,20 +43,27 @@ def plot_heatmap(a, params, title, filepath):
     COORD_NODE_FIRST = params['COORD_NODE_FIRST']
     COORD_NODE_LAST = params['COORD_NODE_LAST']
     DIM = params['N_NODES']
+    TUMOR_CENTER = params['TUMOR_CENTER']
+    RADIUS = params['PARAMETERS']['diameter']/2
     x, y = np.meshgrid(np.linspace(COORD_NODE_FIRST[0], COORD_NODE_LAST[0],
                                    DIM[0]),
                        np.linspace(COORD_NODE_FIRST[1], COORD_NODE_LAST[1],
                                    DIM[1]))
-    # Plot heatmap.
+    # Plot heatmap with circle around hole.
     fig, ax = plt.subplots()
     heatmap = ax.pcolormesh(x, y, a, cmap=cm.viridis, rasterized=True)
+    try:
+        pts = params['HOLE']
+        ax.plot(pts[:,0], pts[:,1], color='r', linestyle='dashed')
+    except KeyError:
+        circle = plt.Circle((TUMOR_CENTER[0], TUMOR_CENTER[1]), RADIUS,
+                            color='r', fill=False, linestyle='dashed')
+        ax.add_artist(circle)
     # Title.
     fig.suptitle('Heatmap in deg C for\n' + title, fontsize=12)
     # Label for axis.
     ax.set_xlabel('x in m')
     ax.set_ylabel('y in m')
-    #
-    ax.axis('equal')
     # Add a color bar which maps values to colors.
     fig.colorbar(heatmap, orientation='vertical', shrink=0.5, aspect=20)
     # Equal gridsize.
@@ -71,13 +78,18 @@ def plot_tumor(a, params, title, filepath):
     COORD_NODE_FIRST = params['COORD_NODE_FIRST']
     COORD_NODE_LAST = params['COORD_NODE_LAST']
     DIM = params['N_NODES']
+    TUMOR_CENTER = params['TUMOR_CENTER']
+    RADIUS = params['PARAMETERS']['diameter']/2
     x, z = np.meshgrid(np.linspace(COORD_NODE_FIRST[0], COORD_NODE_LAST[0],
                                    DIM[0]),
                        np.linspace(COORD_NODE_FIRST[2], COORD_NODE_LAST[2],
                                    DIM[2]))
-    # Plot heatmap.
+    circle = plt.Circle((TUMOR_CENTER[0], TUMOR_CENTER[2]), RADIUS, color='r',
+                         fill=False, linestyle='dashed')
+    # Plot heatmap with circle around tumor.
     fig, ax = plt.subplots()
     heatmap = ax.pcolormesh(x, z, a, cmap=cm.viridis, rasterized=True)
+    ax.add_artist(circle)
     # Title.
     fig.suptitle('Heatmap in deg C for\n' + title, fontsize=12)
     # Customize z axis.
@@ -122,7 +134,6 @@ def plot_surface(filepath, params):
     temperature = np.zeros((dim1, dim0))
     temperature[:,:] = T[(time-1):time,(dim2-1),:,:]
 
-
     filepath = os.path.splitext(filepath)[0]
     title = filepath
     filepath_heatmap = filepath
@@ -134,6 +145,7 @@ def plot_surface(filepath, params):
     plot_3d_surface(temperature, params, title, filepath)
     plot_heatmap(temperature, params, title, filepath_heatmap)
 
+    # Create numpy array and save tumor (x-z-plane) data from netCDF file to it.
     temperature = np.zeros((dim2, dim0))
     temperature[:,:] = T[(time-1):time,:,int(dim1/2),:]
 
@@ -144,26 +156,9 @@ def plot_surface(filepath, params):
     print('Done.')
 
 def main():
-    filepath = ''
-    # Check if path to netCDF file (i.e. results) is provided,
-    # if file exists and if file has .nc extension.
-    if len(sys.argv) > 1:
-        if os.path.isfile(sys.argv[1]) == True:
-            if os.path.splitext(sys.argv[1])[1] == '.nc':
-                filepath = sys.argv[1]
-            else:
-                print(sys.argv[1], 'does not have .nc extension.')
-        else:
-            print(sys.argv[1], 'does not exist.')
-    else:
-        print('No command line argument for netCDF file provided.')
-
-    if filepath == '':
-        print('Usage: python3', sys.argv[0], '<PATH/TO/FILE>')
-        print('Aborting.')
-        exit()
-
-    plot_surface(filepath)
+    print('Script will be called by startSimulation.py.')
+    print('Aborting.')
+    exit()
 
 if __name__ == '__main__':
     main()
