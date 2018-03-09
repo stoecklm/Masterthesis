@@ -1,3 +1,6 @@
+import os
+import sys
+
 import matplotlib
 matplotlib.use('Agg')
 from mpl_toolkits.mplot3d import Axes3D
@@ -6,10 +9,41 @@ from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import netCDF4 as nc
 import numpy as np
-import os
-import sys
 
-def plot_surface(filepath):
+def plot_3d_surface(a, params, title, filepath):
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    COORD_NODE_FIRST = params['COORD_NODE_FIRST']
+    COORD_NODE_LAST = params['COORD_NODE_LAST']
+    DIM = params['N_NODES']
+    x, y = np.meshgrid(np.linspace(COORD_NODE_FIRST[0], COORD_NODE_LAST[0],
+                                   DIM[0]),
+                       np.linspace(COORD_NODE_FIRST[1], COORD_NODE_LAST[1],
+                                   DIM[1]))
+    # Label for axis.
+    ax.set_xlabel('x in m')
+    ax.set_ylabel('y in m')
+    # Title.
+    fig.suptitle('Surface Temperature in deg C for\n' + title, fontsize=12)
+    # Plot surface.
+    surf = ax.plot_surface(x, y, a, cmap=cm.viridis,
+                           linewidth=0, antialiased=False)
+    # Customize z axis.
+    ax.zaxis.set_major_locator(LinearLocator(10))
+    ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+    # Add a color bar which maps values to colors.
+    fig.colorbar(surf, orientation='vertical', shrink=0.5, aspect=20)
+    # Save plot to file.
+    print('Save figure to {}.'.format(filepath))
+    plt.savefig(filepath)
+
+def plot_heatmap():
+    pass
+
+def plot_tumor():
+    pass
+
+def plot_surface(filepath, params):
     print('Plotting {0}.'.format(filepath))
 
     # Open netCDF file and read data from it.
@@ -35,48 +69,18 @@ def plot_surface(filepath):
         exit()
 
     # Create numpy array and save surface data from netCDF file to it.
-    a = np.zeros((dim1, dim0))
-    a[:,:] = T[(time-1):time,(dim2-1),:,:]
+    temperature = np.zeros((dim1, dim0))
+    temperature[:,:] = T[(time-1):time,(dim2-1),:,:]
 
     nc_file.close()
 
     filepath = os.path.splitext(filepath)[0]
-    plot_title = filepath
+    title = filepath
     filepath_heatmap = filepath
     filepath += '_py_surface.eps'
     filepath_heatmap += '_py_heatmap.eps'
 
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
-    x, y = np.meshgrid(np.linspace(0, dim0-1, dim0), \
-                       np.linspace(0, dim1-1, dim1))
-    # Label for axis.
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    # Title.
-    fig.suptitle('Surface Temperature [deg C] for\n' + \
-                 plot_title, fontsize=12)
-    # Plot surface.
-    surf = ax.plot_surface(x, y, a, cmap=cm.viridis,
-                           linewidth=0, antialiased=False)
-    # Customize z axis.
-    ax.zaxis.set_major_locator(LinearLocator(10))
-    ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
-    # Add a color bar which maps values to colors.
-    fig.colorbar(surf, orientation='vertical', shrink=0.5, aspect=20)
-    # Save plot to file.
-    print('Save figure to {}.'.format(filepath))
-    plt.savefig(filepath)
-    # Plot heatmap.
-    plt.gcf().clear()
-    plt.title('Surface Temperature [deg C] for\n' + plot_title)
-    plt.xlabel('x')
-    plt.ylabel('y')
-    plt.imshow(a, cmap=cm.viridis, interpolation='nearest')
-    plt.gca().invert_yaxis()
-    print('Save figure to {}.'.format(filepath_heatmap))
-    plt.colorbar()
-    plt.savefig(filepath_heatmap)
+    plot_3d_surface(temperature, params, title, filepath)
 
     print('Done.')
 
