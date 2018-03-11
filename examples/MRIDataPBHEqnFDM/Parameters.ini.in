@@ -4,7 +4,7 @@ Case = 1151711
 
 [Parameters]
 H = 10.0
-T_INF = 22.4
+T_INF = 22.0
 # Q > 0 => heat flux into region (source)
 # Q < 0 => heat flux out of region (sink)
 # Q = 0 => insulated
@@ -43,17 +43,17 @@ C = 3650.0
 LAMBDA = 0.6
 RHO_BLOOD = 1052.0
 C_BLOOD = 3800.0
-OMEGA = 0.0007
+OMEGA = 0.00975
 T_BLOOD = 37.0
 Q = 25000.0
 T = 37.0
 
 [Geometry]
 # [m].
-COORD_NODE_FIRST = 0x0x0
-COORD_NODE_LAST = 0.10x0.10x0.06
+COORD_NODE_FIRST = -0.06x-0.06x-0.06
+COORD_NODE_LAST = 0.06x0.06x0
 # [-].
-N_NODES = 60x60x30
+N_NODES = 120x120x50
 
 [Time]
 # [s].
