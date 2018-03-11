@@ -16,8 +16,9 @@ from readMRIData import interpolation
 from readMRIData import get_interpolated_path
 from readMRIData import get_path
 
-from postProcessing import mean_surface_temperature
-from postProcessing import mean_tumor_temperature
+from postProcessing import surface_temperatures
+from postProcessing import tumor_temperatures
+from postProcessing import csv_result_temperatures
 
 def parse_config_file(params):
     print('Parsing {0}.'.format(params['NAME_CONFIGFILE']))
@@ -664,8 +665,10 @@ def main():
     start_simulation(params, run_script)
     if params['NAME_RESULTFILE'] != '' and params['SPACE_DIM'] == 3:
         plot_surface(params['NAME_RESULTFILE'], params)
-        mean_surface_temperature(params['NAME_RESULTFILE'])
-        mean_tumor_temperature(params['NAME_RESULTFILE'])
+        surface_temperatures(params['NAME_RESULTFILE'])
+        tumor_temperatures(params['NAME_RESULTFILE'])
+        csv_result_temperatures(params['NAME_RESULTFILE'],
+                                params['MRI_DATA_CASE'])
 
 if __name__ == '__main__':
     main()

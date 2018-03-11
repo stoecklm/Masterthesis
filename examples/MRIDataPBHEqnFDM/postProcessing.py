@@ -5,8 +5,8 @@ import sys
 import netCDF4 as nc
 import numpy as np
 
-def mean_surface_temperature(filepath):
-    print('Calc mean surface temperature of open skull of {0}.'.format(filepath))
+def surface_temperatures(filepath):
+    print('Calc open surface temperatures of {0}.'.format(filepath))
 
     # Open result file and read data from it.
     nc_file = nc.Dataset(filepath)
@@ -59,9 +59,9 @@ def mean_surface_temperature(filepath):
     temp_mean = np.mean(temp[np.where(skull == 1)])
     temp_max = np.max(temp[np.where(skull == 1)])
     temp_min = np.min(temp[np.where(skull == 1)])
-    print('Mean temp of tumor: {0}.'.format(temp_mean))
-    print('Max temp of tumor: {0}.'.format(temp_max))
-    print('Min temp of tumor: {0}.'.format(temp_min))
+    print('Mean temp of open surface: {0}.'.format(temp_mean))
+    print('Max temp of open surface: {0}.'.format(temp_max))
+    print('Min temp of open surface: {0}.'.format(temp_min))
 
     config = configparser.ConfigParser()
 
@@ -80,8 +80,8 @@ def mean_surface_temperature(filepath):
 
     print('Done.')
 
-def mean_tumor_temperature(filepath):
-    print('Calc mean tumor temperature of {0}.'.format(filepath))
+def tumor_temperatures(filepath):
+    print('Calc tumor temperatures of {0}.'.format(filepath))
 
     # Open result file and read data from it.
     nc_file = nc.Dataset(filepath)
@@ -155,6 +155,39 @@ def mean_tumor_temperature(filepath):
 
     print('Done.')
 
+def csv_result_temperatures(filepath, csv):
+    csv = os.path.join(csv, csv + '.csv')
+    print('Calc temperatures of {0}.'.format(csv))
+
+    # Open results file (thermography).
+    temp = np.genfromtxt(csv, delimiter=',')
+    temp_mean = np.mean(temp[np.where(temp != 0)])
+    temp_max = np.max(temp[np.where(temp != 0)])
+    temp_min = np.min(temp[np.where(temp != 0)])
+    print('Mean temp: {0}.'.format(temp_mean))
+    print('Max temp: {0}.'.format(temp_max))
+    print('Min temp: {0}.'.format(temp_min))
+
+    config = configparser.ConfigParser()
+
+    section = str(os.path.basename(csv))
+
+    config[section] = {}
+    config[section]['Mean'] = str(temp_mean)
+    config[section]['Max'] = str(temp_max)
+    config[section]['Min'] = str(temp_min)
+
+    filepath = os.path.splitext(filepath)[0]
+    filepath += '_results.dat'
+
+    print('Write results to {0}.'.format(filepath))
+
+    with open(filepath, 'a') as configfile:
+        config.write(configfile)
+
+    print('Done.')
+
+
 def main():
     filepath = ''
     # Check if path to netCDF file (i.e. results) is provided,
@@ -175,8 +208,8 @@ def main():
         print('Aborting.')
         exit()
 
-    mean_surface_temperature(filepath)
-    mean_tumor_temperature(filepath)
+    surface_temperatures(filepath)
+    tumor_temperatures(filepath)
 
 if __name__ == '__main__':
     main()
