@@ -249,9 +249,9 @@ def calc_variables(params):
     # Calculate location of tumor center.
     TUMOR_CENTER = []
     TUMOR_CENTER.append((params['COORD_NODE_LAST'][0] \
-                         - params['COORD_NODE_FIRST'][0]) / 2.0)
+                         + params['COORD_NODE_FIRST'][0]) / 2.0)
     TUMOR_CENTER.append((params['COORD_NODE_LAST'][1] \
-                         - params['COORD_NODE_FIRST'][1]) / 2.0)
+                         + params['COORD_NODE_FIRST'][1]) / 2.0)
     TUMOR_CENTER.append(params['COORD_NODE_LAST'][2]
                         - params['PARAMETERS']['depth'])
     params['TUMOR_CENTER'] = TUMOR_CENTER
@@ -328,6 +328,7 @@ def create_region_array(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
     dim0 = params['N_NODES'][0]
     dim1 = params['N_NODES'][1]
     dim2 = params['N_NODES'][2]
+    COORD_NODE_FIRST = params['COORD_NODE_FIRST']
     # Get tumor center location.
     TUMOR_CENTER = params['TUMOR_CENTER']
     # Resize temperature array.
@@ -339,9 +340,9 @@ def create_region_array(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
         for elem_y in range(0, values_array.shape[1]):
             for elem_x in range(0, values_array.shape[2]):
                 # Calculate location of current node.
-                x = elem_x * params['GRIDSIZE'][0]
-                y = elem_y * params['GRIDSIZE'][1]
-                z = elem_z * params['GRIDSIZE'][2]
+                x = (elem_x * params['GRIDSIZE'][0]) + COORD_NODE_FIRST[0]
+                y = (elem_y * params['GRIDSIZE'][1]) + COORD_NODE_FIRST[1]
+                z = (elem_z * params['GRIDSIZE'][2]) + COORD_NODE_FIRST[2]
                 # Calculate distance (squared) to tumor center.
                 distance = (x - TUMOR_CENTER[0]) * (x - TUMOR_CENTER[0])
                 distance += (y - TUMOR_CENTER[1]) * (y - TUMOR_CENTER[1])
@@ -419,6 +420,7 @@ def create_surface_array(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
     dim0 = params['N_NODES'][0]
     dim1 = params['N_NODES'][1]
     dim2 = params['N_NODES'][2]
+    COORD_NODE_FIRST = params['COORD_NODE_FIRST']
     # Get tumor center location.
     TUMOR_CENTER = params['TUMOR_CENTER']
     # Resize array.
@@ -429,8 +431,8 @@ def create_surface_array(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
     for elem_y in range(0, values_array.shape[1]):
         for elem_x in range(0, values_array.shape[2]):
             # Calculate location of current node.
-            x = elem_x * params['GRIDSIZE'][0]
-            y = elem_y * params['GRIDSIZE'][1]
+            x = (elem_x * params['GRIDSIZE'][0]) + COORD_NODE_FIRST[0]
+            y = (elem_y * params['GRIDSIZE'][1]) + COORD_NODE_FIRST[1]
             # Calculate distance (squared) to tumor center.
             distance = (x - TUMOR_CENTER[0]) * (x - TUMOR_CENTER[0])
             distance += (y - TUMOR_CENTER[1]) * (y - TUMOR_CENTER[1])
@@ -475,6 +477,7 @@ def create_surface_from_mri(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
     dim0 = params['N_NODES'][0]
     dim1 = params['N_NODES'][1]
     dim2 = params['N_NODES'][2]
+    COORD_NODE_FIRST = params['COORD_NODE_FIRST']
     # Resize array.
     num_elem = dim0 * dim1 * dim2
     values_array = BRAIN_VALUE \
@@ -483,8 +486,8 @@ def create_surface_from_mri(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
     for elem_y in range(0, dim1):
         for elem_x in range(0, dim0):
             # Calculate location of current node.
-            x = elem_x * params['GRIDSIZE'][0]
-            y = elem_y * params['GRIDSIZE'][1]
+            x = (elem_x * params['GRIDSIZE'][0]) + COORD_NODE_FIRST[0]
+            y = (elem_y * params['GRIDSIZE'][1]) + COORD_NODE_FIRST[1]
             # Transform current node to tumor center system.
             x_trans = (x - TUMOR_CENTER[0])*1000
             y_trans = (y - TUMOR_CENTER[1])*1000
@@ -667,8 +670,9 @@ def main():
         plot_surface(params['NAME_RESULTFILE'], params)
         surface_temperatures(params['NAME_RESULTFILE'])
         tumor_temperatures(params['NAME_RESULTFILE'])
-        csv_result_temperatures(params['NAME_RESULTFILE'],
-                                params['MRI_DATA_CASE'])
+        if params['MRI_DATA_CASE'] != '':
+            csv_result_temperatures(params['NAME_RESULTFILE'],
+                                    params['MRI_DATA_CASE'])
 
 if __name__ == '__main__':
     main()
