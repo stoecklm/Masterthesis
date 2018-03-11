@@ -199,7 +199,12 @@ def calc_delta_time(params, material, parameters):
         tmp += (2.0/(GRIDSIZE[dim]*GRIDSIZE[dim])) * (LAMBDA/(RHO*C))
     # Inner nodes.
     DELTA_TIME = tmp + ((RHO_BLOOD*C_BLOOD)/(RHO*C)) * OMEGA
-    DELTA_TIME = 1.0/DELTA_TIME
+    if DELTA_TIME != 0:
+        DELTA_TIME = 1.0/DELTA_TIME
+    else:
+        # If time is infinity,
+        # it will later not be considered for min(delta_time).
+        DELTA_TIME = float('Inf')
     # Border with convection.
     DELTA_TIME_CONV = tmp + 2.0*(1.0/GRIDSIZE[SPACE_DIM-1]) \
                                   * (H/(RHO*C))
