@@ -18,6 +18,8 @@ from readMRIData import get_path
 
 from postProcessing import surface_temperatures
 from postProcessing import tumor_temperatures
+from postProcessing import brain_temperatures
+from postProcessing import domain_temperatures
 from postProcessing import csv_result_temperatures
 
 def parse_config_file(params):
@@ -670,6 +672,8 @@ def main():
         plot_surface(params['NAME_RESULTFILE'], params)
         surface_temperatures(params['NAME_RESULTFILE'])
         tumor_temperatures(params['NAME_RESULTFILE'])
+        brain_temperatures(params['NAME_RESULTFILE'])
+        domain_temperatures(params['NAME_RESULTFILE'])
         if params['MRI_DATA_CASE'] != '':
             csv_result_temperatures(params['NAME_RESULTFILE'],
                                     params['MRI_DATA_CASE'])
