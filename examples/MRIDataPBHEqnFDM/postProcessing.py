@@ -60,9 +60,11 @@ def surface_temperatures(filepath):
         temp_mean = np.mean(temp[np.where(skull == 1)])
         temp_max = np.max(temp[np.where(skull == 1)])
         temp_min = np.min(temp[np.where(skull == 1)])
+        temp_std_dev = np.std(temp[np.where(skull == 1)])
         print('Mean temp of open surface: {0}.'.format(temp_mean))
         print('Max temp of open surface: {0}.'.format(temp_max))
         print('Min temp of open surface: {0}.'.format(temp_min))
+        print('Std dev: {0}.'.format(temp_std_dev))
 
         config = configparser.ConfigParser()
 
@@ -70,6 +72,7 @@ def surface_temperatures(filepath):
         config['Open_Surface']['Mean'] = str(temp_mean)
         config['Open_Surface']['Max'] = str(temp_max)
         config['Open_Surface']['Min'] = str(temp_min)
+        config['Open_Surface']['Std_Dev'] = str(temp_std_dev)
 
         filepath = os.path.splitext(filepath)[0]
         filepath += '_results.dat'
@@ -138,9 +141,11 @@ def tumor_temperatures(filepath):
         temp_mean = np.mean(temp[np.where(tumor == 1)])
         temp_max = np.max(temp[np.where(tumor == 1)])
         temp_min = np.min(temp[np.where(tumor == 1)])
+        temp_std_dev = np.std(temp[np.where(tumor == 1)])
         print('Mean temp of tumor: {0}.'.format(temp_mean))
         print('Max temp of tumor: {0}.'.format(temp_max))
         print('Min temp of tumor: {0}.'.format(temp_min))
+        print('Std dev: {0}.'.format(temp_std_dev))
 
         config = configparser.ConfigParser()
 
@@ -148,6 +153,7 @@ def tumor_temperatures(filepath):
         config['Tumor']['Mean'] = str(temp_mean)
         config['Tumor']['Max'] = str(temp_max)
         config['Tumor']['Min'] = str(temp_min)
+        config['Tumor']['Std_Dev'] = str(temp_std_dev)
 
         filepath = os.path.splitext(filepath)[0]
         filepath += '_results.dat'
@@ -216,14 +222,17 @@ def brain_temperatures(filepath):
         temp_mean = np.mean(temp[np.where(tumor == 0)])
         temp_max = np.max(temp[np.where(tumor == 0)])
         temp_min = np.min(temp[np.where(tumor == 0)])
+        temp_std_dev = np.std(temp[np.where(tumor == 0)])
     else:
         temp_mean = np.mean(temp)
         temp_max = np.max(temp)
         temp_min = np.min(temp)
+        temp_std_dev = np.std(temp)
 
     print('Mean temp of brain: {0}.'.format(temp_mean))
     print('Max temp of brain: {0}.'.format(temp_max))
     print('Min temp of brain: {0}.'.format(temp_min))
+    print('Std dev: {0}.'.format(temp_std_dev))
 
     config = configparser.ConfigParser()
 
@@ -231,6 +240,7 @@ def brain_temperatures(filepath):
     config['Brain']['Mean'] = str(temp_mean)
     config['Brain']['Max'] = str(temp_max)
     config['Brain']['Min'] = str(temp_min)
+    config['Brain']['Std_Dev'] = str(temp_std_dev)
 
     filepath = os.path.splitext(filepath)[0]
     filepath += '_results.dat'
@@ -276,9 +286,11 @@ def domain_temperatures(filepath):
     temp_mean = np.mean(temp)
     temp_max = np.max(temp)
     temp_min = np.min(temp)
+    temp_std_dev = np.std(temp)
     print('Mean temp of domain: {0}.'.format(temp_mean))
     print('Max temp of domain: {0}.'.format(temp_max))
     print('Min temp of domain: {0}.'.format(temp_min))
+    print('Std dev: {0}.'.format(temp_std_dev))
 
     config = configparser.ConfigParser()
 
@@ -286,6 +298,7 @@ def domain_temperatures(filepath):
     config['Domain']['Mean'] = str(temp_mean)
     config['Domain']['Max'] = str(temp_max)
     config['Domain']['Min'] = str(temp_min)
+    config['Domain']['Std_Dev'] = str(temp_std_dev)
 
     filepath = os.path.splitext(filepath)[0]
     filepath += '_results.dat'
@@ -307,9 +320,11 @@ def csv_result_temperatures(filepath, csv):
     temp_mean = np.mean(temp[np.where(temp != 0)])
     temp_max = np.max(temp[np.where(temp != 0)])
     temp_min = np.min(temp[np.where(temp != 0)])
+    temp_std_dev = np.std(temp[np.where(temp != 0)])
     print('Mean temp: {0}.'.format(temp_mean))
     print('Max temp: {0}.'.format(temp_max))
     print('Min temp: {0}.'.format(temp_min))
+    print('Std dev: {0}.'.format(temp_std_dev))
 
     config = configparser.ConfigParser()
 
@@ -319,6 +334,7 @@ def csv_result_temperatures(filepath, csv):
     config[section]['Mean'] = str(temp_mean)
     config[section]['Max'] = str(temp_max)
     config[section]['Min'] = str(temp_min)
+    config[section]['Std_Dev'] = str(temp_std_dev)
 
     filepath = os.path.splitext(filepath)[0]
     filepath += '_results.dat'
