@@ -4272,7 +4272,7 @@ inline void Problem<OWNPRBLM, CT, DIM>::writeDfsToFile(const int& timeIter)
         std::cout << this->mParams.getPrefix()
                   << " * Write data fields to file "
                   << mCommonFile.nameDataFile()
-                  << "at time step " << timeIter << " ..." << std::endl;
+                  << " at time step " << timeIter << " ..." << std::endl;
     }
     this->mParams.decreaseLevel();
 
