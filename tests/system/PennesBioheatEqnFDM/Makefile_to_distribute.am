@@ -1,6 +1,7 @@
 SUBDIRS = Cauchy \
           Dirichlet \
-          Neumann
+          Neumann \
+          Radiation
 
 ################################################################################
 include_HEADERS= PennesBioheatEqnFDM.hpp

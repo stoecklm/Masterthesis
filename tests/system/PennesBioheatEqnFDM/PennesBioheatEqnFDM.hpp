@@ -38,6 +38,13 @@ class PennesBioheatEqnFDM : public ScaFES::Problem<PennesBioheatEqnFDM<CT,DIM, C
     /** Coefficient alpha. */
     const double ALPHA = 1.0;
 
+    /** Coefficient sigma. */
+    //const double SIGMA = 5.670e-8;
+    const double SIGMA = 1.0;
+
+    /** Coefficient epsilon. */
+    const double EPSILON = 1.0;
+
     /** Coefficient rho_blood. */
     const double RHO_BLOOD = 1.0;
 
