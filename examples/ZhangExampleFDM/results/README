@@ -1,8 +1,0 @@
-The Gnuplot diagram of the strong scalabilty test can be created as follows:
-
-    gnuplot ZIH_TAURUS-scaling_strong.plt
-
-The Gnuplot diagram of the weak scalabilty test can be created as follows:
-
-    gnuplot ZIH_TAURUS-scaling_weak.plt
-   

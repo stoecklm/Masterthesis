@@ -71,12 +71,6 @@ EXTRA_DIST += RUN_WEAK_SCALINGTEST_HELPER.sh
 EXTRA_DIST += RUN_WEAK_SCALINGTEST_HYBRID.sh
 EXTRA_DIST += RUN_WEAK_SCALINGTEST_MPI.sh
 EXTRA_DIST += RUN_WEAK_SCALINGTEST_OPENMP.sh
-EXTRA_DIST += results/scafes-scalingtests.plt \
-              results/ZIH_TAURUS-scaling_strong.plt \
-              results/ZIH_TAURUS-scaling_weak.dat \
-              results/ZIH_TAURUS-scaling_strong.dat \
-              results/ZIH_TAURUS-scaling_weak.plt \
-              results/README
 EXTRA_DIST += plotSurface.plt.in
 EXTRA_DIST += plotSurface.sh.in
 EXTRA_DIST += Parameters.ini

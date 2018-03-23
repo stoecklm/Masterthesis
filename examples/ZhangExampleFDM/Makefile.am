@@ -65,12 +65,6 @@ ZhangExampleFDM_LDFLAGS = $(LDFLAGS_COMMON)
 ZhangExampleFDM_LDADD = $(LDADD_COMMON)
 ZhangExampleFDM_DEPENDENCIES = $(DEPENDENCIES_COMMON)
 EXTRA_DIST = RUN.sh
-EXTRA_DIST += results/scafes-scalingtests.plt \
-        results/ZIH_TAURUS-scaling_strong.plt \
-        results/ZIH_TAURUS-scaling_weak.dat \
-        results/ZIH_TAURUS-scaling_strong.dat \
-        results/ZIH_TAURUS-scaling_weak.plt \
-        results/README
 
 
 #------------------------------------------------------------------------------#
