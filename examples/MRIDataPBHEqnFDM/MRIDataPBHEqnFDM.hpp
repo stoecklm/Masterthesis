@@ -43,6 +43,12 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
     /** constant q_skull. Heat flux at upper surface under skull. */
     const CT Q_SKULL; /* W/(m^2) */
 
+    /** constant epsilon. Emissivity. */
+    const CT EPSILON; /* - */
+
+    /** constant sigma. Stefan–Boltzmann constant. */
+    const CT SIGMA = 5.670373e-8; /* W/(m^2 K^4) */
+
     /** All fields which are related to the underlying problem
      * are added in terms of an entry of the parameters of
      * type \c std::vector.
@@ -92,7 +98,8 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
         H(ptree.get<CT>("Parameters.H")),
         T_INF(ptree.get<CT>("Parameters.T_INF")),
         Q_BC(ptree.get<CT>("Parameters.Q_BC")),
-        Q_SKULL(ptree.get<CT>("Parameters.Q_SKULL"))
+        Q_SKULL(ptree.get<CT>("Parameters.Q_SKULL")),
+        EPSILON(ptree.get<CT>("Parameters.EPSILON"))
         { }
 
     /** Evaluates all fields at one given global inner grid node.
@@ -180,6 +187,7 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
         CT q = this->knownDf(7, idxNode);
         int surface = this->knownDf(8, idxNode);
 
+
         /* Discrete Pennes Bioheat Equation modified for updating border nodes. */
         vNew[0](idxNode) = vOld[0](idxNode);
         for (std::size_t pp = 0; pp < DIM; ++pp) {
@@ -189,13 +197,22 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
             /* vOld[0](this->connect(idxNode, 2*pp+1) needs to be replaced. */
                 if (pp == (DIM-1)) {
                     if (surface == 1) {
-                    /* Open skull: Cauchy boundary condition. */
+                    /* Open skull: Cauchy boundary condition and
+                     * thermal radiation boundary condition. */
+                        CT tempOld = vNew[0](idxNode) + 273.15;
+                        CT tempOldPow4 = tempOld * tempOld * tempOld * tempOld;
+                        CT tempAmb = T_INF + 273.15;
+                        CT tempAmbPow4 = tempAmb * tempAmb * tempAmb * tempAmb;
+
                         vNew[0](idxNode) += this->tau() * (lambda/(rho*c))
                                             * (vOld[0](this->connect(idxNode, 2*pp))
                                             /* + vOld[0](this->connect(idxNode, 2*pp+1) */
                                                + vOld[0](this->connect(idxNode, 2*pp))
                                                - ((2.0*this->gridsize(pp)/lambda)
                                                   * H * (vOld[0](idxNode) - T_INF))
+                                               - ((2.0*this->gridsize(pp)/lambda)
+                                                  * EPSILON * SIGMA
+                                                  * (tempOldPow4 - tempAmbPow4))
                                             /********************************************/
                                                - 2.0 * vOld[0](idxNode))
                                             / (this->gridsize(pp) * this->gridsize(pp));

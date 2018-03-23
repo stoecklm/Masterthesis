@@ -10,6 +10,8 @@ T_INF = 22.0
 # Q = 0 => insulated
 Q_BC = 0.0
 Q_SKULL = 0.0
+# Thermal radiation: emissivity.
+EPSILON = 0.0
 # RADIUS or DIAMETER
 RADIUS = 0.021135
 DEPTH = 0.024
