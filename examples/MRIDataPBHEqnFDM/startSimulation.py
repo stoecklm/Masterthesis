@@ -426,7 +426,11 @@ def create_init_array(params, nc_file, region, BRAIN_VALUE, TUMOR_VALUE,
                     values_array[elem_z, elem_y, elem_x] = TUMOR_VALUE
     if params['USE_VESSELS_SEGMENTATION'] == True:
         if NAME_VARIABLE in params['VARIABLES_VESSELS']:
+            # - 1 = grid node outside of trepanation domain
+            # 0 = grid node inside trepanation domain, no vessel
+            # 1 = grid node is vessel inside trepanation domain
             vessels_big = np.ones(dim1*dim0).reshape(dim1, dim0)
+            vessels_big *= -1.0
             x_min = params['surface_cmin']
             x_max = params['surface_cmax']
             y_min = params['surface_rmin']
@@ -437,10 +441,11 @@ def create_init_array(params, nc_file, region, BRAIN_VALUE, TUMOR_VALUE,
                         vessels_big[elem_y, elem_x] = 0
             for elem_y in range(0, vessels.shape[0]):
                 for elem_x in range(0, vessels.shape[1]):
-                    if vessels[elem_y, elem_x] == 1:
+                    if vessels[elem_y, elem_x] == 1 \
+                        and surface[dim2-1, elem_y+y_min, elem_x+x_min] == 1:
                         vessels_big[elem_y+y_min, elem_x+x_min] = 1
             depth = params['VESSELS_DEPTH']
-            values_array[dim2-depth:dim2,:,:] = vessels_big * BRAIN_VALUE
+            values_array[dim2-depth:dim2,:,:] = abs(vessels_big) * BRAIN_VALUE
     # Write NumPy array to netCDF file.
     write_values_to_file(nc_file, values_array, NAME_VARIABLE)
 
