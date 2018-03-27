@@ -310,7 +310,6 @@ def domain_temperatures(filepath):
 
     print('Done.')
 
-
 def csv_result_temperatures(filepath, csv):
     csv = os.path.join(csv, csv + '.csv')
     print('Calc temperatures of {0}.'.format(csv))
@@ -342,6 +341,93 @@ def csv_result_temperatures(filepath, csv):
     print('Write results to {0}.'.format(filepath))
 
     with open(filepath, 'a') as configfile:
+        config.write(configfile)
+
+    print('Done.')
+
+def vessels_temperatures(filepath, vessels):
+    print('Calc vessel temperatures of {0}.'.format(filepath))
+
+    # Open result file and read data from it.
+    nc_file = nc.Dataset(filepath)
+    dim0 = nc_file.dimensions['nNodes_0'].size
+    dim1 = nc_file.dimensions['nNodes_1'].size
+    dim2 = nc_file.dimensions['nNodes_2'].size
+    time = nc_file.dimensions['time'].size
+
+    possible_names = ['T', 'TNewDom', 'TDiff']
+    found_name = False
+    for name in possible_names:
+        try:
+            T = nc_file.variables[name]
+            found_name = True
+            break
+        except KeyError:
+            pass
+
+    if found_name == False:
+        print('* ERROR: No temperature variable found in this file.')
+        print('Aborting.')
+        exit()
+
+    # Create numpy array and save surface data from netCDF file to it.
+    temp = np.zeros((dim1, dim0))
+    temp[:,:] = T[(time-1):time,(dim2-1),:,:]
+
+    nc_file.close()
+
+    temp_mean = np.mean(temp[np.where(vessels == 1)])
+    temp_max = np.max(temp[np.where(vessels == 1)])
+    temp_min = np.min(temp[np.where(vessels == 1)])
+    temp_std_dev = np.std(temp[np.where(vessels == 1)])
+    print('Mean temp of vessels: {0}.'.format(temp_mean))
+    print('Max temp of vessels: {0}.'.format(temp_max))
+    print('Min temp of vessels: {0}.'.format(temp_min))
+    print('Std dev: {0}.'.format(temp_std_dev))
+
+    config = configparser.ConfigParser()
+
+    config['Vessel'] = {}
+    config['Vessel']['Mean'] = str(temp_mean)
+    config['Vessel']['Max'] = str(temp_max)
+    config['Vessel']['Min'] = str(temp_min)
+    config['Vessel']['Std_Dev'] = str(temp_std_dev)
+
+    filepath = os.path.splitext(filepath)[0]
+    filepath += '_results.dat'
+
+    print('Write results to {0}.'.format(filepath))
+
+    with open(filepath, 'w') as configfile:
+        config.write(configfile)
+
+    print('Done.')
+
+    print('Calc non-vessel temperatures of {0}.'.format(filepath))
+
+    temp_mean = np.mean(temp[np.where(vessels == 0)])
+    temp_max = np.max(temp[np.where(vessels == 0)])
+    temp_min = np.min(temp[np.where(vessels == 0)])
+    temp_std_dev = np.std(temp[np.where(vessels == 0)])
+    print('Mean temp of non-vessels: {0}.'.format(temp_mean))
+    print('Max temp of non-vessels: {0}.'.format(temp_max))
+    print('Min temp of non-vessels: {0}.'.format(temp_min))
+    print('Std dev: {0}.'.format(temp_std_dev))
+
+    config = configparser.ConfigParser()
+
+    config['Non_Vessel'] = {}
+    config['Non_Vessel']['Mean'] = str(temp_mean)
+    config['Non_Vessel']['Max'] = str(temp_max)
+    config['Non_Vessel']['Min'] = str(temp_min)
+    config['Non_Vessel']['Std_Dev'] = str(temp_std_dev)
+
+    filepath = os.path.splitext(filepath)[0]
+    filepath += '_results.dat'
+
+    print('Write results to {0}.'.format(filepath))
+
+    with open(filepath, 'w') as configfile:
         config.write(configfile)
 
     print('Done.')

@@ -23,6 +23,7 @@ from postProcessing import tumor_temperatures
 from postProcessing import brain_temperatures
 from postProcessing import domain_temperatures
 from postProcessing import csv_result_temperatures
+from postProcessing import vessels_temperatures
 
 def parse_config_file(params):
     print('Parsing {0}.'.format(params['NAME_CONFIGFILE']))
@@ -71,8 +72,11 @@ def parse_config_file(params):
     params['MRI_DATA_CASE'] = config['MRI'].get('CASE', fallback='')
     params['USE_VESSELS_SEGMENTATION'] = config['MRI'].getboolean('USE_VESSELS_SEGMENTATION',
                                                                   fallback=False)
-    VARIABLES_VESSELS = config['MRI'].get('VARIABLES', fallback='')
-    params['VARIABLES_VESSELS'] = list(VARIABLES_VESSELS.split(' '))
+    VARIABLES_VESSELS = config['MRI'].get('VARIABLES', fallback=list())
+    if len(VARIABLES_VESSELS) > 0:
+        params['VARIABLES_VESSELS'] = list(VARIABLES_VESSELS.split(' '))
+    else:
+        params['VARIABLES_VESSELS'] = list()
     params['VESSELS_DEPTH'] = config['MRI'].getint('DEPTH', fallback=1)
     # Get values from section 'Brain'.
     brain = dict(config.items('Brain'))
@@ -409,6 +413,7 @@ def write_values_to_file(nc_file, values_array, NAME_VARIABLE):
 
 def create_init_array(params, nc_file, region, BRAIN_VALUE, TUMOR_VALUE,
                       NAME_VARIABLE, vessels, surface):
+    global vessels_big
     # Get file/grid dimensions.
     dim0 = params['N_NODES'][0]
     dim1 = params['N_NODES'][1]
@@ -425,7 +430,14 @@ def create_init_array(params, nc_file, region, BRAIN_VALUE, TUMOR_VALUE,
                 if region[elem_z, elem_y, elem_x] == 1:
                     values_array[elem_z, elem_y, elem_x] = TUMOR_VALUE
     if params['USE_VESSELS_SEGMENTATION'] == True:
-        if NAME_VARIABLE in params['VARIABLES_VESSELS']:
+        VARIABLES_VESSELS = params['VARIABLES_VESSELS']
+        if NAME_VARIABLE in VARIABLES_VESSELS:
+            # Special Case: No trepanation domain is set,
+            # but vessel segmentation is read.
+            # Vessel will be used on the surface of the whole domain.
+            if np.count_nonzero(surface) == 0:
+                surface[dim2-1,:,:] = 1
+            # Normal case: trepanation domain is set.
             # - 1 = grid node outside of trepanation domain
             # 0 = grid node inside trepanation domain, no vessel
             # 1 = grid node is vessel inside trepanation domain
@@ -446,6 +458,7 @@ def create_init_array(params, nc_file, region, BRAIN_VALUE, TUMOR_VALUE,
                         vessels_big[elem_y+y_min, elem_x+x_min] = 1
             depth = params['VESSELS_DEPTH']
             values_array[dim2-depth:dim2,:,:] = abs(vessels_big) * BRAIN_VALUE
+            VARIABLES_VESSELS.remove(NAME_VARIABLE)
     # Write NumPy array to netCDF file.
     write_values_to_file(nc_file, values_array, NAME_VARIABLE)
 
@@ -485,6 +498,23 @@ def create_surface_array(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
     init_values = nc_file.createVariable(NAME_VARIABLE, 'i', nNodes)
     # Write NumPy Array to file.
     init_values[0,] = values_array
+
+    # Bounding box for trepanation domain.
+    rows = np.any(values_array[dim2-1,:,:], axis=1)
+    cols = np.any(values_array[dim2-1,:,:], axis=0)
+    try:
+        params['surface_rmin'], params['surface_rmax'] = np.where(rows)[0][[0, -1]]
+    except IndexError:
+        params['surface_rmin'], params['surface_rmax'] = 0, dim1-1
+    try:
+        params['surface_cmin'], params['surface_cmax'] = np.where(cols)[0][[0, -1]]
+    except IndexError:
+        params['surface_cmin'], params['surface_cmax'] = 0, dim0-1
+
+    print(params['surface_cmin'])
+    print(params['surface_cmax'])
+
+    return values_array
 
 def create_surface_from_mri(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
                             NAME_VARIABLE):
@@ -540,6 +570,7 @@ def create_surface_from_mri(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
     init_values = nc_file.createVariable(NAME_VARIABLE, 'i', nNodes)
     # Write NumPy Array to file.
     init_values[0,] = values_array
+
     # Bounding box for trepanation domain.
     rows = np.any(values_array[dim2-1,:,:], axis=1)
     cols = np.any(values_array[dim2-1,:,:], axis=0)
@@ -615,8 +646,7 @@ def create_init_file(params):
     if params['MRI_DATA_CASE'] != '':
         surface = create_surface_from_mri(params, nc_file, 0, 1, 'surface')
     else:
-        create_surface_array(params, nc_file, 0, 1, 'surface')
-        surface = 0
+        surface = create_surface_array(params, nc_file, 0, 1, 'surface')
 
     if params['USE_VESSELS_SEGMENTATION'] == True:
         vessels = read_vessels_segmentation(params)
@@ -631,6 +661,11 @@ def create_init_file(params):
     for key, value in brain.items():
         create_init_array(params, nc_file, region, brain[key], tumor[key],
                           names[key], vessels, surface)
+
+    VARIABLES_VESSELS = params['VARIABLES_VESSELS']
+    if len(VARIABLES_VESSELS) != 0:
+        print('* WARNING: Variables', VARIABLES_VESSELS,
+              'for vessels not known.')
 
     nc_file.close()
 
@@ -753,6 +788,8 @@ def main():
         tumor_temperatures(params['NAME_RESULTFILE'])
         brain_temperatures(params['NAME_RESULTFILE'])
         domain_temperatures(params['NAME_RESULTFILE'])
+        if params['USE_VESSELS_SEGMENTATION'] == True:
+            vessels_temperatures(params['NAME_RESULTFILE'], vessels_big)
         if params['MRI_DATA_CASE'] != '':
             csv_result_temperatures(params['NAME_RESULTFILE'],
                                     params['MRI_DATA_CASE'])
