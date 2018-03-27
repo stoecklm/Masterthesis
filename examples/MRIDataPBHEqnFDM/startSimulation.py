@@ -1,11 +1,13 @@
 import configparser
 import glob
-import netCDF4 as nc
-import numpy as np
 import os
 import subprocess
 import sys
+
+import netCDF4 as nc
+import numpy as np
 import matplotlib.path as mpath
+from scipy.interpolate import griddata
 
 from plotSurface import plot_surface
 from readMRIData import read_intra_op_points
@@ -67,6 +69,11 @@ def parse_config_file(params):
                                                                     fallback=1)
     # Get values from section 'MRI'.
     params['MRI_DATA_CASE'] = config['MRI'].get('CASE', fallback='')
+    params['USE_VESSELS_SEGMENTATION'] = config['MRI'].getboolean('USE_VESSELS_SEGMENTATION',
+                                                                  fallback=False)
+    VARIABLES_VESSELS = config['MRI'].get('VARIABLES', fallback='')
+    params['VARIABLES_VESSELS'] = list(VARIABLES_VESSELS.split(' '))
+    params['VESSELS_DEPTH'] = config['MRI'].getint('DEPTH', fallback=1)
     # Get values from section 'Brain'.
     brain = dict(config.items('Brain'))
     for key in brain:
@@ -181,6 +188,12 @@ def check_variables(params):
                 exit()
         else:
             print('* ERROR:', folder, 'does not exist.')
+            print('Aborting.')
+            exit()
+    if params['USE_VESSELS_SEGMENTATION'] == True:
+        vessels_seg_path = os.path.join(folder, 'vessels_segmentation.csv')
+        if os.path.isfile(vessels_seg_path) != True:
+            print('* ERROR:', vessels_seg_path, 'does not exist.')
             print('Aborting.')
             exit()
 
@@ -395,7 +408,7 @@ def write_values_to_file(nc_file, values_array, NAME_VARIABLE):
     init_values[0,] = values_array
 
 def create_init_array(params, nc_file, region, BRAIN_VALUE, TUMOR_VALUE,
-                      NAME_VARIABLE):
+                      NAME_VARIABLE, vessels, surface):
     # Get file/grid dimensions.
     dim0 = params['N_NODES'][0]
     dim1 = params['N_NODES'][1]
@@ -411,6 +424,23 @@ def create_init_array(params, nc_file, region, BRAIN_VALUE, TUMOR_VALUE,
                 # If yes, set value to tumor specific value.
                 if region[elem_z, elem_y, elem_x] == 1:
                     values_array[elem_z, elem_y, elem_x] = TUMOR_VALUE
+    if params['USE_VESSELS_SEGMENTATION'] == True:
+        if NAME_VARIABLE in params['VARIABLES_VESSELS']:
+            vessels_big = np.ones(dim1*dim0).reshape(dim1, dim0)
+            x_min = params['surface_cmin']
+            x_max = params['surface_cmax']
+            y_min = params['surface_rmin']
+            y_max = params['surface_rmax']
+            for elem_y in range(0, surface.shape[1]):
+                for elem_x in range(0, surface.shape[2]):
+                    if surface[dim2-1, elem_y, elem_x] == 1:
+                        vessels_big[elem_y, elem_x] = 0
+            for elem_y in range(0, vessels.shape[0]):
+                for elem_x in range(0, vessels.shape[1]):
+                    if vessels[elem_y, elem_x] == 1:
+                        vessels_big[elem_y+y_min, elem_x+x_min] = 1
+            depth = params['VESSELS_DEPTH']
+            values_array[dim2-depth:dim2,:,:] = vessels_big * BRAIN_VALUE
     # Write NumPy array to netCDF file.
     write_values_to_file(nc_file, values_array, NAME_VARIABLE)
 
@@ -505,6 +535,43 @@ def create_surface_from_mri(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
     init_values = nc_file.createVariable(NAME_VARIABLE, 'i', nNodes)
     # Write NumPy Array to file.
     init_values[0,] = values_array
+    # Bounding box for trepanation domain.
+    rows = np.any(values_array[dim2-1,:,:], axis=1)
+    cols = np.any(values_array[dim2-1,:,:], axis=0)
+    params['surface_rmin'], params['surface_rmax'] = np.where(rows)[0][[0, -1]]
+    params['surface_cmin'], params['surface_cmax'] = np.where(cols)[0][[0, -1]]
+
+    return values_array
+
+def read_vessels_segmentation(params):
+    print('Read vessels segmentation.')
+    # Load vessels segmentation and save it with the smallest bounding box.
+    vessels_seg_path = os.path.join(params['MRI_DATA_CASE'],
+                                    'vessels_segmentation.csv')
+    a = np.genfromtxt(vessels_seg_path, delimiter=',')
+    rows = np.any(a, axis=1)
+    cols = np.any(a, axis=0)
+    rmin, rmax = np.where(rows)[0][[0, -1]]
+    cmin, cmax = np.where(cols)[0][[0, -1]]
+    b = np.zeros((rmax-rmin+1, cmax-cmin+1))
+    b[:,:] = a[rmin:rmax+1,cmin:cmax+1]
+
+    dim0_sparse = params['surface_cmax'] - params['surface_cmin'] + 1
+    dim1_sparse = params['surface_rmax'] - params['surface_rmin'] + 1
+
+    dim0_dense = b.shape[1]
+    dim1_dense = b.shape[0]
+
+    x_sparse, y_sparse = np.meshgrid(np.linspace(0, dim0_sparse-1, dim0_sparse),
+                                     np.linspace(0, dim1_sparse-1, dim1_sparse))
+    x_dense, y_dense = np.meshgrid(np.linspace(0, dim0_sparse-1, dim0_dense),
+                                   np.linspace(0, dim1_sparse-1, dim1_dense))
+
+    vessels_sparse = griddata(np.array([x_dense.ravel(), y_dense.ravel()]).T,
+                              b.ravel(), (x_sparse, y_sparse), method='nearest')
+
+    print('Done.')
+    return vessels_sparse
 
 def create_init_file(params):
     filepath = params['NAME_INITFILE'] + '.nc'
@@ -540,6 +607,17 @@ def create_init_file(params):
         nNodes = nc_file.createDimension('nNodes_' + str(dim),
                                          params['N_NODES'][dim])
 
+    if params['MRI_DATA_CASE'] != '':
+        surface = create_surface_from_mri(params, nc_file, 0, 1, 'surface')
+    else:
+        create_surface_array(params, nc_file, 0, 1, 'surface')
+        surface = 0
+
+    if params['USE_VESSELS_SEGMENTATION'] == True:
+        vessels = read_vessels_segmentation(params)
+    else:
+        vessels = 0
+
     brain = params['BRAIN']
     tumor = params['TUMOR']
     names = {'rho': 'rho', 'c': 'c', 'lambda': 'lambda',
@@ -547,11 +625,7 @@ def create_init_file(params):
              't_blood': 'T_blood', 'q': 'q', 't': 'T'}
     for key, value in brain.items():
         create_init_array(params, nc_file, region, brain[key], tumor[key],
-                          names[key])
-    if params['MRI_DATA_CASE'] != '':
-        create_surface_from_mri(params, nc_file, 0, 1, 'surface')
-    else:
-        create_surface_array(params, nc_file, 0, 1, 'surface')
+                          names[key], vessels, surface)
 
     nc_file.close()
 
