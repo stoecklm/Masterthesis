@@ -398,7 +398,7 @@ def vessels_temperatures(filepath_nc, vessels):
 
     print('Write results to {0}.'.format(filepath))
 
-    with open(filepath, 'w') as configfile:
+    with open(filepath, 'a') as configfile:
         config.write(configfile)
 
     print('Done.')
@@ -424,7 +424,7 @@ def vessels_temperatures(filepath_nc, vessels):
 
     print('Write results to {0}.'.format(filepath))
 
-    with open(filepath, 'w') as configfile:
+    with open(filepath, 'a') as configfile:
         config.write(configfile)
 
     print('Done.')
