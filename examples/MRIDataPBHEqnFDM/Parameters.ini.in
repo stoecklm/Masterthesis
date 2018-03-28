@@ -3,8 +3,11 @@
 Case = 1151711
 USE_VESSELS_SEGMENTATION = True
 # e.g. = omega q t_blood
-VARIABLES = omega
-# in N_NODES
+# Variables names: rho c lambda rho_blood c_blood omega T_blood q T
+VARIABLES_VESSELS = T_blood
+VALUES_VESSELS = 35
+VALUES_NON_VESSELS = 30
+# in N_NODES_2
 DEPTH = 3
 
 [Parameters]

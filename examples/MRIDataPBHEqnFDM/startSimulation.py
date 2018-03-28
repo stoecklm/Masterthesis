@@ -72,11 +72,21 @@ def parse_config_file(params):
     params['MRI_DATA_CASE'] = config['MRI'].get('CASE', fallback='')
     params['USE_VESSELS_SEGMENTATION'] = config['MRI'].getboolean('USE_VESSELS_SEGMENTATION',
                                                                   fallback=False)
-    VARIABLES_VESSELS = config['MRI'].get('VARIABLES', fallback=list())
+    VARIABLES_VESSELS = config['MRI'].get('VARIABLES_VESSELS', fallback=list())
     if len(VARIABLES_VESSELS) > 0:
         params['VARIABLES_VESSELS'] = list(VARIABLES_VESSELS.split(' '))
     else:
-        params['VARIABLES_VESSELS'] = list()
+        params['VARIABLES_VESSELS'] = VARIABLES_VESSELS
+    VALUES_VESSELS = config['MRI'].get('VALUES_VESSELS', fallback=list())
+    if len(VALUES_VESSELS) > 0:
+        params['VALUES_VESSELS'] = list(VALUES_VESSELS.split(' '))
+    else:
+        params['VALUES_VESSELS'] = VALUES_VESSELS
+    VALUES_NON_VESSELS = config['MRI'].get('VALUES_NON_VESSELS', fallback=list())
+    if len(VALUES_VESSELS) > 0:
+        params['VALUES_NON_VESSELS'] = list(VALUES_NON_VESSELS.split(' '))
+    else:
+        params['VALUES_NON_VESSELS'] = VALUES_NON_VESSELS
     params['VESSELS_DEPTH'] = config['MRI'].getint('DEPTH', fallback=1)
     # Get values from section 'Brain'.
     brain = dict(config.items('Brain'))
@@ -200,6 +210,29 @@ def check_variables(params):
             print('* ERROR:', vessels_seg_path, 'does not exist.')
             print('Aborting.')
             exit()
+    # Check if names specified in VARIABLES for vessels are
+    # variables known in ScaFES.
+    names = ['rho', 'c', 'lambda', 'rho_blood', 'c_blood', 'omega', 'T_blood', \
+             'q', 'T']
+    for var in params['VARIABLES_VESSELS']:
+        if var not in names:
+            print('* ERROR:', var, 'in VARIABLES_VESSELS not known.')
+            print('Aborting.')
+            exit()
+    if params['VESSELS_DEPTH'] > params['N_NODES'][2]:
+        print('* WARNING: Depth for vessel segmentation is bigger than nNodes_2.')
+        print('  VESSELS_DEPTH was set to {0}.'.format(params['N_NODES'][2]))
+        params['VESSELS_DEPTH'] = params['N_NODES'][2]
+    if len(params['VARIABLES_VESSELS']) != len(params['VALUES_VESSELS']):
+        print('* ERROR: length of VARIABLES_VESSELS does not match length of',
+              'VALUES_VESSELS.')
+        print('Aborting.')
+        exit()
+    if len(params['VARIABLES_VESSELS']) != len(params['VALUES_NON_VESSELS']):
+        print('* ERROR: length of VARIABLES_VESSELS does not match length of',
+              'VALUES_NON_VESSELS.')
+        print('Aborting.')
+        exit()
 
     print('Done.')
 
@@ -421,17 +454,11 @@ def create_init_array(params, nc_file, region, BRAIN_VALUE, TUMOR_VALUE,
     # Resize temperature array.
     num_elem = dim0 * dim1 * dim2
     values_array = BRAIN_VALUE * np.ones(num_elem).reshape(dim2, dim1, dim0)
-    # Iterate through temperature array.
-    for elem_z in range(0, values_array.shape[0]):
-        for elem_y in range(0, values_array.shape[1]):
-            for elem_x in range(0, values_array.shape[2]):
-                # Check if current point is inside tumor.
-                # If yes, set value to tumor specific value.
-                if region[elem_z, elem_y, elem_x] == 1:
-                    values_array[elem_z, elem_y, elem_x] = TUMOR_VALUE
     if params['USE_VESSELS_SEGMENTATION'] == True:
         VARIABLES_VESSELS = params['VARIABLES_VESSELS']
         if NAME_VARIABLE in VARIABLES_VESSELS:
+            VALUE_VESSEL = params['VALUES_VESSELS'][VARIABLES_VESSELS.index(NAME_VARIABLE)]
+            VALUE_NON_VESSEL = params['VALUES_NON_VESSELS'][VARIABLES_VESSELS.index(NAME_VARIABLE)]
             # Special Case: No trepanation domain is set,
             # but vessel segmentation is read.
             # Vessel will be used on the surface of the whole domain.
@@ -447,18 +474,28 @@ def create_init_array(params, nc_file, region, BRAIN_VALUE, TUMOR_VALUE,
             x_max = params['surface_cmax']
             y_min = params['surface_rmin']
             y_max = params['surface_rmax']
+            depth = params['VESSELS_DEPTH']
             for elem_y in range(0, surface.shape[1]):
                 for elem_x in range(0, surface.shape[2]):
                     if surface[dim2-1, elem_y, elem_x] == 1:
                         vessels_big[elem_y, elem_x] = 0
+                        values_array[dim2-depth:dim2,elem_y,elem_x] = VALUE_NON_VESSEL
             for elem_y in range(0, vessels.shape[0]):
                 for elem_x in range(0, vessels.shape[1]):
                     if vessels[elem_y, elem_x] == 1 \
                         and surface[dim2-1, elem_y+y_min, elem_x+x_min] == 1:
                         vessels_big[elem_y+y_min, elem_x+x_min] = 1
-            depth = params['VESSELS_DEPTH']
-            values_array[dim2-depth:dim2,:,:] = abs(vessels_big) * BRAIN_VALUE
+                        values_array[dim2-depth:dim2,elem_y+y_min,elem_x+x_min] = VALUE_VESSEL
+            #values_array[dim2-depth:dim2,:,:] = abs(vessels_big) * BRAIN_VALUE
             VARIABLES_VESSELS.remove(NAME_VARIABLE)
+    # Iterate through temperature array.
+    for elem_z in range(0, values_array.shape[0]):
+        for elem_y in range(0, values_array.shape[1]):
+            for elem_x in range(0, values_array.shape[2]):
+                # Check if current point is inside tumor.
+                # If yes, set value to tumor specific value.
+                if region[elem_z, elem_y, elem_x] == 1:
+                    values_array[elem_z, elem_y, elem_x] = TUMOR_VALUE
     # Write NumPy array to netCDF file.
     write_values_to_file(nc_file, values_array, NAME_VARIABLE)
 
@@ -661,11 +698,6 @@ def create_init_file(params):
     for key, value in brain.items():
         create_init_array(params, nc_file, region, brain[key], tumor[key],
                           names[key], vessels, surface)
-
-    VARIABLES_VESSELS = params['VARIABLES_VESSELS']
-    if len(VARIABLES_VESSELS) != 0:
-        print('* WARNING: Variables', VARIABLES_VESSELS,
-              'for vessels not known.')
 
     nc_file.close()
 

@@ -143,9 +143,9 @@ def plot_surface(filepath, params):
     title = filepath
     filepath_heatmap = filepath
     filepath_tumor = filepath
-    filepath += '_py_surface.eps'
-    filepath_heatmap += '_py_heatmap.eps'
-    filepath_tumor += '_py_tumor.eps'
+    filepath += '_surface.eps'
+    filepath_heatmap += '_heatmap.eps'
+    filepath_tumor += '_tumor.eps'
 
     # Create numpy array and save surface data from netCDF file to it.
     temperature = np.zeros((dim1, dim0))

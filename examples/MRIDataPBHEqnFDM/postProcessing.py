@@ -345,11 +345,11 @@ def csv_result_temperatures(filepath, csv):
 
     print('Done.')
 
-def vessels_temperatures(filepath, vessels):
-    print('Calc vessel temperatures of {0}.'.format(filepath))
+def vessels_temperatures(filepath_nc, vessels):
+    print('Calc vessel temperatures of {0}.'.format(filepath_nc))
 
     # Open result file and read data from it.
-    nc_file = nc.Dataset(filepath)
+    nc_file = nc.Dataset(filepath_nc)
     dim0 = nc_file.dimensions['nNodes_0'].size
     dim1 = nc_file.dimensions['nNodes_1'].size
     dim2 = nc_file.dimensions['nNodes_2'].size
@@ -393,7 +393,7 @@ def vessels_temperatures(filepath, vessels):
     config['Vessel']['Min'] = str(temp_min)
     config['Vessel']['Std_Dev'] = str(temp_std_dev)
 
-    filepath = os.path.splitext(filepath)[0]
+    filepath = os.path.splitext(filepath_nc)[0]
     filepath += '_results.dat'
 
     print('Write results to {0}.'.format(filepath))
@@ -403,7 +403,7 @@ def vessels_temperatures(filepath, vessels):
 
     print('Done.')
 
-    print('Calc non-vessel temperatures of {0}.'.format(filepath))
+    print('Calc non-vessel temperatures of {0}.'.format(filepath_nc))
 
     temp_mean = np.mean(temp[np.where(vessels == 0)])
     temp_max = np.max(temp[np.where(vessels == 0)])
@@ -421,9 +421,6 @@ def vessels_temperatures(filepath, vessels):
     config['Non_Vessel']['Max'] = str(temp_max)
     config['Non_Vessel']['Min'] = str(temp_min)
     config['Non_Vessel']['Std_Dev'] = str(temp_std_dev)
-
-    filepath = os.path.splitext(filepath)[0]
-    filepath += '_results.dat'
 
     print('Write results to {0}.'.format(filepath))
 
