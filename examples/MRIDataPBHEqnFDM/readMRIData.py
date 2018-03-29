@@ -92,22 +92,28 @@ def plot_interpolation(points, filename):
 
 def read_intra_op_points(folderpath):
     print('Read IntraOp points.')
-    filepath = os.path.join(folderpath, 'fiducials.csv')
+    if os.path.isfile(os.path.join(folderpath, 'fiducials.csv')):
+        filepath = os.path.join(folderpath, 'fiducials.csv')
+    else:
+        filepath = os.path.join(folderpath, 'OpenIGTLink.fcsv')
     points = list()
     with open(filepath, newline='') as csvfile:
         reader = csv.reader(csvfile, delimiter=',', quotechar='|')
         for row in reader:
             # Check if this line is a IntraOp Point or Tumor.
-            tmp = re.search('IntraOp', str(row[-3]))
             try:
-                # If it does not fail, it is a IntraOp Point
-                tmp.group(0)
-                x = float(row[1])
-                y = float(row[2])
-                z = float(row[3])
-                xyz = [x, y, z]
-                points.append(xyz)
-            except AttributeError:
+                tmp = re.search('IntraOp', str(row[-3]))
+                try:
+                    # If it does not fail, it is a IntraOp Point
+                    tmp.group(0)
+                    x = float(row[1])
+                    y = float(row[2])
+                    z = float(row[3])
+                    xyz = [x, y, z]
+                    points.append(xyz)
+                except AttributeError:
+                    pass
+            except IndexError:
                 pass
 
     print('Done.')
@@ -116,21 +122,27 @@ def read_intra_op_points(folderpath):
 
 def read_tumor_point(folderpath):
     print('Read tumor point.')
-    filepath = os.path.join(folderpath, 'fiducials.csv')
-    xyz = list()
+    if os.path.isfile(os.path.join(folderpath, 'fiducials.csv')):
+        filepath = os.path.join(folderpath, 'fiducials.csv')
+    else:
+        filepath = os.path.join(folderpath, 'OpenIGTLink.fcsv')
+    xyz = [0, 0, 0]
     with open(filepath, newline='') as csvfile:
         reader = csv.reader(csvfile, delimiter=',', quotechar='|')
         for row in reader:
             # Check if this line is a IntraOp Point or Tumor.
-            tmp = re.search('Tumor', str(row[-3]))
             try:
-                # If it does not fail, it is the Tumor Center.
-                tmp.group(0)
-                x = float(row[1])
-                y = float(row[2])
-                z = float(row[3])
-                xyz = [x, y, z]
-            except AttributeError:
+                tmp = re.search('Tumor', str(row[-3]))
+                try:
+                    # If it does not fail, it is the Tumor Center.
+                    tmp.group(0)
+                    x = float(row[1])
+                    y = float(row[2])
+                    z = float(row[3])
+                    xyz = [x, y, z]
+                except AttributeError:
+                    pass
+            except IndexError:
                 pass
 
     print('Done.')
@@ -230,14 +242,16 @@ def main():
     # if file exists and if file has .csv extension.
     if len(sys.argv) > 1:
         if os.path.isdir(sys.argv[1]) == True:
-            tmp = os.path.join(os.sys.argv[1], 'fiducials.csv')
-            if os.path.isfile(tmp) == True:
-                filepath = sys.argv[1]
-                filepath = os.path.normpath(filepath)
-            else:
-                print(sys.argv[1], 'does not contain fiducials.csv.')
+            tmp1 = os.path.join(os.sys.argv[1], 'fiducials.csv')
+            tmp2 = os.path.join(os.sys.argv[1], 'OpenIGTLink.fcsv')
+            if os.path.isfile(tmp1) != True and os.path.isfile(tmp2) != True:
+                print(sys.argv[1], 'does not contain fiducials.csv',
+                      'or OpenIGTLink.fcsv.')
                 print('Aborting.')
                 exit()
+            else:
+                filepath = sys.argv[1]
+                filepath = os.path.normpath(filepath)
         else:
             print(sys.argv[1], 'does not exist.')
             print('Aborting.')

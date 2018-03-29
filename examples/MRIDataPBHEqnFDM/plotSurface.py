@@ -9,6 +9,9 @@ from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import netCDF4 as nc
 import numpy as np
+import numpy.ma as ma
+
+CMAP = cm.viridis
 
 def plot_3d_surface(a, params, title, filepath):
     fig = plt.figure()
@@ -26,7 +29,7 @@ def plot_3d_surface(a, params, title, filepath):
     # Title.
     fig.suptitle('Surface Temperature in deg C for\n' + title, fontsize=12)
     # Plot surface.
-    surf = ax.plot_surface(x, y, a, cmap=cm.viridis,
+    surf = ax.plot_surface(x, y, a, cmap=CMAP,
                            linewidth=0, antialiased=False)
     # Customize z axis.
     ax.zaxis.set_major_locator(LinearLocator(10))
@@ -56,7 +59,7 @@ def plot_heatmap(a, params, title, filepath):
                                    DIM[1]))
     # Plot heatmap with circle around hole.
     fig, ax = plt.subplots()
-    heatmap = ax.pcolormesh(x, y, a, cmap=cm.viridis, rasterized=True)
+    heatmap = ax.pcolormesh(x, y, a, cmap=CMAP, rasterized=True)
     try:
         pts = params['HOLE']
         ax.plot(pts[:,0], pts[:,1], color='r', linestyle='dashed')
@@ -95,7 +98,7 @@ def plot_tumor(a, params, title, filepath):
                          fill=False, linestyle='dashed')
     # Plot heatmap with circle around tumor.
     fig, ax = plt.subplots()
-    heatmap = ax.pcolormesh(x, z, a, cmap=cm.viridis, rasterized=True)
+    heatmap = ax.pcolormesh(x, z, a, cmap=CMAP, rasterized=True)
     ax.add_artist(circle)
     # Title.
     fig.suptitle('Heatmap in deg C for\n' + title, fontsize=12)
@@ -104,6 +107,32 @@ def plot_tumor(a, params, title, filepath):
     ax.set_ylabel('z in m')
     # Add a color bar which maps values to colors.
     ticks = np.linspace(a.min(), a.max(), 11)
+    fig.colorbar(heatmap, ticks=ticks, orientation='vertical', shrink=0.75,
+                 aspect=20)
+    # Equal gridsize.
+    plt.gca().set_aspect('equal', adjustable='box')
+    # Save plot to file.
+    print('Save figure to {}.'.format(filepath))
+    plt.savefig(filepath)
+    plt.gcf().clear()
+    plt.close()
+
+def plot_thermo(case, folder):
+    filepath = case + '_thermo.eps'
+    a = np.genfromtxt(os.path.join(folder, 'thermo.csv'), delimiter=',')
+    rows = np.any(a, axis=1)
+    cols = np.any(a, axis=0)
+    rmin, rmax = np.where(rows)[0][[0, -1]]
+    cmin, cmax = np.where(cols)[0][[0, -1]]
+    b = np.zeros((rmax-rmin+1, cmax-cmin+1))
+    b[:,:] = a[rmin:rmax+1,cmin:cmax+1]
+    b[b == 0] = float('nan')
+    x, y = np.meshgrid(np.linspace(0, b.shape[1]-1, b.shape[1]), \
+                       np.linspace(0, b.shape[0]-1, b.shape[0]))
+    fig, ax = plt.subplots()
+    c = ma.masked_where(np.isnan(b), b)
+    ticks = np.linspace(c.min(), c.max(), 11)
+    heatmap = ax.pcolormesh(x, y, c, cmap=CMAP, rasterized=True)
     fig.colorbar(heatmap, ticks=ticks, orientation='vertical', shrink=0.75,
                  aspect=20)
     # Equal gridsize.
@@ -161,6 +190,8 @@ def plot_surface(filepath, params):
     plot_tumor(temperature, params, title, filepath_tumor)
 
     nc_file.close()
+
+    plot_thermo(params['MRI_DATA_CASE'], params['MRI_DATA_FOLDER'])
 
     print('Done.')
 

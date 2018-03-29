@@ -10,6 +10,7 @@ import matplotlib.path as mpath
 from scipy.interpolate import griddata
 
 from plotSurface import plot_surface
+
 from readMRIData import read_intra_op_points
 from readMRIData import read_tumor_point
 from readMRIData import rotate_points
@@ -69,7 +70,10 @@ def parse_config_file(params):
     params['CHECK_CONV_AT_EVERY_N_ITER'] = config['Input'].getfloat('CHECK_CONV_AT_EVERY_N_ITER',
                                                                     fallback=1)
     # Get values from section 'MRI'.
-    params['MRI_DATA_CASE'] = config['MRI'].get('CASE', fallback='')
+    mri_case = config['MRI'].get('CASE', fallback='')
+    params['MRI_DATA_CASE'] = mri_case.split('_')[0]
+    mri_folder = glob.glob(params['MRI_DATA_CASE'] + '*/')
+    params['MRI_DATA_FOLDER'] = mri_folder[0]
     params['USE_VESSELS_SEGMENTATION'] = config['MRI'].getboolean('USE_VESSELS_SEGMENTATION',
                                                                   fallback=False)
     VARIABLES_VESSELS = config['MRI'].get('VARIABLES_VESSELS', fallback=list())
@@ -192,12 +196,14 @@ def check_variables(params):
     # Check if MRI data exist.
     # Check if path to folder (i.e. results) is provided,
     # and if folder does contain fiducials.csv.
-    folder = params['MRI_DATA_CASE']
+    folder = params['MRI_DATA_FOLDER']
     if folder != '':
         if os.path.isdir(folder) == True:
-            tmp = os.path.join(folder, 'fiducials.csv')
-            if os.path.isfile(tmp) != True:
-                print('* ERROR:', folder, 'does not contain fiducials.csv.')
+            tmp1 = os.path.join(folder, 'fiducials.csv')
+            tmp2 = os.path.join(folder, 'OpenIGTLink.fcsv')
+            if os.path.isfile(tmp1) != True and os.path.isfile(tmp2) != True:
+                print('* ERROR:', folder, 'does not contain fiducials.csv',
+                      'or OpenIGTLink.fcsv.')
                 print('Aborting.')
                 exit()
         else:
@@ -555,7 +561,7 @@ def create_surface_array(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
 
 def create_surface_from_mri(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
                             NAME_VARIABLE):
-    filepath = params['MRI_DATA_CASE']
+    filepath = params['MRI_DATA_FOLDER']
     iop = read_intra_op_points(filepath)
     t = read_tumor_point(filepath)
     iop, t = rotate_points(iop, t)
@@ -619,7 +625,7 @@ def create_surface_from_mri(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
 def read_vessels_segmentation(params):
     print('Read vessels segmentation.')
     # Load vessels segmentation and save it with the smallest bounding box.
-    vessels_seg_path = os.path.join(params['MRI_DATA_CASE'],
+    vessels_seg_path = os.path.join(params['MRI_DATA_FOLDER'],
                                     'vessels_segmentation.csv')
     a = np.genfromtxt(vessels_seg_path, delimiter=',')
     rows = np.any(a, axis=1)
@@ -824,7 +830,7 @@ def main():
             vessels_temperatures(params['NAME_RESULTFILE'], vessels_big)
         if params['MRI_DATA_CASE'] != '':
             csv_result_temperatures(params['NAME_RESULTFILE'],
-                                    params['MRI_DATA_CASE'])
+                                    params['MRI_DATA_FOLDER'])
 
 if __name__ == '__main__':
     main()

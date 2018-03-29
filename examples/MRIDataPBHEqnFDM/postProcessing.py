@@ -311,11 +311,12 @@ def domain_temperatures(filepath):
     print('Done.')
 
 def csv_result_temperatures(filepath, csv):
-    csv = os.path.join(csv, csv + '.csv')
+    csv = os.path.join(csv, 'thermo.csv')
     print('Calc temperatures of {0}.'.format(csv))
 
     # Open results file (thermography).
     temp = np.genfromtxt(csv, delimiter=',')
+    temp = np.nan_to_num(temp)
     temp_mean = np.mean(temp[np.where(temp != 0)])
     temp_max = np.max(temp[np.where(temp != 0)])
     temp_min = np.min(temp[np.where(temp != 0)])
