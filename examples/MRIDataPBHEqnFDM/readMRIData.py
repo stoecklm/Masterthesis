@@ -261,6 +261,8 @@ def main():
         print('Running test.')
         filepath = 'test'
 
+    case = filepath.split('_')[0]
+
     # Original data.
     iop = read_intra_op_points(filepath)
     print('Set of IntraOp points:')
@@ -268,15 +270,15 @@ def main():
     t = read_tumor_point(filepath)
     print('Tumor point:')
     print(t)
-    plot_points(iop, filepath + '_org_points')
-    plot_lin_plane_fitting(iop, filepath + '_org_plane')
-    plot_interpolation(iop, filepath + '_org_inter')
+    plot_points(iop, case + '_org_points')
+    plot_lin_plane_fitting(iop, case + '_org_plane')
+    plot_interpolation(iop, case + '_org_inter')
     print()
     # Rotation of points.
     iop, t = rotate_points(iop, t)
-    plot_points(iop, filepath + '_rot_points')
-    plot_lin_plane_fitting(iop, filepath + '_rot_plane')
-    plot_interpolation(iop, filepath + '_rot_inter')
+    plot_points(iop, case + '_rot_points')
+    plot_lin_plane_fitting(iop, case + '_rot_plane')
+    plot_interpolation(iop, case + '_rot_inter')
     print('Set of IntraOp points after rotation:')
     print(iop)
     print('Tumor point after rotation:')
@@ -284,9 +286,9 @@ def main():
     print()
     # Move tumor to origin.
     iop, t = move_points(iop, t, t)
-    plot_points(iop, filepath + '_move_points')
-    plot_lin_plane_fitting(iop, filepath + '_move_plane')
-    plot_interpolation(iop, filepath + '_move_inter')
+    plot_points(iop, case + '_move_points')
+    plot_lin_plane_fitting(iop, case + '_move_plane')
+    plot_interpolation(iop, case + '_move_inter')
     print('Set of IntraOp points after moving:')
     print(iop)
     print('Tumor point after moving:')
