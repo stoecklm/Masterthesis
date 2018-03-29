@@ -1,8 +1,7 @@
 [MRI]
 # Leave blank if no real data shall be used.
 Case = 1151711
-USE_VESSELS_SEGMENTATION = True
-# e.g. = omega q t_blood
+USE_VESSELS_SEGMENTATION = False
 # Variables names: rho c lambda rho_blood c_blood omega T_blood q T
 VARIABLES_VESSELS = T_blood
 VALUES_VESSELS = 35
