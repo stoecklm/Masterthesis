@@ -4,6 +4,38 @@ import sys
 import netCDF4 as nc
 import numpy as np
 import nrrd
+from scipy.interpolate import RegularGridInterpolator
+
+def interpolate_3d(data):
+    x_mri = np.linspace(0, 1, data.shape[0])
+    y_mri = np.linspace(0, 1, data.shape[1])
+    z_mri = np.linspace(0, 1, data.shape[2])
+
+    dim0 = 120
+    dim1 = 120
+    dim2 = 50
+
+    x_scafes = np.linspace(0, 1, dim0)
+    y_scafes = np.linspace(0, 1, dim1)
+    z_scafes = np.linspace(0, 1, dim2)
+
+    my_interpolating_function = RegularGridInterpolator((x_mri, y_mri, z_mri), data)
+
+    x, y, z = np.meshgrid(x_scafes, y_scafes, z_scafes, sparse=True, indexing='ij')
+
+    new_data = np.zeros(dim0*dim1*dim2).reshape((dim0, dim1, dim2))
+
+    print(new_data.shape)
+
+    for elem_x in range(0, new_data.shape[0]):
+        for elem_y in range(0, new_data.shape[1]):
+            for elem_z in range(0, new_data.shape[2]):
+                new_data[elem_x, elem_y, elem_z] = my_interpolating_function([x_scafes[elem_x],
+                                                                              y_scafes[elem_y],
+                                                                              z_scafes[elem_z]])
+
+    save_volume_as_netcdf(new_data, 'region.nc')
+
 
 def stats_from_tumor(data):
     print('Mean: {}.'.format(np.mean(data)))
@@ -20,6 +52,7 @@ def binary_data(data):
 
     save_volume_as_netcdf(bin_data, 'bin_data.nc')
 
+    return bin_data
 
 def extract_tumor_from_volume(data, start, end):
     length = (end[0]-start[0]+1, end[1]-start[1]+1, end[2]-start[2]+1)
@@ -42,7 +75,7 @@ def save_volume_as_netcdf(data, filename):
     nNodes = nc_file.createDimension('nNodes_1', data.shape[1])
     nNodes = nc_file.createDimension('nNodes_2', data.shape[2])
     time = nc_file.createDimension('time')
-    brain = nc_file.createVariable('mri', 'i2', ('time', 'nNodes_2',
+    brain = nc_file.createVariable('region', 'i2', ('time', 'nNodes_2',
                                                   'nNodes_1', 'nNodes_0'))
     brain[0,:,:,:] = data.T
 
@@ -90,7 +123,9 @@ def main():
 
     stats_from_tumor(tumor)
 
-    binary_data(tumor)
+    binary_tumor = binary_data(tumor)
+
+    interpolate_3d(binary_tumor)
 
     print('Done.')
 
