@@ -391,11 +391,10 @@ def create_region_array(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
     COORD_NODE_FIRST = params['COORD_NODE_FIRST']
     # Get tumor center location.
     TUMOR_CENTER = params['TUMOR_CENTER']
-    # Resize temperature array.
     num_elem = dim0 * dim1 * dim2
     values_array = BRAIN_VALUE \
                    * np.ones(num_elem, dtype=int).reshape(dim2, dim1, dim0)
-    # Iterate through temperature array.
+    # Iterate through array.
     for elem_z in range(0, values_array.shape[0]):
         for elem_y in range(0, values_array.shape[1]):
             for elem_x in range(0, values_array.shape[2]):
@@ -494,16 +493,8 @@ def create_init_array(params, nc_file, region, BRAIN_VALUE, TUMOR_VALUE,
                         and surface[dim2-1, elem_y+y_min, elem_x+x_min] == 1:
                         vessels_big[elem_y+y_min, elem_x+x_min] = 1
                         values_array[dim2-depth:dim2,elem_y+y_min,elem_x+x_min] = VALUE_VESSEL
-            #values_array[dim2-depth:dim2,:,:] = abs(vessels_big) * BRAIN_VALUE
             VARIABLES_VESSELS.remove(NAME_VARIABLE)
-    # Iterate through temperature array.
-    for elem_z in range(0, values_array.shape[0]):
-        for elem_y in range(0, values_array.shape[1]):
-            for elem_x in range(0, values_array.shape[2]):
-                # Check if current point is inside tumor.
-                # If yes, set value to tumor specific value.
-                if region[elem_z, elem_y, elem_x] == 1:
-                    values_array[elem_z, elem_y, elem_x] = TUMOR_VALUE
+    values_array = np.where(region == 1, TUMOR_VALUE, values_array)
     # Write NumPy array to netCDF file.
     write_values_to_file(nc_file, values_array, NAME_VARIABLE)
 
@@ -555,9 +546,6 @@ def create_surface_array(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
         params['surface_cmin'], params['surface_cmax'] = np.where(cols)[0][[0, -1]]
     except IndexError:
         params['surface_cmin'], params['surface_cmax'] = 0, dim0-1
-
-    print(params['surface_cmin'])
-    print(params['surface_cmax'])
 
     return values_array
 
