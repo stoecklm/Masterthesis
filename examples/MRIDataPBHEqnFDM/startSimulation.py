@@ -57,6 +57,8 @@ def parse_config_file(params):
     # Get values from section 'Output'.
     params['N_SNAPSHOTS'] = config['Output'].getint('N_SNAPSHOTS')
     # Get values from section 'Input'.
+    params['USE_MRI_FILE'] = config['Input'].getboolean('USE_MRI_FILE',
+                                                        fallback=False)
     params['NAME_INITFILE'] = config['Input'].get('NAME_INITFILE',
                                                   fallback='init')
     params['USE_INITFILE'] = config['Input'].getboolean('USE_INITFILE',
@@ -816,7 +818,8 @@ def main():
     check_variables(params)
     calc_variables(params)
     check_stability(params)
-    create_region_file(params)
+    if params['USE_MRI_FILE'] == False:
+        create_region_file(params)
     create_init_file(params)
     set_environment_variables(params)
     start_simulation(params, run_script)

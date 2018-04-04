@@ -74,6 +74,8 @@ END_TIME = 1800
 N_TIMESTEPS = 0
 
 [Input]
+# Set to True if data from nrrd files shall be used.
+USE_MRI_FILE = False
 # Name of file without file exentsion.
 NAME_INITFILE = init
 # Set USE_INITFILE to True even if CREATE_INITFILE is True,
