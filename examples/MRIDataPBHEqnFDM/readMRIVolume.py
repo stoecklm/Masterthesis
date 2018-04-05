@@ -1,3 +1,4 @@
+import configparser
 import os
 import sys
 
@@ -98,7 +99,7 @@ def ijk_to_ras(ijk, header):
     lps_to_ras = np.diag([-1, -1, 1, 1])
     ras = np.matmul(lps, lps_to_ras)
 
-    return ras
+    return ras[0:3]
 
 def main():
     filepath = ''
@@ -110,11 +111,19 @@ def main():
                 print('Aborting.')
                 exit()
             else:
+                folderpath = sys.argv[1]
                 filepath = tmp
         else:
             print(sys.argv[1], 'does not exist.')
             print('Aborting.')
             exit()
+        tmp = os.path.join(folderpath, 'bounding-box.ini')
+        if os.path.isfile(tmp) != True:
+            print(sys.argv[1], 'does not contain bounding-box.ini.')
+            print('Aborting.')
+            exit()
+        else:
+            bbox = tmp
     else:
         print('No command line argument for folder provided.')
         print('Aborting.')
@@ -124,10 +133,16 @@ def main():
 
     save_volume_as_netcdf(data, 'whole_mri_volume.nc')
 
-    #start = (nNodes_0, nNodes_1, nNodes_2)
-    space_end = [224, 256, 176]
-    start = [90,45,20]
-    end = [150,100,80]
+    #point = (nNodes_0, nNodes_1, nNodes_2)
+    space_origin = [0,0,0]
+    space_end = list(map(float, header['space origin']))
+    config = configparser.ConfigParser()
+    config.read(bbox)
+
+    start = config['Start'].get('START')
+    start = list(map(int, start.split('x')))
+    end = config['End'].get('END')
+    end = list(map(int, end.split('x')))
 
     tumor = extract_tumor_from_volume(data, start, end)
     save_volume_as_netcdf(tumor, 'tumor_mri.nc')
@@ -137,6 +152,9 @@ def main():
 
     #interpolated_tumor = interpolate_3d(binary_tumor)
     #save_volume_as_netcdf(interpolated_tumor, 'region.nc')
+
+    print(ijk_to_ras(start, header))
+    print(ijk_to_ras(end, header))
 
     print('Done.')
 
