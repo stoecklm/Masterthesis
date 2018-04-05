@@ -19,23 +19,23 @@ def interpolate_3d(data):
     y_scafes = np.linspace(0, 1, dim1)
     z_scafes = np.linspace(0, 1, dim2)
 
-    my_interpolating_function = RegularGridInterpolator((x_mri, y_mri, z_mri), data)
+    my_interpolating_function = RegularGridInterpolator((x_mri, y_mri, z_mri),
+                                                        data)
 
-    x, y, z = np.meshgrid(x_scafes, y_scafes, z_scafes, sparse=True, indexing='ij')
+    x, y, z = np.meshgrid(x_scafes, y_scafes, z_scafes, sparse=True,
+                          indexing='ij')
 
     new_data = np.zeros(dim0*dim1*dim2).reshape((dim0, dim1, dim2))
-
-    print(new_data.shape)
 
     for elem_x in range(0, new_data.shape[0]):
         for elem_y in range(0, new_data.shape[1]):
             for elem_z in range(0, new_data.shape[2]):
-                new_data[elem_x, elem_y, elem_z] = my_interpolating_function([x_scafes[elem_x],
-                                                                              y_scafes[elem_y],
-                                                                              z_scafes[elem_z]])
+                tmp = my_interpolating_function([x_scafes[elem_x],
+                                                 y_scafes[elem_y],
+                                                 z_scafes[elem_z]])
+                new_data[elem_x, elem_y, elem_z] = tmp
 
-    save_volume_as_netcdf(new_data, 'region.nc')
-
+    return new_data
 
 def stats_from_tumor(data):
     print('Mean: {}.'.format(np.mean(data)))
@@ -50,21 +50,15 @@ def binary_data(data):
 
     bin_data = np.where(data > mean + std_dev, 1, 0)
 
-    save_volume_as_netcdf(bin_data, 'bin_data.nc')
-
     return bin_data
 
 def extract_tumor_from_volume(data, start, end):
     length = (end[0]-start[0]+1, end[1]-start[1]+1, end[2]-start[2]+1)
     num_elem = length[0]*length[1]*length[2]
-    print(length)
     new_data = np.arange(num_elem).reshape(length)
-    print(new_data.shape)
     new_data = data[start[0]:end[0]+1,
                     start[1]:end[1]+1,
                     start[2]:end[2]+1]
-    print(new_data.shape)
-    print('....')
 
     return new_data
 
@@ -84,10 +78,27 @@ def save_volume_as_netcdf(data, filename):
 def read_volume(filepath):
     data, header = nrrd.read(filepath)
 
-    print(data.shape)
-    print(header)
+    return data, header
 
-    return data
+def ijk_to_ras(ijk, header):
+    ijk.append(1)
+    space_origin = list(map(float, header['space origin']))
+    space_origin.append(1)
+
+    row0 = list(map(float, header['space directions'][0]))
+    row0.append(0)
+    row1 = list(map(float, header['space directions'][1]))
+    row1.append(0)
+    row2 = list(map(float, header['space directions'][2]))
+    row2.append(0)
+    transformation_matrix = np.array([row0, row1, row2, space_origin]).T
+
+    lps = np.dot(transformation_matrix, ijk)
+
+    lps_to_ras = np.diag([-1, -1, 1, 1])
+    ras = np.matmul(lps, lps_to_ras)
+
+    return ras
 
 def main():
     filepath = ''
@@ -109,23 +120,23 @@ def main():
         print('Aborting.')
         exit()
 
-    data = read_volume(filepath)
+    data, header = read_volume(filepath)
 
     save_volume_as_netcdf(data, 'whole_mri_volume.nc')
 
     #start = (nNodes_0, nNodes_1, nNodes_2)
-    start = (90,45,20)
-    end = (150,100,80)
-    # end = (224, 256, 176)
-    tumor = extract_tumor_from_volume(data, start, end)
+    space_end = [224, 256, 176]
+    start = [90,45,20]
+    end = [150,100,80]
 
+    tumor = extract_tumor_from_volume(data, start, end)
     save_volume_as_netcdf(tumor, 'tumor_mri.nc')
 
-    stats_from_tumor(tumor)
-
     binary_tumor = binary_data(tumor)
+    save_volume_as_netcdf(binary_tumor, 'bin_data.nc')
 
-    interpolate_3d(binary_tumor)
+    #interpolated_tumor = interpolate_3d(binary_tumor)
+    #save_volume_as_netcdf(interpolated_tumor, 'region.nc')
 
     print('Done.')
 
