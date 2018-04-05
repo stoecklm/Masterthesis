@@ -4,30 +4,47 @@ import sys
 
 import netCDF4 as nc
 import numpy as np
+from numpy import linalg as LA
 import nrrd
 from scipy.interpolate import RegularGridInterpolator
 
-def interpolate_3d(data):
-    x_mri = np.linspace(0, 1, data.shape[0])
-    y_mri = np.linspace(0, 1, data.shape[1])
-    z_mri = np.linspace(0, 1, data.shape[2])
+def interpolate_3d(data, start, end, header):
+    dim0_length = np.subtract(ijk_to_ras([0,0,0], header),
+                              ijk_to_ras([data.shape[0]-1,0,0], header))
+    dim0_length = LA.norm(dim0_length)
+
+    dim1_length = np.subtract(ijk_to_ras([0,0,0], header),
+                              ijk_to_ras([0,data.shape[1]-1,0], header))
+    dim1_length = LA.norm(dim1_length)
+
+    dim2_length = np.subtract(ijk_to_ras([0,0,0], header),
+                              ijk_to_ras([0,0,data.shape[2]-1], header))
+    dim2_length = LA.norm(dim2_length)
+    print(dim0_length)
+    print(dim1_length)
+    print(dim2_length)
+
+    x_mri = np.linspace(0, dim0_length, data.shape[0])
+    y_mri = np.linspace(0, dim1_length, data.shape[1])
+    z_mri = np.linspace(0, dim2_length, data.shape[2])
 
     dim0 = 120
     dim1 = 120
     dim2 = 50
 
-    x_scafes = np.linspace(0, 1, dim0)
-    y_scafes = np.linspace(0, 1, dim1)
-    z_scafes = np.linspace(0, 1, dim2)
+    x_scafes = np.linspace(0, 120, dim0)
+    y_scafes = np.linspace(0, 120, dim1)
+    z_scafes = np.linspace(0, 60, dim2)
 
     my_interpolating_function = RegularGridInterpolator((x_mri, y_mri, z_mri),
-                                                        data)
+                                                        data,
+                                                        bounds_error=False,
+                                                        fill_value=0)
 
     x, y, z = np.meshgrid(x_scafes, y_scafes, z_scafes, sparse=True,
                           indexing='ij')
 
     new_data = np.zeros(dim0*dim1*dim2).reshape((dim0, dim1, dim2))
-
     for elem_x in range(0, new_data.shape[0]):
         for elem_y in range(0, new_data.shape[1]):
             for elem_z in range(0, new_data.shape[2]):
@@ -54,9 +71,6 @@ def binary_data(data):
     return bin_data
 
 def extract_tumor_from_volume(data, start, end):
-    length = (end[0]-start[0]+1, end[1]-start[1]+1, end[2]-start[2]+1)
-    num_elem = length[0]*length[1]*length[2]
-    new_data = np.arange(num_elem).reshape(length)
     new_data = data[start[0]:end[0]+1,
                     start[1]:end[1]+1,
                     start[2]:end[2]+1]
@@ -82,7 +96,8 @@ def read_volume(filepath):
     return data, header
 
 def ijk_to_ras(ijk, header):
-    ijk.append(1)
+    if len(ijk) == 3:
+        ijk.append(1)
     space_origin = list(map(float, header['space origin']))
     space_origin.append(1)
 
@@ -150,8 +165,8 @@ def main():
     binary_tumor = binary_data(tumor)
     save_volume_as_netcdf(binary_tumor, 'bin_data.nc')
 
-    #interpolated_tumor = interpolate_3d(binary_tumor)
-    #save_volume_as_netcdf(interpolated_tumor, 'region.nc')
+    interpolated_tumor = interpolate_3d(binary_tumor, start, end, header)
+    save_volume_as_netcdf(interpolated_tumor, 'region.nc')
 
     print(ijk_to_ras(start, header))
     print(ijk_to_ras(end, header))
