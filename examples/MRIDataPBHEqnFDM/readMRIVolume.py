@@ -20,24 +20,25 @@ def interpolate_3d(data, start, end, header):
     dim2_length = np.subtract(ijk_to_ras([0,0,0], header),
                               ijk_to_ras([0,0,data.shape[2]-1], header))
     dim2_length = LA.norm(dim2_length)
-    print(dim0_length)
-    print(dim1_length)
-    print(dim2_length)
 
     x_mri = np.linspace(0, dim0_length, data.shape[0])
     y_mri = np.linspace(0, dim1_length, data.shape[1])
     z_mri = np.linspace(0, dim2_length, data.shape[2])
 
-    dim0 = 120
-    dim1 = 120
-    dim2 = 50
+    dim0_gridsize = 120/(120-1)
+    dim1_gridsize = 120/(120-1)
+    dim2_gridsize = 60/(50-1)
 
-    x_scafes = np.linspace(0, 120, dim0)
-    y_scafes = np.linspace(0, 120, dim1)
-    z_scafes = np.linspace(0, 60, dim2)
+    dim0 = int(dim0_length/dim0_gridsize)+1
+    dim1 = int(dim1_length/dim1_gridsize)+1
+    dim2 = int(dim2_length/dim2_gridsize)+1
+
+    x_scafes = np.linspace(0, dim0_length, dim0)
+    y_scafes = np.linspace(0, dim1_length, dim1)
+    z_scafes = np.linspace(0, dim2_length, dim2)
 
     my_interpolating_function = RegularGridInterpolator((x_mri, y_mri, z_mri),
-                                                        data,
+                                                        data, method='nearest',
                                                         bounds_error=False,
                                                         fill_value=0)
 
@@ -45,6 +46,7 @@ def interpolate_3d(data, start, end, header):
                           indexing='ij')
 
     new_data = np.zeros(dim0*dim1*dim2).reshape((dim0, dim1, dim2))
+
     for elem_x in range(0, new_data.shape[0]):
         for elem_y in range(0, new_data.shape[1]):
             for elem_z in range(0, new_data.shape[2]):
@@ -193,8 +195,8 @@ def main():
         binary_tumor = binary_data(tumor)
         save_volume_as_netcdf(binary_tumor, case + '_bin_tumor.nc')
 
-        #interpolated_tumor = interpolate_3d(binary_tumor, start, end, header)
-        #save_volume_as_netcdf(interpolated_tumor, 'region.nc')
+        interpolated_tumor = interpolate_3d(binary_tumor, start, end, header)
+        save_volume_as_netcdf(interpolated_tumor, 'region.nc')
 
     print('Done.')
 
