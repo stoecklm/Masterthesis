@@ -77,7 +77,6 @@ def extract_tumor_from_volume(data, start, end):
 
     return new_data
 
-
 def save_volume_as_netcdf(data, filename):
     nc_file = nc.Dataset(filename, 'w', format='NETCDF3_CLASSIC')
     nNodes = nc_file.createDimension('nNodes_0', data.shape[0])
@@ -111,7 +110,7 @@ def get_ijk_to_lps(header):
 
 def ijk_to_ras(ijk, header):
     if len(ijk) == 3:
-        ijk.append(1)
+        ijk = np.append(ijk, 1)
 
     ijk_to_lps = get_ijk_to_lps(header)
     lps_to_ras = np.diag([-1, -1, 1, 1])
@@ -133,6 +132,18 @@ def ras_to_ijk(ras, header):
     ijk = np.dot(lps_to_ijk, lps)
 
     return ijk[0:3]
+
+def bounding_box_tumor(start, end):
+    bbox = np.asarray([[start[0], start[1], start[2]],
+                       [end[0], start[1], start[2]],
+                       [end[0], end[1], start[2]],
+                       [start[0], end[1], start[2]],
+                       [start[0], start[1], end[2]],
+                       [end[0], start[1], end[2]],
+                       [end[0], end[1], end[2]],
+                       [start[0], end[1], end[2]]])
+
+    return bbox
 
 def main():
     filepath = ''
@@ -173,9 +184,9 @@ def main():
     config.read(bbox)
 
     start = config['Start'].get('START')
-    start = list(map(int, start.split('x')))
+    start = np.asarray(list(map(int, start.split('x'))))
     end = config['End'].get('END')
-    end = list(map(int, end.split('x')))
+    end = np.asarray(list(map(int, end.split('x'))))
 
     tumor = extract_tumor_from_volume(data, start, end)
     save_volume_as_netcdf(tumor, 'tumor_mri.nc')
