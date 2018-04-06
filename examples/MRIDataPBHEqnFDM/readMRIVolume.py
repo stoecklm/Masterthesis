@@ -95,9 +95,7 @@ def read_volume(filepath):
 
     return data, header
 
-def ijk_to_ras(ijk, header):
-    if len(ijk) == 3:
-        ijk.append(1)
+def get_ijk_to_lps(header):
     space_origin = list(map(float, header['space origin']))
     space_origin.append(1)
 
@@ -109,12 +107,32 @@ def ijk_to_ras(ijk, header):
     row2.append(0)
     ijk_to_lps = np.array([row0, row1, row2, space_origin]).T
 
-    lps = np.dot(ijk_to_lps, ijk)
+    return ijk_to_lps
 
+def ijk_to_ras(ijk, header):
+    if len(ijk) == 3:
+        ijk.append(1)
+
+    ijk_to_lps = get_ijk_to_lps(header)
     lps_to_ras = np.diag([-1, -1, 1, 1])
+
+    lps = np.dot(ijk_to_lps, ijk)
     ras = np.matmul(lps, lps_to_ras)
 
     return ras[0:3]
+
+def ras_to_ijk(ras, header):
+    if len(ras) == 3:
+        ras = np.append(ras, 1)
+
+    ijk_to_lps = get_ijk_to_lps(header)
+    lps_to_ijk = LA.inv(ijk_to_lps)
+    ras_to_lps = np.diag([-1, -1, 1, 1])
+
+    lps = np.matmul(ras, ras_to_lps)
+    ijk = np.dot(lps_to_ijk, lps)
+
+    return ijk[0:3]
 
 def main():
     filepath = ''
@@ -165,11 +183,8 @@ def main():
     binary_tumor = binary_data(tumor)
     save_volume_as_netcdf(binary_tumor, 'bin_data.nc')
 
-    interpolated_tumor = interpolate_3d(binary_tumor, start, end, header)
-    save_volume_as_netcdf(interpolated_tumor, 'region.nc')
-
-    print(ijk_to_ras(start, header))
-    print(ijk_to_ras(end, header))
+    #interpolated_tumor = interpolate_3d(binary_tumor, start, end, header)
+    #save_volume_as_netcdf(interpolated_tumor, 'region.nc')
 
     print('Done.')
 
