@@ -145,6 +145,17 @@ def bounding_box_tumor(start, end):
 
     return bbox
 
+def get_start_and_end(filepath):
+    config = configparser.ConfigParser()
+    config.read(filepath)
+
+    start = config['Start'].get('START')
+    start = np.asarray(list(map(int, start.split('x'))))
+    end = config['End'].get('END')
+    end = np.asarray(list(map(int, end.split('x'))))
+
+    return start, end
+
 def main():
     filepath = ''
     if len(sys.argv) > 1:
@@ -161,41 +172,29 @@ def main():
             print(sys.argv[1], 'does not exist.')
             print('Aborting.')
             exit()
-        tmp = os.path.join(folderpath, 'bounding-box.ini')
-        if os.path.isfile(tmp) != True:
-            print(sys.argv[1], 'does not contain bounding-box.ini.')
-            print('Aborting.')
-            exit()
-        else:
-            bbox = tmp
     else:
         print('No command line argument for folder provided.')
         print('Aborting.')
         exit()
 
+    case = filepath.split('_')[0]
+
     data, header = read_volume(filepath)
 
-    save_volume_as_netcdf(data, 'whole_mri_volume.nc')
+    save_volume_as_netcdf(data, case + '_mri_volume.nc')
 
-    #point = (nNodes_0, nNodes_1, nNodes_2)
-    space_origin = [0,0,0]
-    space_end = list(map(float, header['space origin']))
-    config = configparser.ConfigParser()
-    config.read(bbox)
+    bbox = os.path.join(folderpath, 'bounding-box.ini')
+    if os.path.isfile(bbox) == True:
+        start, end = get_start_and_end(bbox)
 
-    start = config['Start'].get('START')
-    start = np.asarray(list(map(int, start.split('x'))))
-    end = config['End'].get('END')
-    end = np.asarray(list(map(int, end.split('x'))))
+        tumor = extract_tumor_from_volume(data, start, end)
+        save_volume_as_netcdf(tumor, case + '_mri_tumor.nc')
 
-    tumor = extract_tumor_from_volume(data, start, end)
-    save_volume_as_netcdf(tumor, 'tumor_mri.nc')
+        binary_tumor = binary_data(tumor)
+        save_volume_as_netcdf(binary_tumor, case + '_bin_tumor.nc')
 
-    binary_tumor = binary_data(tumor)
-    save_volume_as_netcdf(binary_tumor, 'bin_data.nc')
-
-    #interpolated_tumor = interpolate_3d(binary_tumor, start, end, header)
-    #save_volume_as_netcdf(interpolated_tumor, 'region.nc')
+        #interpolated_tumor = interpolate_3d(binary_tumor, start, end, header)
+        #save_volume_as_netcdf(interpolated_tumor, 'region.nc')
 
     print('Done.')
 
