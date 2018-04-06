@@ -107,9 +107,9 @@ def ijk_to_ras(ijk, header):
     row1.append(0)
     row2 = list(map(float, header['space directions'][2]))
     row2.append(0)
-    transformation_matrix = np.array([row0, row1, row2, space_origin]).T
+    ijk_to_lps = np.array([row0, row1, row2, space_origin]).T
 
-    lps = np.dot(transformation_matrix, ijk)
+    lps = np.dot(ijk_to_lps, ijk)
 
     lps_to_ras = np.diag([-1, -1, 1, 1])
     ras = np.matmul(lps, lps_to_ras)
