@@ -87,8 +87,8 @@ def save_volume_as_netcdf(data, filename):
     nNodes = nc_file.createDimension('nNodes_2', data.shape[2])
     time = nc_file.createDimension('time')
     brain = nc_file.createVariable('region', 'i2', ('time', 'nNodes_2',
-                                                  'nNodes_1', 'nNodes_0'))
-    brain[0,:,:,:] = data.T
+                                                    'nNodes_1', 'nNodes_0'))
+    brain[0,:,:,:] = np.swapaxes(data, 0, 2)
 
     nc_file.close()
 
@@ -172,9 +172,10 @@ def return_grid(data, header):
     i = int((new_dim0-dim0)/2)
     j = int((new_dim1-dim1)/2)
     #k = int((new_dim2-dim2)/2)
-    k = 0
+    k = 5
 
     new_data[i:i+dim0, j:j+dim1, k:k+dim2] = data
+    new_data = np.flip(new_data, 2)
 
     dim0_length = np.subtract(ijk_to_ras([0,0,0], header),
                               ijk_to_ras([new_dim0-1,0,0], header))
