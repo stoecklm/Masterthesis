@@ -1,5 +1,6 @@
 import configparser
 import os
+from shutil import copyfile
 import sys
 
 import netCDF4 as nc
@@ -158,6 +159,63 @@ def get_start_and_end(filepath):
 
     return start, end
 
+def return_grid(data, header):
+    dim0, dim1, dim2 = data.shape
+
+    new_dim0 = 2 * dim0
+    new_dim1 = 2 * dim1
+    new_dim2 = int(1.5 * dim2)
+
+    num_elem = new_dim0 * new_dim1 * new_dim2
+    new_data = np.zeros(num_elem).reshape((new_dim0, new_dim1, new_dim2))
+
+    i = int((new_dim0-dim0)/2)
+    j = int((new_dim1-dim1)/2)
+    #k = int((new_dim2-dim2)/2)
+    k = 0
+
+    new_data[i:i+dim0, j:j+dim1, k:k+dim2] = data
+
+    dim0_length = np.subtract(ijk_to_ras([0,0,0], header),
+                              ijk_to_ras([new_dim0-1,0,0], header))
+    dim0_length = LA.norm(dim0_length)
+
+    dim1_length = np.subtract(ijk_to_ras([0,0,0], header),
+                              ijk_to_ras([0,new_dim1-1,0], header))
+    dim1_length = LA.norm(dim1_length)
+
+    dim2_length = np.subtract(ijk_to_ras([0,0,0], header),
+                              ijk_to_ras([0,0,new_dim2-1], header))
+    dim2_length = LA.norm(dim2_length)
+
+    dim0_length = dim0_length/1000
+    dim1_length = dim1_length/1000
+    dim2_length = dim2_length/1000
+
+    config = configparser.ConfigParser()
+    config['Geometry'] = {}
+    config['Geometry']['COORD_NODE_FIRST'] = '0x0x' \
+                                              + '-{:.4f}'.format(dim2_length)
+    config['Geometry']['COORD_NODE_LAST'] = "{:.4f}".format(dim0_length) \
+                                            + 'x' \
+                                            + "{:.4f}".format(dim1_length) \
+                                            + 'x0'
+    config['Geometry']['N_NODES'] = str(new_dim0) + 'x' + str(new_dim1) + 'x' \
+                                    + str(new_dim2)
+
+    if os.path.isfile('Template.ini') == True:
+        copyfile('Template.ini', 'MRI.ini')
+    else:
+        print('Template.ini does not exist.')
+        print('Aborting.')
+        exit()
+
+    with open('MRI.ini', 'a') as configfile:
+        config.write(configfile)
+
+    return new_data
+
+
 def main():
     filepath = ''
     if len(sys.argv) > 1:
@@ -195,8 +253,11 @@ def main():
         binary_tumor = binary_data(tumor)
         save_volume_as_netcdf(binary_tumor, case + '_bin_tumor.nc')
 
-        interpolated_tumor = interpolate_3d(binary_tumor, start, end, header)
-        save_volume_as_netcdf(interpolated_tumor, 'region.nc')
+        #interpolated_tumor = interpolate_3d(binary_tumor, start, end, header)
+        #save_volume_as_netcdf(interpolated_tumor, 'region.nc')
+
+        region = return_grid(binary_tumor, header)
+        save_volume_as_netcdf(region, 'region.nc')
 
     print('Done.')
 
