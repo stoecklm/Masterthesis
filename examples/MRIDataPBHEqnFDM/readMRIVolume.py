@@ -69,7 +69,7 @@ def binary_data(data):
     mean = np.mean(data)
     std_dev = np.std(data)
 
-    bin_data = np.where(data > mean + std_dev, 1, 0)
+    bin_data = np.where(data > mean + 0.2*std_dev, 1, 0)
 
     return bin_data
 
@@ -159,7 +159,7 @@ def get_start_and_end(filepath):
 
     return start, end
 
-def return_grid(data, header):
+def return_grid(data, header, case):
     dim0, dim1, dim2 = data.shape
 
     new_dim0 = 2 * dim0
@@ -193,25 +193,35 @@ def return_grid(data, header):
     dim1_length = dim1_length/1000
     dim2_length = dim2_length/1000
 
-    config = configparser.ConfigParser()
-    config['Geometry'] = {}
-    config['Geometry']['COORD_NODE_FIRST'] = '0x0x' \
-                                              + '-{:.4f}'.format(dim2_length)
-    config['Geometry']['COORD_NODE_LAST'] = "{:.4f}".format(dim0_length) \
-                                            + 'x' \
-                                            + "{:.4f}".format(dim1_length) \
-                                            + 'x0'
-    config['Geometry']['N_NODES'] = str(new_dim0) + 'x' + str(new_dim1) + 'x' \
-                                    + str(new_dim2)
-
     if os.path.isfile('Template.ini') == True:
-        copyfile('Template.ini', 'MRI.ini')
+        copyfile('Template.ini', case + '.ini')
     else:
         print('Template.ini does not exist.')
         print('Aborting.')
         exit()
 
-    with open('MRI.ini', 'a') as configfile:
+    coord_node_first = '0x0x-{:.4f}'.format(dim2_length)
+    coord_node_last = '{:.4f}x{:.4f}x0'.format(dim0_length, dim1_length)
+    n_nodes = str(new_dim0) + 'x' + str(new_dim1) + 'x' + str(new_dim2)
+
+    config = configparser.ConfigParser()
+    config['Geometry'] = {}
+    config['Geometry']['COORD_NODE_FIRST'] = coord_node_first
+    config['Geometry']['COORD_NODE_LAST'] = coord_node_last
+    config['Geometry']['N_NODES'] = n_nodes
+    config['MRI'] = {}
+    config['MRI']['CASE'] = case
+    config['Input'] = {}
+    config['Input']['NAME_REGION_FILE'] = case + '_region'
+    config['Input']['USE_MRI_FILE'] = 'True'
+    config['Input']['NAME_INITFILE'] = 'init'
+    config['Input']['USE_INITFILE'] = 'True'
+    config['Input']['CREATE_INITFILE'] = 'True'
+    config['Input']['THRESHOLD'] = '1e-5'
+    config['Input']['CHECK_CONV_FIRST_AT_ITER'] = '0.5'
+    config['Input']['CHECK_CONV_AT_EVERY_N_ITER'] = '0.05'
+
+    with open(case + '.ini', 'a') as configfile:
         config.write(configfile)
 
     return new_data
@@ -257,8 +267,8 @@ def main():
         #interpolated_tumor = interpolate_3d(binary_tumor, start, end, header)
         #save_volume_as_netcdf(interpolated_tumor, 'region.nc')
 
-        region = return_grid(binary_tumor, header)
-        save_volume_as_netcdf(region, 'region.nc')
+        region = return_grid(binary_tumor, header, case)
+        save_volume_as_netcdf(region, case + '_region.nc')
 
     print('Done.')
 
