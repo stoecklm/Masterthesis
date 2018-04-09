@@ -86,7 +86,7 @@ def surface_temperatures(filepath):
 
     print('Done.')
 
-def tumor_temperatures(filepath):
+def tumor_temperatures(filepath, region_file):
     print('Calc tumor temperatures of {0}.'.format(filepath))
 
     # Open result file and read data from it.
@@ -117,13 +117,13 @@ def tumor_temperatures(filepath):
 
     nc_file.close()
 
-    if os.path.isfile('region.nc') == False:
-        print('region.nc does not exist.')
+    if os.path.isfile(region_file) == False:
+        print(region_file, 'does not exist.')
         print('Aborting.')
         exit()
 
     # Open region file and read data from it.
-    nc_file = nc.Dataset('region.nc')
+    nc_file = nc.Dataset(region_file)
     dim0 = nc_file.dimensions['nNodes_0'].size
     dim1 = nc_file.dimensions['nNodes_1'].size
     dim2 = nc_file.dimensions['nNodes_2'].size
@@ -167,7 +167,7 @@ def tumor_temperatures(filepath):
 
     print('Done.')
 
-def brain_temperatures(filepath):
+def brain_temperatures(filepath, region_file):
     print('Calc brain temperatures of {0}.'.format(filepath))
 
     # Open result file and read data from it.
@@ -198,13 +198,13 @@ def brain_temperatures(filepath):
 
     nc_file.close()
 
-    if os.path.isfile('region.nc') == False:
-        print('region.nc does not exist.')
+    if os.path.isfile(region_file) == False:
+        print(region_file, 'does not exist.')
         print('Aborting.')
         exit()
 
     # Open region file and read data from it.
-    nc_file = nc.Dataset('region.nc')
+    nc_file = nc.Dataset(region_file)
     dim0 = nc_file.dimensions['nNodes_0'].size
     dim1 = nc_file.dimensions['nNodes_1'].size
     dim2 = nc_file.dimensions['nNodes_2'].size

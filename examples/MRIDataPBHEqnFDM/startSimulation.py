@@ -59,6 +59,8 @@ def parse_config_file(params):
     # Get values from section 'Input'.
     params['USE_MRI_FILE'] = config['Input'].getboolean('USE_MRI_FILE',
                                                         fallback=False)
+    params['NAME_REGION_FILE'] = config['Input'].get('NAME_REGION_FILE',
+                                                    fallback='region')
     params['NAME_INITFILE'] = config['Input'].get('NAME_INITFILE',
                                                   fallback='init')
     params['USE_INITFILE'] = config['Input'].getboolean('USE_INITFILE',
@@ -420,7 +422,7 @@ def create_region_array(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
     init_values[0,] = values_array
 
 def create_region_file(params):
-    filepath = 'region.nc'
+    filepath = params['NAME_REGION_FILE'] + '.nc'
     SPACE_DIM = params['SPACE_DIM']
     print('Creating {0}.'.format(filepath))
 
@@ -652,13 +654,13 @@ def create_init_file(params):
         os.remove(filepath)
 
     # Check if region file exists.
-    if os.path.isfile('region.nc') == False:
-        print('* ERROR: region.nc does not exist.')
+    if os.path.isfile(params['NAME_REGION_FILE'] + '.nc') == False:
+        print('* ERROR: File for region does not exist.')
         print('Aborting.')
         exit()
 
     # Open region file.
-    nc_file = nc.Dataset('region.nc')
+    nc_file = nc.Dataset(params['NAME_REGION_FILE'] + '.nc')
     dim0 = nc_file.dimensions['nNodes_0'].size
     dim1 = nc_file.dimensions['nNodes_1'].size
     dim2 = nc_file.dimensions['nNodes_2'].size
@@ -814,8 +816,10 @@ def main():
     if params['NAME_RESULTFILE'] != '' and params['SPACE_DIM'] == 3:
         plot_surface(params['NAME_RESULTFILE'], params)
         surface_temperatures(params['NAME_RESULTFILE'])
-        tumor_temperatures(params['NAME_RESULTFILE'])
-        brain_temperatures(params['NAME_RESULTFILE'])
+        tumor_temperatures(params['NAME_RESULTFILE'],
+                           params['NAME_REGION_FILE'] + '.nc')
+        brain_temperatures(params['NAME_RESULTFILE'],
+                           params['NAME_REGION_FILE'] + '.nc')
         domain_temperatures(params['NAME_RESULTFILE'])
         if params['USE_VESSELS_SEGMENTATION'] == True:
             vessels_temperatures(params['NAME_RESULTFILE'], vessels_big)
