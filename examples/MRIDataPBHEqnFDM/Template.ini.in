@@ -1,14 +1,3 @@
-[MRI]
-# Leave blank if no real data shall be used.
-CASE = 1151711
-USE_VESSELS_SEGMENTATION = False
-# Variables names: rho c lambda rho_blood c_blood omega T_blood q T
-VARIABLES_VESSELS = T_blood
-VALUES_VESSELS = 35
-VALUES_NON_VESSELS = 30
-# in N_NODES_2
-DEPTH = 3
-
 [Parameters]
 H = 10.0
 T_INF = 22.0
@@ -57,13 +46,6 @@ T_BLOOD = 35.0
 Q = 25000.0
 T = 37.0
 
-[Geometry]
-# [m].
-COORD_NODE_FIRST = -0.06x-0.06x-0.06
-COORD_NODE_LAST = 0.06x0.06x0
-# [-].
-N_NODES = 120x120x50
-
 [Time]
 # [s].
 START_TIME = 0
@@ -72,24 +54,6 @@ END_TIME = 1800
 # Comment or write = 0 if N_TIMESTEP shall be calculated
 # from stability criterion.
 N_TIMESTEPS = 0
-
-[Input]
-# Set to True if data from nrrd files shall be used.
-USE_MRI_FILE = False
-NAME_REGION_FILE = region
-# Name of file without file exentsion.
-NAME_INITFILE = init
-# Set USE_INITFILE to True even if CREATE_INITFILE is True,
-# if you want to use a init file.
-USE_INITFILE = True
-CREATE_INITFILE = True
-# Threshold for check of convergence.
-THRESHOLD = 1.0e-5
-# Parameters to reduce number of convergence checks.
-# If value is >= 1, then it is assumed to be an absolute value.
-# If 0 < value < 1, then it is assumend to be an ratio.
-CHECK_CONV_FIRST_AT_ITER = 0.5
-CHECK_CONV_AT_EVERY_N_ITER = 0.05
 
 [Dimension]
 SPACE_DIM = 3
