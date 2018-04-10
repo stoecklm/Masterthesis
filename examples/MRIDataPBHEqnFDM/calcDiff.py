@@ -1,10 +1,40 @@
-import numpy as np
 import os
-from scipy.interpolate import griddata
 import sys
 
+import matplotlib
+matplotlib.use('Agg')
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+from matplotlib import cm
+from matplotlib.ticker import LinearLocator
+from matplotlib.ticker import FormatStrFormatter
+import netCDF4 as nc
+import numpy as np
+from scipy.interpolate import griddata
+
+CMAP = cm.viridis
+
+def plot_diff_on_surface(data, filepath):
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    x, y = np.meshgrid(np.linspace(0, data.shape[1]-1, data.shape[1]),
+                       np.linspace(0, data.shape[0]-1, data.shape[0]))
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    fig.suptitle('Surface Temperature Difference in deg C', fontsize=12)
+    surf = ax.plot_surface(x, y, data, cmap=CMAP,
+                           linewidth=0, antialiased=False)
+    ax.zaxis.set_major_locator(LinearLocator(10))
+    ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+    ticks = np.linspace(data.min(), data.max(), 11)
+    fig.colorbar(surf, ticks=ticks, orientation='vertical', shrink=0.75,
+                 aspect=20)
+    print('Save figure to {}.'.format(filepath))
+    plt.savefig(filepath)
+    plt.gcf().clear()
+    plt.close()
+
 def two_netcdf_files_surface(filepath, a_1, a_2):
-    import netCDF4 as nc
     filepath = os.path.splitext(filepath[0])[0] + '_' \
                + os.path.basename(os.path.splitext(filepath[1])[0]) \
                + '_diff_surface.nc'
@@ -89,13 +119,13 @@ def two_netcdf_files_surface(filepath, a_1, a_2):
     text_file.close()
 
 def two_netcdf_files_volume(filepath, a_1, a_2, dim0, dim1, dim2):
-    import netCDF4 as nc
     filepath = os.path.splitext(filepath[0])[0] + '_' \
                + os.path.basename(os.path.splitext(filepath[1])[0]) \
-               + '_diff_volume.nc'
-    print('Write volume data to {0}.'.format(filepath))
+               + '_diff'
+    filepath_nc = filepath + '_volume.nc'
+    print('Write volume data to {0}.'.format(filepath_nc))
 
-    nc_file = nc.Dataset(filepath, 'w', format='NETCDF3_CLASSIC')
+    nc_file = nc.Dataset(filepath_nc, 'w', format='NETCDF3_CLASSIC')
     nNodes = nc_file.createDimension('nNodes_0', dim0)
     nNodes = nc_file.createDimension('nNodes_1', dim1)
     nNodes = nc_file.createDimension('nNodes_2', dim2)
@@ -124,25 +154,10 @@ def two_netcdf_files_volume(filepath, a_1, a_2, dim0, dim1, dim2):
                                                           max_diff_index))
     print('Surface: mean(abs(diff)) = {0}.'.format(sum_diff))
 
-    filepath = os.path.splitext(filepath)[0]
-    filepath += '_surface.dat'
-    text_file = open(filepath, 'w')
-
-    print('Write surface data to {0}.'.format(filepath))
-
-    a = np.zeros((dim1, dim0))
-    a[:,:] = a_3[dim2-1,:,:]
-
-    for elem_y in range(0, a.shape[0]):
-        for elem_x in range(0, a.shape[1]):
-            text_file.write('{0} {1} {2}\n'.format(str(elem_x), str(elem_y),
-                                                   str(a[elem_y, elem_x])))
-        text_file.write('\n')
-
-    text_file.close()
+    filepath_fig = filepath + '_surface.eps'
+    plot_diff_on_surface(a_3[-1,:,:], filepath_fig)
 
 def two_netcdf_files(filepath):
-    import netCDF4 as nc
     print('Read data from {0}.'.format(filepath[0]))
 
     nc_file_1 = nc.Dataset(filepath[0])
@@ -153,7 +168,7 @@ def two_netcdf_files(filepath):
     TNewDom = nc_file_1.variables['TNewDom']
 
     a_1 = np.zeros((dim2, dim1, dim0))
-    a_1[:,:,:] = TNewDom[(time-1):time,:,:,]
+    a_1[:,:,:] = TNewDom[(time-1):time,:,:,:]
 
     nc_file_1.close()
 
@@ -167,7 +182,7 @@ def two_netcdf_files(filepath):
     TNewDom = nc_file_2.variables['TNewDom']
 
     a_2 = np.zeros((dim2, dim1, dim0))
-    a_2[:,:,:] = TNewDom[(time-1):time,:,:,]
+    a_2[:,:,:] = TNewDom[(time-1):time,:,:,:]
 
     nc_file_2.close()
 
@@ -255,8 +270,6 @@ def two_dat_files(filepath):
     diff_file_rel.close()
 
 def netcdf_and_dat_file(filepath):
-    import netCDF4 as nc
-
     if os.path.splitext(filepath[0])[1] == '.nc':
         print('Read data from {0}.'.format(filepath[0]))
         nc_file = nc.Dataset(filepath[0])
