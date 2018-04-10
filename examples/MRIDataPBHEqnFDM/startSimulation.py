@@ -387,9 +387,7 @@ def create_region_array(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
                         NAME_VARIABLE):
     RADIUS = params['PARAMETERS']['diameter']/2
     # Get file/grid dimensions.
-    dim0 = params['N_NODES'][0]
-    dim1 = params['N_NODES'][1]
-    dim2 = params['N_NODES'][2]
+    dim0, dim1, dim2 = params['N_NODES']
     COORD_NODE_FIRST = params['COORD_NODE_FIRST']
     # Get tumor center location.
     TUMOR_CENTER = params['TUMOR_CENTER']
@@ -457,9 +455,7 @@ def create_init_array(params, nc_file, region, BRAIN_VALUE, TUMOR_VALUE,
                       NAME_VARIABLE, vessels, surface):
     global vessels_big
     # Get file/grid dimensions.
-    dim0 = params['N_NODES'][0]
-    dim1 = params['N_NODES'][1]
-    dim2 = params['N_NODES'][2]
+    dim0, dim1, dim2 = params['N_NODES']
     # Resize temperature array.
     num_elem = dim0 * dim1 * dim2
     values_array = BRAIN_VALUE * np.ones(num_elem).reshape(dim2, dim1, dim0)
@@ -505,9 +501,7 @@ def create_surface_array(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
     RADIUS = (params['PARAMETERS']['diameter'] \
               * params['PARAMETERS']['hole_factor'])/2
     # Get file/grid dimensions.
-    dim0 = params['N_NODES'][0]
-    dim1 = params['N_NODES'][1]
-    dim2 = params['N_NODES'][2]
+    dim0, dim1, dim2 = params['N_NODES']
     COORD_NODE_FIRST = params['COORD_NODE_FIRST']
     # Get tumor center location.
     TUMOR_CENTER = params['TUMOR_CENTER']
@@ -576,9 +570,7 @@ def create_surface_from_mri(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
     params['HOLE'] = pts
 
     # Get file/grid dimensions.
-    dim0 = params['N_NODES'][0]
-    dim1 = params['N_NODES'][1]
-    dim2 = params['N_NODES'][2]
+    dim0, dim1, dim2 = params['N_NODES']
     COORD_NODE_FIRST = params['COORD_NODE_FIRST']
     # Resize array.
     num_elem = dim0 * dim1 * dim2
