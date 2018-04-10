@@ -145,22 +145,6 @@ def return_grid(data, header, case):
     new_data[i:i+dim0, j:j+dim1, k:k+dim2] = data
     new_data = np.flip(new_data, 2)
 
-    dim0_length = np.subtract(ijk_to_ras([0,0,0], header),
-                              ijk_to_ras([new_dim0-1,0,0], header))
-    dim0_length = LA.norm(dim0_length)
-
-    dim1_length = np.subtract(ijk_to_ras([0,0,0], header),
-                              ijk_to_ras([0,new_dim1-1,0], header))
-    dim1_length = LA.norm(dim1_length)
-
-    dim2_length = np.subtract(ijk_to_ras([0,0,0], header),
-                              ijk_to_ras([0,0,new_dim2-1], header))
-    dim2_length = LA.norm(dim2_length)
-
-    dim0_length = dim0_length/1000
-    dim1_length = dim1_length/1000
-    dim2_length = dim2_length/1000
-
     if os.path.isfile('Template.ini') == True:
         copyfile('Template.ini', case + '.ini')
     else:
@@ -168,8 +152,6 @@ def return_grid(data, header, case):
         print('Aborting.')
         exit()
 
-    #coord_node_first = '0x0x-{:.4f}'.format(dim2_length)
-    #coord_node_last = '{:.4f}x{:.4f}x0'.format(dim0_length, dim1_length)
     coord_node_first = '-0.06x-0.06x-0.06'
     coord_node_last = '0.06x0.06x0'
     n_nodes = str(new_dim0) + 'x' + str(new_dim1) + 'x' + str(new_dim2)
