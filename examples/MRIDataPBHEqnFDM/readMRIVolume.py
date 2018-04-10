@@ -73,15 +73,66 @@ def ras_to_ijk(ras, header):
 
     return ijk[0:3]
 
-def update_ini_file():
-    pass
+def volume_dimensions(header):
+    start = np.asarray([0, 0, 0])
+    end = np.asarray(header['sizes'])
+
+    dim0_length = np.subtract(ijk_to_ras(start, header),
+                              ijk_to_ras([end[0],start[1],start[2]], header))
+    dim0_length = LA.norm(dim0_length)
+
+    dim1_length = np.subtract(ijk_to_ras(start, header),
+                              ijk_to_ras([start[0],end[1],start[2]], header))
+    dim1_length = LA.norm(dim1_length)
+
+    dim2_length = np.subtract(ijk_to_ras(start, header),
+                              ijk_to_ras([start[0],start[1],end[2]], header))
+    dim2_length = LA.norm(dim2_length)
+
+    return dim0_length, dim1_length, dim2_length
+
+def interpolate_data(data, header):
+    dim0_length, dim1_length, dim2_length = volume_dimensions(header)
+
+    x_mri = np.linspace(0, dim0_length, data.shape[0])
+    y_mri = np.linspace(0, dim1_length, data.shape[1])
+    z_mri = np.linspace(0, dim2_length, data.shape[2])
+
+    dim0_gridsize = 120/(120-1)
+    dim1_gridsize = 120/(120-1)
+    dim2_gridsize = 60/(50-1)
+
+    dim0 = int(dim0_length/dim0_gridsize)+1
+    dim1 = int(dim1_length/dim1_gridsize)+1
+    dim2 = int(dim2_length/dim2_gridsize)+1
+
+    x_scafes = np.linspace(0, dim0_length, dim0)
+    y_scafes = np.linspace(0, dim1_length, dim1)
+    z_scafes = np.linspace(0, dim2_length, dim2)
+
+    my_interpolating_function = RegularGridInterpolator((x_mri, y_mri, z_mri),
+                                                        data, method='nearest',
+                                                        bounds_error=False,
+                                                        fill_value=0)
+
+    new_data = np.zeros(dim0*dim1*dim2).reshape((dim0, dim1, dim2))
+
+    for elem_x in range(0, new_data.shape[0]):
+        for elem_y in range(0, new_data.shape[1]):
+            for elem_z in range(0, new_data.shape[2]):
+                tmp = my_interpolating_function([x_scafes[elem_x],
+                                                 y_scafes[elem_y],
+                                                 z_scafes[elem_z]])
+                new_data[elem_x, elem_y, elem_z] = tmp
+
+    return new_data
 
 def return_grid(data, header, case):
     dim0, dim1, dim2 = data.shape
 
-    new_dim0 = int(1.5 * dim0)
-    new_dim1 = int(1.5 * dim1)
-    new_dim2 = int(1.5 * dim2)
+    new_dim0 = 120
+    new_dim1 = 120
+    new_dim2 = 50
 
     num_elem = new_dim0 * new_dim1 * new_dim2
     new_data = np.zeros(num_elem).reshape((new_dim0, new_dim1, new_dim2))
@@ -117,8 +168,10 @@ def return_grid(data, header, case):
         print('Aborting.')
         exit()
 
-    coord_node_first = '0x0x-{:.4f}'.format(dim2_length)
-    coord_node_last = '{:.4f}x{:.4f}x0'.format(dim0_length, dim1_length)
+    #coord_node_first = '0x0x-{:.4f}'.format(dim2_length)
+    #coord_node_last = '{:.4f}x{:.4f}x0'.format(dim0_length, dim1_length)
+    coord_node_first = '-0.06x-0.06x-0.06'
+    coord_node_last = '0.06x0.06x0'
     n_nodes = str(new_dim0) + 'x' + str(new_dim1) + 'x' + str(new_dim2)
 
     config = configparser.ConfigParser()
@@ -155,55 +208,6 @@ def bounding_box(start, end):
 
     return bbox
 
-def interpolate_3d(data, start, end, header):
-    dim0_length = np.subtract(ijk_to_ras([0,0,0], header),
-                              ijk_to_ras([data.shape[0]-1,0,0], header))
-    dim0_length = LA.norm(dim0_length)
-
-    dim1_length = np.subtract(ijk_to_ras([0,0,0], header),
-                              ijk_to_ras([0,data.shape[1]-1,0], header))
-    dim1_length = LA.norm(dim1_length)
-
-    dim2_length = np.subtract(ijk_to_ras([0,0,0], header),
-                              ijk_to_ras([0,0,data.shape[2]-1], header))
-    dim2_length = LA.norm(dim2_length)
-
-    x_mri = np.linspace(0, dim0_length, data.shape[0])
-    y_mri = np.linspace(0, dim1_length, data.shape[1])
-    z_mri = np.linspace(0, dim2_length, data.shape[2])
-
-    dim0_gridsize = 120/(120-1)
-    dim1_gridsize = 120/(120-1)
-    dim2_gridsize = 60/(50-1)
-
-    dim0 = int(dim0_length/dim0_gridsize)+1
-    dim1 = int(dim1_length/dim1_gridsize)+1
-    dim2 = int(dim2_length/dim2_gridsize)+1
-
-    x_scafes = np.linspace(0, dim0_length, dim0)
-    y_scafes = np.linspace(0, dim1_length, dim1)
-    z_scafes = np.linspace(0, dim2_length, dim2)
-
-    my_interpolating_function = RegularGridInterpolator((x_mri, y_mri, z_mri),
-                                                        data, method='nearest',
-                                                        bounds_error=False,
-                                                        fill_value=0)
-
-    x, y, z = np.meshgrid(x_scafes, y_scafes, z_scafes, sparse=True,
-                          indexing='ij')
-
-    new_data = np.zeros(dim0*dim1*dim2).reshape((dim0, dim1, dim2))
-
-    for elem_x in range(0, new_data.shape[0]):
-        for elem_y in range(0, new_data.shape[1]):
-            for elem_z in range(0, new_data.shape[2]):
-                tmp = my_interpolating_function([x_scafes[elem_x],
-                                                 y_scafes[elem_y],
-                                                 z_scafes[elem_z]])
-                new_data[elem_x, elem_y, elem_z] = tmp
-
-    return new_data
-
 
 def main():
     if len(sys.argv) > 1:
@@ -235,7 +239,10 @@ def main():
     binary_data = data_as_binary_data(data)
     save_as_netcdf(binary_data, case + '_binary_tumor.nc')
 
-    region = return_grid(binary_data, header, case)
+    interpolated_data = interpolate_data(binary_data, header)
+    save_as_netcdf(interpolated_data, case + '_interpolated_data.nc')
+
+    region = return_grid(interpolated_data, header, case)
     save_as_netcdf(region, case + '_region.nc')
 
     iop = read_intra_op_points(folderpath)
