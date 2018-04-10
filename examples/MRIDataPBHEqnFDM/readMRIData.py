@@ -182,6 +182,40 @@ def plot_lin_plane_fitting(points, filename):
     print('Done.')
 
 # https://gist.github.com/amroamroamro/1db8d69b4b65e8bc66a6
+def plot_lin_plane_fitting_with_bbox(points, bbox, filename):
+    print('Plot plane fitting.')
+    data = np.c_[points[:,0], points[:,1], points[:,2]]
+    data2 = np.c_[bbox[:,0], bbox[:,1], bbox[:,2]]
+    # Regular grid covering the domain of the data.
+    mn = np.min(data, axis=0)
+    mx = np.max(data, axis=0)
+    X,Y = np.meshgrid(np.linspace(mn[0], mx[0], 20),
+                      np.linspace(mn[1], mx[1], 20))
+    # Fit linear plane.
+    A = np.c_[data[:,0], data[:,1], np.ones(data.shape[0])]
+    C,_,_,_ = scipy.linalg.lstsq(A, data[:,2])    # coefficients
+
+    # Evaluate plane.
+    Z = C[0]*X + C[1]*Y + C[2]
+
+    # Plot points and fitted surface
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    ax.plot_wireframe(X, Y, Z, rstride=2, cstride=2)
+    ax.scatter(data[:,0], data[:,1], data[:,2], c='r', s=50)
+    ax.scatter(data2[:,0], data2[:,1], data2[:,2], c='g', s=50)
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    ax.set_zlabel('Z')
+    ax.axis('equal')
+    ax.axis('tight')
+    print('Save figure to {}.eps'.format(filename))
+    plt.savefig(filename + '.eps')
+    plt.close()
+
+    print('Done.')
+
+# https://gist.github.com/amroamroamro/1db8d69b4b65e8bc66a6
 def lin_plane_fitting(points):
     print('Plane fitting.')
     X = points[:,0]
