@@ -9,93 +9,30 @@ from numpy import linalg as LA
 import nrrd
 from scipy.interpolate import RegularGridInterpolator
 
-def interpolate_3d(data, start, end, header):
-    dim0_length = np.subtract(ijk_to_ras([0,0,0], header),
-                              ijk_to_ras([data.shape[0]-1,0,0], header))
-    dim0_length = LA.norm(dim0_length)
+from readMRIData import plot_lin_plane_fitting_with_bbox
+from readMRIData import read_intra_op_points
 
-    dim1_length = np.subtract(ijk_to_ras([0,0,0], header),
-                              ijk_to_ras([0,data.shape[1]-1,0], header))
-    dim1_length = LA.norm(dim1_length)
-
-    dim2_length = np.subtract(ijk_to_ras([0,0,0], header),
-                              ijk_to_ras([0,0,data.shape[2]-1], header))
-    dim2_length = LA.norm(dim2_length)
-
-    x_mri = np.linspace(0, dim0_length, data.shape[0])
-    y_mri = np.linspace(0, dim1_length, data.shape[1])
-    z_mri = np.linspace(0, dim2_length, data.shape[2])
-
-    dim0_gridsize = 120/(120-1)
-    dim1_gridsize = 120/(120-1)
-    dim2_gridsize = 60/(50-1)
-
-    dim0 = int(dim0_length/dim0_gridsize)+1
-    dim1 = int(dim1_length/dim1_gridsize)+1
-    dim2 = int(dim2_length/dim2_gridsize)+1
-
-    x_scafes = np.linspace(0, dim0_length, dim0)
-    y_scafes = np.linspace(0, dim1_length, dim1)
-    z_scafes = np.linspace(0, dim2_length, dim2)
-
-    my_interpolating_function = RegularGridInterpolator((x_mri, y_mri, z_mri),
-                                                        data, method='nearest',
-                                                        bounds_error=False,
-                                                        fill_value=0)
-
-    x, y, z = np.meshgrid(x_scafes, y_scafes, z_scafes, sparse=True,
-                          indexing='ij')
-
-    new_data = np.zeros(dim0*dim1*dim2).reshape((dim0, dim1, dim2))
-
-    for elem_x in range(0, new_data.shape[0]):
-        for elem_y in range(0, new_data.shape[1]):
-            for elem_z in range(0, new_data.shape[2]):
-                tmp = my_interpolating_function([x_scafes[elem_x],
-                                                 y_scafes[elem_y],
-                                                 z_scafes[elem_z]])
-                new_data[elem_x, elem_y, elem_z] = tmp
-
-    return new_data
-
-def stats_from_tumor(data):
-    print('Mean: {}.'.format(np.mean(data)))
-    print('Min: {}.'.format(np.min(data)))
-    print('Max: {}.'.format(np.max(data)))
-    print('StdDev: {}.'.format(np.std(data)))
-
-def binary_data(data):
-    bin_data = np.zeros(data.shape)
-    mean = np.mean(data)
-    std_dev = np.std(data)
-
-    bin_data = np.where(data > mean + 0.2*std_dev, 1, 0)
-
-    return bin_data
-
-def extract_tumor_from_volume(data, start, end):
-    new_data = data[start[0]:end[0]+1,
-                    start[1]:end[1]+1,
-                    start[2]:end[2]+1]
-
-    return new_data
-
-def save_volume_as_netcdf(data, filename):
-    nc_file = nc.Dataset(filename, 'w', format='NETCDF3_CLASSIC')
-    nNodes = nc_file.createDimension('nNodes_0', data.shape[0])
-    nNodes = nc_file.createDimension('nNodes_1', data.shape[1])
-    nNodes = nc_file.createDimension('nNodes_2', data.shape[2])
-    time = nc_file.createDimension('time')
-    brain = nc_file.createVariable('region', 'i2', ('time', 'nNodes_2',
-                                                    'nNodes_1', 'nNodes_0'))
-    brain[0,:,:,:] = np.swapaxes(data, 0, 2)
-
-    nc_file.close()
-
-def read_volume(filepath):
+def read_nrrd_file(filepath):
     data, header = nrrd.read(filepath)
 
     return data, header
+
+def save_as_netcdf(data, filename):
+    nc_file = nc.Dataset(filename, 'w', format='NETCDF3_CLASSIC')
+    nc_file.createDimension('nNodes_0', data.shape[0])
+    nc_file.createDimension('nNodes_1', data.shape[1])
+    nc_file.createDimension('nNodes_2', data.shape[2])
+    nc_file.createDimension('time')
+    brain = nc_file.createVariable('region', 'i2', ('time', 'nNodes_2',
+                                                    'nNodes_1', 'nNodes_0'))
+    brain[0,] = np.swapaxes(data, 0, 2)
+    nc_file.close()
+
+def data_as_binary_data(data):
+    binary_data = np.zeros(data.shape)
+    binary_data = np.where(data == 255, 1, 0)
+
+    return binary_data
 
 def get_ijk_to_lps(header):
     space_origin = list(map(float, header['space origin']))
@@ -136,34 +73,14 @@ def ras_to_ijk(ras, header):
 
     return ijk[0:3]
 
-def bounding_box_tumor(start, end):
-    bbox = np.asarray([[start[0], start[1], start[2]],
-                       [end[0], start[1], start[2]],
-                       [end[0], end[1], start[2]],
-                       [start[0], end[1], start[2]],
-                       [start[0], start[1], end[2]],
-                       [end[0], start[1], end[2]],
-                       [end[0], end[1], end[2]],
-                       [start[0], end[1], end[2]]])
-
-    return bbox
-
-def get_start_and_end(filepath):
-    config = configparser.ConfigParser()
-    config.read(filepath)
-
-    start = config['Start'].get('START')
-    start = np.asarray(list(map(int, start.split('x'))))
-    end = config['End'].get('END')
-    end = np.asarray(list(map(int, end.split('x'))))
-
-    return start, end
+def update_ini_file():
+    pass
 
 def return_grid(data, header, case):
     dim0, dim1, dim2 = data.shape
 
-    new_dim0 = 2 * dim0
-    new_dim1 = 2 * dim1
+    new_dim0 = int(1.5 * dim0)
+    new_dim1 = int(1.5 * dim1)
     new_dim2 = int(1.5 * dim2)
 
     num_elem = new_dim0 * new_dim1 * new_dim2
@@ -226,14 +143,74 @@ def return_grid(data, header, case):
 
     return new_data
 
+def bounding_box(start, end):
+    bbox = np.asarray([[start[0], start[1], start[2]],
+                       [end[0], start[1], start[2]],
+                       [end[0], end[1], start[2]],
+                       [start[0], end[1], start[2]],
+                       [start[0], start[1], end[2]],
+                       [end[0], start[1], end[2]],
+                       [end[0], end[1], end[2]],
+                       [start[0], end[1], end[2]]])
+
+    return bbox
+
+def interpolate_3d(data, start, end, header):
+    dim0_length = np.subtract(ijk_to_ras([0,0,0], header),
+                              ijk_to_ras([data.shape[0]-1,0,0], header))
+    dim0_length = LA.norm(dim0_length)
+
+    dim1_length = np.subtract(ijk_to_ras([0,0,0], header),
+                              ijk_to_ras([0,data.shape[1]-1,0], header))
+    dim1_length = LA.norm(dim1_length)
+
+    dim2_length = np.subtract(ijk_to_ras([0,0,0], header),
+                              ijk_to_ras([0,0,data.shape[2]-1], header))
+    dim2_length = LA.norm(dim2_length)
+
+    x_mri = np.linspace(0, dim0_length, data.shape[0])
+    y_mri = np.linspace(0, dim1_length, data.shape[1])
+    z_mri = np.linspace(0, dim2_length, data.shape[2])
+
+    dim0_gridsize = 120/(120-1)
+    dim1_gridsize = 120/(120-1)
+    dim2_gridsize = 60/(50-1)
+
+    dim0 = int(dim0_length/dim0_gridsize)+1
+    dim1 = int(dim1_length/dim1_gridsize)+1
+    dim2 = int(dim2_length/dim2_gridsize)+1
+
+    x_scafes = np.linspace(0, dim0_length, dim0)
+    y_scafes = np.linspace(0, dim1_length, dim1)
+    z_scafes = np.linspace(0, dim2_length, dim2)
+
+    my_interpolating_function = RegularGridInterpolator((x_mri, y_mri, z_mri),
+                                                        data, method='nearest',
+                                                        bounds_error=False,
+                                                        fill_value=0)
+
+    x, y, z = np.meshgrid(x_scafes, y_scafes, z_scafes, sparse=True,
+                          indexing='ij')
+
+    new_data = np.zeros(dim0*dim1*dim2).reshape((dim0, dim1, dim2))
+
+    for elem_x in range(0, new_data.shape[0]):
+        for elem_y in range(0, new_data.shape[1]):
+            for elem_z in range(0, new_data.shape[2]):
+                tmp = my_interpolating_function([x_scafes[elem_x],
+                                                 y_scafes[elem_y],
+                                                 z_scafes[elem_z]])
+                new_data[elem_x, elem_y, elem_z] = tmp
+
+    return new_data
+
 
 def main():
-    filepath = ''
     if len(sys.argv) > 1:
         if os.path.isdir(sys.argv[1]) == True:
-            tmp = os.path.join(os.sys.argv[1], 'volume.nrrd')
+            tmp = os.path.join(os.sys.argv[1], '_1.nrrd')
             if os.path.isfile(tmp) != True:
-                print(sys.argv[1], 'does not contain volume.nrrd.')
+                print(sys.argv[1], 'does not contain _1.nrrd.')
                 print('Aborting.')
                 exit()
             else:
@@ -248,27 +225,24 @@ def main():
         print('Aborting.')
         exit()
 
+    print('Create region file.')
+
     case = filepath.split('_')[0]
 
-    data, header = read_volume(filepath)
+    data, header = read_nrrd_file(filepath)
+    save_as_netcdf(data, case + '_seg_tumor.nc')
 
-    save_volume_as_netcdf(data, case + '_mri_volume.nc')
+    binary_data = data_as_binary_data(data)
+    save_as_netcdf(binary_data, case + '_binary_tumor.nc')
 
-    bbox = os.path.join(folderpath, 'bounding-box.ini')
-    if os.path.isfile(bbox) == True:
-        start, end = get_start_and_end(bbox)
+    region = return_grid(binary_data, header, case)
+    save_as_netcdf(region, case + '_region.nc')
 
-        tumor = extract_tumor_from_volume(data, start, end)
-        save_volume_as_netcdf(tumor, case + '_mri_tumor.nc')
-
-        binary_tumor = binary_data(tumor)
-        save_volume_as_netcdf(binary_tumor, case + '_bin_tumor.nc')
-
-        #interpolated_tumor = interpolate_3d(binary_tumor, start, end, header)
-        #save_volume_as_netcdf(interpolated_tumor, 'region.nc')
-
-        region = return_grid(binary_tumor, header, case)
-        save_volume_as_netcdf(region, case + '_region.nc')
+    iop = read_intra_op_points(folderpath)
+    start = np.asarray([0, 0, 0])
+    end = np.asarray(header['sizes'])
+    bbox = bounding_box(ijk_to_ras(start, header), ijk_to_ras(end, header))
+    plot_lin_plane_fitting_with_bbox(iop, bbox, case + '_domain')
 
     print('Done.')
 
