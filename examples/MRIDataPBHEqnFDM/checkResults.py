@@ -3,31 +3,39 @@ import numpy as np
 import os
 import sys
 
+def temperature_array_from_result(filepath):
+    print('Read data from {0}.'.format(filepath))
+
+    nc_file = nc.Dataset(filepath)
+    dim0 = nc_file.dimensions['nNodes_0'].size
+    dim1 = nc_file.dimensions['nNodes_1'].size
+    dim2 = nc_file.dimensions['nNodes_2'].size
+
+    possible_names = ['T', 'TNewDom', 'TDiff']
+    found_name = False
+    for name in possible_names:
+        try:
+            T = nc_file.variables[name]
+            found_name = True
+            break
+        except KeyError:
+            pass
+
+    if found_name == False:
+        print('* ERROR: No temperature variable found in {0}.'.format(filepath))
+        print('Aborting.')
+        exit()
+
+    temp = np.zeros((dim2, dim1, dim0))
+    temp[:,:,:] = T[-1,:,:,:]
+
+    nc_file.close()
+
+    return temp
+
 def check_results(filepath):
-    print('Read data from {0}.'.format(filepath[0]))
-
-    nc_file_1 = nc.Dataset(filepath[0])
-    dim0 = nc_file_1.dimensions['nNodes_0'].size
-    dim1 = nc_file_1.dimensions['nNodes_1'].size
-    dim2 = nc_file_1.dimensions['nNodes_2'].size
-    time = nc_file_1.dimensions['time'].size
-    TNewDom = nc_file_1.variables['TNewDom']
-
-    a_1 = np.zeros((dim2, dim1, dim0))
-    a_1[:,:,:] = TNewDom[(time-1):time,:,:,]
-
-    print('Read data from {0}.'.format(filepath[1]))
-
-    nc_file_2 = nc.Dataset(filepath[1])
-    dim0 = nc_file_2.dimensions['nNodes_0'].size
-    dim1 = nc_file_2.dimensions['nNodes_1'].size
-    dim2 = nc_file_2.dimensions['nNodes_2'].size
-    time = nc_file_2.dimensions['time'].size
-    TNewDom = nc_file_2.variables['TNewDom']
-
-    a_2 = np.zeros((dim2, dim1, dim0))
-    a_2[:,:,:] = TNewDom[(time-1):time,:,:,]
-
+    a_1 = temperature_array_from_result(filepath[0])
+    a_2 = temperature_array_from_result(filepath[1])
     print()
     if np.array_equal(a_1, a_2) == True:
         print('SUCCESS: Last timestep is equal.')
@@ -38,9 +46,6 @@ def check_results(filepath):
             print('Shape of files is not equal.')
         else:
             print('WARNING: Last timestep is NOT equal.')
-
-    nc_file_1.close()
-    nc_file_2.close()
 
     print('Done.')
 
