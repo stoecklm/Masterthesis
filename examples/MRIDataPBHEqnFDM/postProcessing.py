@@ -5,10 +5,7 @@ import sys
 import netCDF4 as nc
 import numpy as np
 
-def surface_temperatures(filepath):
-    print('Calc open surface temperatures of {0}.'.format(filepath))
-
-    # Open result file and read data from it.
+def temperature_array_from_result(filepath):
     nc_file = nc.Dataset(filepath)
     dim0 = nc_file.dimensions['nNodes_0'].size
     dim1 = nc_file.dimensions['nNodes_1'].size
@@ -30,27 +27,54 @@ def surface_temperatures(filepath):
         print('Aborting.')
         exit()
 
-    # Create numpy array and save surface data from netCDF file to it.
-    temp = np.zeros((dim1, dim0))
-    temp[:,:] = T[(time-1):time,(dim2-1),:,:]
+    temp = np.zeros((dim2, dim1, dim0))
+    temp[:,:,:] = T[(time-1):time,:,:,:]
 
     nc_file.close()
+
+    return temp
+
+def surface_temperature_array_from_result(filepath):
+    temp = temperature_array_from_result(filepath)
+    dim2, dim1, dim0 = temp.shape
+
+    temp_surface = np.zeros((dim1, dim0))
+    temp_surface[:,:] = temp[(dim2-1),:,:]
+
+    return temp_surface
+
+def region_array_from_file(filepath):
+    nc_file = nc.Dataset(filepath)
+    dim0 = nc_file.dimensions['nNodes_0'].size
+    dim1 = nc_file.dimensions['nNodes_1'].size
+    dim2 = nc_file.dimensions['nNodes_2'].size
+    time = nc_file.dimensions['time'].size
+    region = nc_file.variables['region']
+
+    tumor = np.zeros((dim2, dim1, dim0))
+    tumor[:,:,:] = region[(time-1):time,:,:,:]
+
+    nc_file.close()
+
+    return tumor
+
+def surface_temperatures(filepath):
+    print('Calc open surface temperatures of {0}.'.format(filepath))
 
     if os.path.isfile('init.nc') == False:
         print('init.nc does not exist.')
         print('Aborting.')
         exit()
 
-    # Open init file and read data from it.
+    temp = surface_temperature_array_from_result(filepath)
+
     nc_file = nc.Dataset('init.nc')
     dim0 = nc_file.dimensions['nNodes_0'].size
     dim1 = nc_file.dimensions['nNodes_1'].size
     dim2 = nc_file.dimensions['nNodes_2'].size
     time = nc_file.dimensions['time'].size
-
     surface = nc_file.variables['surface']
 
-    # Create numpy array and save surface data from netCDF file to it.
     skull = np.zeros((dim1, dim0))
     skull[:,:] = surface[(time-1):time,(dim2-1),:,:]
 
@@ -89,53 +113,13 @@ def surface_temperatures(filepath):
 def tumor_temperatures(filepath, region_file):
     print('Calc tumor temperatures of {0}.'.format(filepath))
 
-    # Open result file and read data from it.
-    nc_file = nc.Dataset(filepath)
-    dim0 = nc_file.dimensions['nNodes_0'].size
-    dim1 = nc_file.dimensions['nNodes_1'].size
-    dim2 = nc_file.dimensions['nNodes_2'].size
-    time = nc_file.dimensions['time'].size
-
-    possible_names = ['T', 'TNewDom', 'TDiff']
-    found_name = False
-    for name in possible_names:
-        try:
-            T = nc_file.variables[name]
-            found_name = True
-            break
-        except KeyError:
-            pass
-
-    if found_name == False:
-        print('* ERROR: No temperature variable found in this file.')
-        print('Aborting.')
-        exit()
-
-    # Create numpy array and save surface data from netCDF file to it.
-    temp = np.zeros((dim2, dim1, dim0))
-    temp[:,:] = T[(time-1):time,:,:,:]
-
-    nc_file.close()
-
     if os.path.isfile(region_file) == False:
         print(region_file, 'does not exist.')
         print('Aborting.')
         exit()
 
-    # Open region file and read data from it.
-    nc_file = nc.Dataset(region_file)
-    dim0 = nc_file.dimensions['nNodes_0'].size
-    dim1 = nc_file.dimensions['nNodes_1'].size
-    dim2 = nc_file.dimensions['nNodes_2'].size
-    time = nc_file.dimensions['time'].size
-
-    region = nc_file.variables['region']
-
-    # Create numpy array and save surface data from netCDF file to it.
-    tumor = np.zeros((dim2, dim1, dim0))
-    tumor[:,:] = region[(time-1):time,:,:,:]
-
-    nc_file.close()
+    temp = temperature_array_from_result(filepath)
+    tumor = region_array_from_file(region_file)
 
     if np.count_nonzero(tumor == 1) != 0:
         temp_mean = np.mean(temp[np.where(tumor == 1)])
@@ -170,53 +154,14 @@ def tumor_temperatures(filepath, region_file):
 def brain_temperatures(filepath, region_file):
     print('Calc brain temperatures of {0}.'.format(filepath))
 
-    # Open result file and read data from it.
-    nc_file = nc.Dataset(filepath)
-    dim0 = nc_file.dimensions['nNodes_0'].size
-    dim1 = nc_file.dimensions['nNodes_1'].size
-    dim2 = nc_file.dimensions['nNodes_2'].size
-    time = nc_file.dimensions['time'].size
-
-    possible_names = ['T', 'TNewDom', 'TDiff']
-    found_name = False
-    for name in possible_names:
-        try:
-            T = nc_file.variables[name]
-            found_name = True
-            break
-        except KeyError:
-            pass
-
-    if found_name == False:
-        print('* ERROR: No temperature variable found in this file.')
-        print('Aborting.')
-        exit()
-
-    # Create numpy array and save surface data from netCDF file to it.
-    temp = np.zeros((dim2, dim1, dim0))
-    temp[:,:] = T[(time-1):time,:,:,:]
-
-    nc_file.close()
+    temp = temperature_array_from_result(filepath)
 
     if os.path.isfile(region_file) == False:
         print(region_file, 'does not exist.')
         print('Aborting.')
         exit()
 
-    # Open region file and read data from it.
-    nc_file = nc.Dataset(region_file)
-    dim0 = nc_file.dimensions['nNodes_0'].size
-    dim1 = nc_file.dimensions['nNodes_1'].size
-    dim2 = nc_file.dimensions['nNodes_2'].size
-    time = nc_file.dimensions['time'].size
-
-    region = nc_file.variables['region']
-
-    # Create numpy array and save surface data from netCDF file to it.
-    tumor = np.zeros((dim2, dim1, dim0))
-    tumor[:,:] = region[(time-1):time,:,:,:]
-
-    nc_file.close()
+    tumor = region_array_from_file(region_file)
 
     if np.count_nonzero(tumor == 1) != 0:
         temp_mean = np.mean(temp[np.where(tumor == 0)])
@@ -255,33 +200,7 @@ def brain_temperatures(filepath, region_file):
 def domain_temperatures(filepath):
     print('Calc domain temperatures of {0}.'.format(filepath))
 
-    # Open result file and read data from it.
-    nc_file = nc.Dataset(filepath)
-    dim0 = nc_file.dimensions['nNodes_0'].size
-    dim1 = nc_file.dimensions['nNodes_1'].size
-    dim2 = nc_file.dimensions['nNodes_2'].size
-    time = nc_file.dimensions['time'].size
-
-    possible_names = ['T', 'TNewDom', 'TDiff']
-    found_name = False
-    for name in possible_names:
-        try:
-            T = nc_file.variables[name]
-            found_name = True
-            break
-        except KeyError:
-            pass
-
-    if found_name == False:
-        print('* ERROR: No temperature variable found in this file.')
-        print('Aborting.')
-        exit()
-
-    # Create numpy array and save surface data from netCDF file to it.
-    temp = np.zeros((dim2, dim1, dim0))
-    temp[:,:] = T[(time-1):time,:,:,:]
-
-    nc_file.close()
+    temp = temperature_array_from_result(filepath)
 
     temp_mean = np.mean(temp)
     temp_max = np.max(temp)
@@ -349,33 +268,7 @@ def csv_result_temperatures(filepath, csv):
 def vessels_temperatures(filepath_nc, vessels):
     print('Calc vessel temperatures of {0}.'.format(filepath_nc))
 
-    # Open result file and read data from it.
-    nc_file = nc.Dataset(filepath_nc)
-    dim0 = nc_file.dimensions['nNodes_0'].size
-    dim1 = nc_file.dimensions['nNodes_1'].size
-    dim2 = nc_file.dimensions['nNodes_2'].size
-    time = nc_file.dimensions['time'].size
-
-    possible_names = ['T', 'TNewDom', 'TDiff']
-    found_name = False
-    for name in possible_names:
-        try:
-            T = nc_file.variables[name]
-            found_name = True
-            break
-        except KeyError:
-            pass
-
-    if found_name == False:
-        print('* ERROR: No temperature variable found in this file.')
-        print('Aborting.')
-        exit()
-
-    # Create numpy array and save surface data from netCDF file to it.
-    temp = np.zeros((dim1, dim0))
-    temp[:,:] = T[(time-1):time,(dim2-1),:,:]
-
-    nc_file.close()
+    temp = temperature_array_from_result(filepath)
 
     temp_mean = np.mean(temp[np.where(vessels == 1)])
     temp_max = np.max(temp[np.where(vessels == 1)])
