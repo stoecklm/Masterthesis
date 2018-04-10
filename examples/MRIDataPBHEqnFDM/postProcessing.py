@@ -5,54 +5,18 @@ import sys
 import netCDF4 as nc
 import numpy as np
 
-def temperature_array_from_result(filepath):
-    nc_file = nc.Dataset(filepath)
-    dim0 = nc_file.dimensions['nNodes_0'].size
-    dim1 = nc_file.dimensions['nNodes_1'].size
-    dim2 = nc_file.dimensions['nNodes_2'].size
-    time = nc_file.dimensions['time'].size
-
-    possible_names = ['T', 'TNewDom', 'TDiff']
-    found_name = False
-    for name in possible_names:
-        try:
-            T = nc_file.variables[name]
-            found_name = True
-            break
-        except KeyError:
-            pass
-
-    if found_name == False:
-        print('* ERROR: No temperature variable found in this file.')
-        print('Aborting.')
-        exit()
-
-    temp = np.zeros((dim2, dim1, dim0))
-    temp[:,:,:] = T[(time-1):time,:,:,:]
-
-    nc_file.close()
-
-    return temp
-
-def surface_temperature_array_from_result(filepath):
-    temp = temperature_array_from_result(filepath)
-    dim2, dim1, dim0 = temp.shape
-
-    temp_surface = np.zeros((dim1, dim0))
-    temp_surface[:,:] = temp[(dim2-1),:,:]
-
-    return temp_surface
+from helperFunctions import temperature_array_from_result
+from helperFunctions import surface_temperature_array_from_result
 
 def region_array_from_file(filepath):
     nc_file = nc.Dataset(filepath)
     dim0 = nc_file.dimensions['nNodes_0'].size
     dim1 = nc_file.dimensions['nNodes_1'].size
     dim2 = nc_file.dimensions['nNodes_2'].size
-    time = nc_file.dimensions['time'].size
     region = nc_file.variables['region']
 
     tumor = np.zeros((dim2, dim1, dim0))
-    tumor[:,:,:] = region[(time-1):time,:,:,:]
+    tumor[:,:,:] = region[-1,:,:,:]
 
     nc_file.close()
 
@@ -72,11 +36,10 @@ def surface_temperatures(filepath):
     dim0 = nc_file.dimensions['nNodes_0'].size
     dim1 = nc_file.dimensions['nNodes_1'].size
     dim2 = nc_file.dimensions['nNodes_2'].size
-    time = nc_file.dimensions['time'].size
     surface = nc_file.variables['surface']
 
     skull = np.zeros((dim1, dim0))
-    skull[:,:] = surface[(time-1):time,(dim2-1),:,:]
+    skull[:,:] = surface[-1,-1,:,:]
 
     nc_file.close()
 

@@ -468,7 +468,7 @@ def create_init_array(params, nc_file, region, BRAIN_VALUE, TUMOR_VALUE,
             # but vessel segmentation is read.
             # Vessel will be used on the surface of the whole domain.
             if np.count_nonzero(surface) == 0:
-                surface[dim2-1,:,:] = 1
+                surface[-1,:,:] = 1
             # Normal case: trepanation domain is set.
             # - 1 = grid node outside of trepanation domain
             # 0 = grid node inside trepanation domain, no vessel
@@ -482,13 +482,13 @@ def create_init_array(params, nc_file, region, BRAIN_VALUE, TUMOR_VALUE,
             depth = params['VESSELS_DEPTH']
             for elem_y in range(0, surface.shape[1]):
                 for elem_x in range(0, surface.shape[2]):
-                    if surface[dim2-1, elem_y, elem_x] == 1:
+                    if surface[-1, elem_y, elem_x] == 1:
                         vessels_big[elem_y, elem_x] = 0
                         values_array[dim2-depth:dim2,elem_y,elem_x] = VALUE_NON_VESSEL
             for elem_y in range(0, vessels.shape[0]):
                 for elem_x in range(0, vessels.shape[1]):
                     if vessels[elem_y, elem_x] == 1 \
-                        and surface[dim2-1, elem_y+y_min, elem_x+x_min] == 1:
+                        and surface[-1, elem_y+y_min, elem_x+x_min] == 1:
                         vessels_big[elem_y+y_min, elem_x+x_min] = 1
                         values_array[dim2-depth:dim2,elem_y+y_min,elem_x+x_min] = VALUE_VESSEL
             VARIABLES_VESSELS.remove(NAME_VARIABLE)
@@ -521,7 +521,7 @@ def create_surface_array(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
             # Check if current point is inside tumor.
             # If yes, set value to tumor specific value
             if distance <= RADIUS*RADIUS:
-                values_array[dim2-1, elem_y, elem_x] = TUMOR_VALUE
+                values_array[-1, elem_y, elem_x] = TUMOR_VALUE
     # Create netCDF variable.
     nNodes = []
     nNodes.append('time')
@@ -532,8 +532,8 @@ def create_surface_array(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
     init_values[0,] = values_array
 
     # Bounding box for trepanation domain.
-    rows = np.any(values_array[dim2-1,:,:], axis=1)
-    cols = np.any(values_array[dim2-1,:,:], axis=0)
+    rows = np.any(values_array[-1,:,:], axis=1)
+    cols = np.any(values_array[-1,:,:], axis=0)
     try:
         params['surface_rmin'], params['surface_rmax'] = np.where(rows)[0][[0, -1]]
     except IndexError:
@@ -588,7 +588,7 @@ def create_surface_from_mri(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
             # Check if current point is inside open skill
             # If yes, set value to tumor specific value.
             if path.contains_point((x_trans,y_trans)) == True:
-                values_array[dim2-1, elem_y, elem_x] = TUMOR_VALUE
+                values_array[-1, elem_y, elem_x] = TUMOR_VALUE
     # Create netCDF variable.
     nNodes = []
     nNodes.append('time')
@@ -599,8 +599,8 @@ def create_surface_from_mri(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
     init_values[0,] = values_array
 
     # Bounding box for trepanation domain.
-    rows = np.any(values_array[dim2-1,:,:], axis=1)
-    cols = np.any(values_array[dim2-1,:,:], axis=0)
+    rows = np.any(values_array[-1,:,:], axis=1)
+    cols = np.any(values_array[-1,:,:], axis=0)
     params['surface_rmin'], params['surface_rmax'] = np.where(rows)[0][[0, -1]]
     params['surface_cmin'], params['surface_cmax'] = np.where(cols)[0][[0, -1]]
 
@@ -656,10 +656,9 @@ def create_init_file(params):
     dim0 = nc_file.dimensions['nNodes_0'].size
     dim1 = nc_file.dimensions['nNodes_1'].size
     dim2 = nc_file.dimensions['nNodes_2'].size
-    time = nc_file.dimensions['time'].size
     nc_var = nc_file.variables['region']
     region = np.zeros((dim2, dim1, dim0), dtype=int)
-    region[:,:,:] = nc_var[(time-1):time,:,:,:]
+    region[:,:,:] = nc_var[-1,:,:,:]
 
     nc_file.close()
 

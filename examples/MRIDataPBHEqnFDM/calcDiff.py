@@ -12,6 +12,9 @@ import netCDF4 as nc
 import numpy as np
 from scipy.interpolate import griddata
 
+from helperFunctions import temperature_array_from_result
+from helperFunctions import surface_temperature_array_from_result
+
 CMAP = cm.viridis
 
 def plot_diff_on_surface(data, filepath):
@@ -43,7 +46,7 @@ def two_netcdf_files_surface(filepath, a_1, a_2):
        a_1.shape[1] == a_2.shape[1]:
         dim0_sparse = a_1.shape[2]
         dim1_sparse = a_1.shape[1]
-        a_3 = np.subtract(a_1[a_1.shape[0]-1,:,:], a_2[a_2.shape[0]-1,:,:])
+        a_3 = np.subtract(a_1[-1,:,:], a_2[-1,:,:])
     elif a_1.shape[2] != a_2.shape[2] and \
          a_1.shape[1] != a_2.shape[1]:
         print('* WARNING: Shape in x dim and y dim is not equal.')
@@ -77,16 +80,16 @@ def two_netcdf_files_surface(filepath, a_1, a_2):
             # a_2 = dense
             a_sparse = griddata(np.array([x_dense.ravel(),
                                           y_dense.ravel()]).T,
-                                a_2[a_2.shape[0]-1,:,:].ravel(),
+                                a_2[-1,:,:].ravel(),
                                 (x_sparse, y_sparse), method='cubic')
-            a_3 = np.subtract(a_1[a_1.shape[0]-1,:,:], a_sparse[:,:])
+            a_3 = np.subtract(a_1[-1,:,:], a_sparse[:,:])
         else:
             # a_1 = dense
             # a_2 = sparse
             a_sparse = griddata(np.array([x_dense.ravel(), y_dense.ravel()]).T,
-                                a_1[a_1.shape[0]-1,:,:].ravel(),
+                                a_1[-1,:,:].ravel(),
                                 (x_sparse, y_sparse), method='cubic')
-            a_3 = np.subtract(a_sparse[:,:], a_2[a_2.shape[0]-1,:,:])
+            a_3 = np.subtract(a_sparse[:,:], a_2[-1,:,:])
 
     nc_file = nc.Dataset(filepath, 'w', format='NETCDF3_CLASSIC')
     nNodes = nc_file.createDimension('nNodes_0', dim0_sparse)
@@ -118,12 +121,14 @@ def two_netcdf_files_surface(filepath, a_1, a_2):
 
     text_file.close()
 
-def two_netcdf_files_volume(filepath, a_1, a_2, dim0, dim1, dim2):
+def two_netcdf_files_volume(filepath, a_1, a_2):
     filepath = os.path.splitext(filepath[0])[0] + '_' \
                + os.path.basename(os.path.splitext(filepath[1])[0]) \
                + '_diff'
     filepath_nc = filepath + '_volume.nc'
     print('Write volume data to {0}.'.format(filepath_nc))
+
+    dim2, dim1, dim0 = a_1.shape
 
     nc_file = nc.Dataset(filepath_nc, 'w', format='NETCDF3_CLASSIC')
     nNodes = nc_file.createDimension('nNodes_0', dim0)
@@ -144,12 +149,12 @@ def two_netcdf_files_volume(filepath, a_1, a_2, dim0, dim1, dim2):
     print('Volume:   max(abs(diff)) = {0} at {1}.'.format(max_diff,
                                                           max_diff_index))
     print('Volume:  mean(abs(diff)) = {0}.'.format(sum_diff))
-    max_diff = np.amax(np.absolute(a_3[dim2-1,:,:]))
-    max_diff_index = np.unravel_index(np.argmax(np.absolute(a_3[dim2-1,:,:])),
+    max_diff = np.amax(np.absolute(a_3[-1,:,:]))
+    max_diff_index = np.unravel_index(np.argmax(np.absolute(a_3[-1,:,:])),
                                       a_3.shape)
     max_diff_index = max_diff_index[::-1]
     max_diff_index = max_diff_index[0], max_diff_index[1], dim2-1
-    sum_diff = np.mean(np.absolute(a_3[dim2-1,:,:]))
+    sum_diff = np.mean(np.absolute(a_3[-1,:,:]))
     print('Surface:  max(abs(diff)) = {0} at {1}.'.format(max_diff,
                                                           max_diff_index))
     print('Surface: mean(abs(diff)) = {0}.'.format(sum_diff))
@@ -158,40 +163,15 @@ def two_netcdf_files_volume(filepath, a_1, a_2, dim0, dim1, dim2):
     plot_diff_on_surface(a_3[-1,:,:], filepath_fig)
 
 def two_netcdf_files(filepath):
-    print('Read data from {0}.'.format(filepath[0]))
-
-    nc_file_1 = nc.Dataset(filepath[0])
-    dim0 = nc_file_1.dimensions['nNodes_0'].size
-    dim1 = nc_file_1.dimensions['nNodes_1'].size
-    dim2 = nc_file_1.dimensions['nNodes_2'].size
-    time = nc_file_1.dimensions['time'].size
-    TNewDom = nc_file_1.variables['TNewDom']
-
-    a_1 = np.zeros((dim2, dim1, dim0))
-    a_1[:,:,:] = TNewDom[(time-1):time,:,:,:]
-
-    nc_file_1.close()
-
-    print('Read data from {0}.'.format(filepath[1]))
-
-    nc_file_2 = nc.Dataset(filepath[1])
-    dim0 = nc_file_2.dimensions['nNodes_0'].size
-    dim1 = nc_file_2.dimensions['nNodes_1'].size
-    dim2 = nc_file_2.dimensions['nNodes_2'].size
-    time = nc_file_2.dimensions['time'].size
-    TNewDom = nc_file_2.variables['TNewDom']
-
-    a_2 = np.zeros((dim2, dim1, dim0))
-    a_2[:,:,:] = TNewDom[(time-1):time,:,:,:]
-
-    nc_file_2.close()
+    a_1 = temperature_array_from_result(filepath[0])
+    a_2 = temperature_array_from_result(filepath[1])
 
     if a_1.shape[0] == a_2.shape[0] and \
        a_1.shape[1] == a_2.shape[1] and \
        a_1.shape[2] == a_2.shape[2]:
         print('All shapes of files are equal.')
         print('Calc diff of volume and surface.')
-        two_netcdf_files_volume(filepath, a_1, a_2, dim0, dim1, dim2)
+        two_netcdf_files_volume(filepath, a_1, a_2)
     elif a_1.shape[1] <= a_2.shape[1] and \
          a_1.shape[2] <= a_2.shape[2]:
         print('Not all shapes of files are equal.')
@@ -272,29 +252,18 @@ def two_dat_files(filepath):
 def netcdf_and_dat_file(filepath):
     if os.path.splitext(filepath[0])[1] == '.nc':
         print('Read data from {0}.'.format(filepath[0]))
-        nc_file = nc.Dataset(filepath[0])
+        a = surface_temperature_array_from_result(filepath[0])
         filepath[0] = os.path.splitext(filepath[0])[0]
         filepath[0] += '_surface.dat'
         print('Write surface data to {0}.'.format(filepath[0]))
         text_file = open(filepath[0], 'w')
     else:
         print('Read data from {0}.'.format(filepath[1]))
-        nc_file = nc.Dataset(filepath[1])
+        a = surface_temperature_array_from_result(filepath[1])
         filepath[1] = os.path.splitext(filepath[1])[0]
         filepath[1] += '_surface.dat'
         print('Write surface data to {0}.'.format(filepath[1]))
         text_file = open(filepath[1], 'w')
-
-    dim0 = nc_file.dimensions['nNodes_0'].size
-    dim1 = nc_file.dimensions['nNodes_1'].size
-    dim2 = nc_file.dimensions['nNodes_2'].size
-    time = nc_file.dimensions['time'].size
-    T = nc_file.variables['TNewDom']
-
-    a = np.zeros((dim1, dim0))
-    a[:,:] = T[(time-1):time,(dim2-1),:,:]
-
-    nc_file.close()
 
     for elem_y in range(0, a.shape[0]):
         for elem_x in range(0, a.shape[1]):

@@ -6,10 +6,12 @@ matplotlib.use('Agg')
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 from matplotlib import cm
-from matplotlib.ticker import LinearLocator, FormatStrFormatter
-import netCDF4 as nc
+from matplotlib.ticker import LinearLocator
+from matplotlib.ticker import FormatStrFormatter
 import numpy as np
 import numpy.ma as ma
+
+from helperFunctions import temperature_array_from_result
 
 CMAP = cm.viridis
 
@@ -146,27 +148,8 @@ def plot_thermo(case, folder):
 def plot_surface(filepath, params):
     print('Plotting {0}.'.format(filepath))
 
-    # Open netCDF file and read data from it.
-    nc_file = nc.Dataset(filepath)
-    dim0 = nc_file.dimensions['nNodes_0'].size
-    dim1 = nc_file.dimensions['nNodes_1'].size
-    dim2 = nc_file.dimensions['nNodes_2'].size
-    time = nc_file.dimensions['time'].size
-
-    possible_names = ['T', 'TNewDom', 'TDiff']
-    found_name = False
-    for name in possible_names:
-        try:
-            T = nc_file.variables[name]
-            found_name = True
-            break
-        except KeyError:
-            pass
-
-    if found_name == False:
-        print('* ERROR: No temperature variable found in this file.')
-        print('Aborting.')
-        exit()
+    T = temperature_array_from_result(filepath)
+    dim2, dim1, dim0 = T.shape
 
     filepath = os.path.splitext(filepath)[0]
     title = filepath
@@ -176,20 +159,16 @@ def plot_surface(filepath, params):
     filepath_heatmap += '_heatmap.eps'
     filepath_tumor += '_tumor.eps'
 
-    # Create numpy array and save surface data from netCDF file to it.
+    # Surface data.
     temperature = np.zeros((dim1, dim0))
-    temperature[:,:] = T[(time-1):time,(dim2-1),:,:]
-
+    temperature[:,:] = T[-1,:,:]
     plot_3d_surface(temperature, params, title, filepath)
     plot_heatmap(temperature, params, title, filepath_heatmap)
 
-    # Create numpy array and save tumor (x-z-plane) data from netCDF file to it.
+    # x-z-plane data.
     temperature = np.zeros((dim2, dim0))
-    temperature[:,:] = T[(time-1):time,:,int(dim1/2),:]
-
+    temperature[:,:] = T[:,int(dim1/2),:]
     plot_tumor(temperature, params, title, filepath_tumor)
-
-    nc_file.close()
 
     plot_thermo(params['MRI_DATA_CASE'], params['MRI_DATA_FOLDER'])
 

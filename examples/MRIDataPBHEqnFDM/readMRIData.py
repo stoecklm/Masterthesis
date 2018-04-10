@@ -1,5 +1,10 @@
 import csv
 import math
+import os
+import re
+import sys
+import warnings
+
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -7,12 +12,10 @@ import matplotlib.path as mpath
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 from numpy import linalg as LA
-import os
-import re
-from scipy.interpolate import splprep, splev
+from scipy.interpolate import splprep
+from scipy.interpolate import splev
 import scipy.linalg
-import sys
-import warnings
+
 warnings.filterwarnings(action="ignore", module="scipy",
                         message="^internal gelsd")
 warnings.filterwarnings(action="ignore", module="scipy",
