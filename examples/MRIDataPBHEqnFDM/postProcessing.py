@@ -9,10 +9,10 @@ from helperFunctions import temperature_array_from_result
 from helperFunctions import surface_temperature_array_from_result
 
 def print_results(section, temp_mean, temp_max, temp_min, temp_std_dev):
-    print('Mean temp of {0}: {1}.'.format(section, temp_mean))
-    print('Max temp of {0}: {1}.'.format(section, temp_max))
-    print('Min temp of {0}: {1}.'.format(section, temp_min))
-    print('Std dev temp of {0}: {1}.'.format(section, temp_std_dev))
+    print('Mean temp of {}: {:02.3f}.'.format(section, temp_mean))
+    print('Max temp of {}: {:02.3f}.'.format(section, temp_max))
+    print('Min temp of {}: {:02.3f}.'.format(section, temp_min))
+    print('Std dev temp of {}: {:02.4f}.'.format(section, temp_std_dev))
 
 def write_results_to_file(section, temp_mean, temp_max, temp_min, temp_std_dev,
                           filepath, file_mode):
@@ -49,6 +49,7 @@ def region_array_from_file(filepath):
     return tumor
 
 def open_surface_temperatures(filepath):
+    print()
     print('Calc open surface temperatures of {0}.'.format(filepath))
 
     if os.path.isfile('init.nc') == False:
@@ -92,6 +93,7 @@ def open_surface_temperatures(filepath):
     return temp_mean
 
 def tumor_temperatures(filepath, region_filepath):
+    print()
     print('Calc tumor temperatures of {0}.'.format(filepath))
 
     temp = temperature_array_from_result(filepath)
@@ -118,6 +120,7 @@ def tumor_temperatures(filepath, region_filepath):
     return temp_mean
 
 def tumor_near_surface_temperatures(filepath, region_filepath):
+    print()
     print('Calc tumor temperatures near surface of {0}.'.format(filepath))
 
     temp = temperature_array_from_result(filepath)
@@ -154,6 +157,7 @@ def tumor_near_surface_temperatures(filepath, region_filepath):
     return temp_mean
 
 def brain_temperatures(filepath, region_filepath):
+    print()
     print('Calc brain temperatures of {0}.'.format(filepath))
 
     temp = temperature_array_from_result(filepath)
@@ -182,6 +186,7 @@ def brain_temperatures(filepath, region_filepath):
     return temp_mean
 
 def domain_temperatures(filepath):
+    print()
     print('Calc domain temperatures of {0}.'.format(filepath))
 
     temp = temperature_array_from_result(filepath)
@@ -204,6 +209,7 @@ def domain_temperatures(filepath):
 
 def csv_result_temperatures(filepath, csv):
     csv = os.path.join(csv, 'thermo.csv')
+    print()
     print('Calc temperatures of {0}.'.format(csv))
 
     # Open results file (thermography).
@@ -227,6 +233,7 @@ def csv_result_temperatures(filepath, csv):
     return temp_mean
 
 def vessels_temperatures(filepath_nc, vessels):
+    print()
     print('Calc vessel temperatures of {0}.'.format(filepath_nc))
 
     temp = surface_temperature_array_from_result(filepath_nc)
@@ -248,6 +255,7 @@ def vessels_temperatures(filepath_nc, vessels):
     return temp_mean
 
 def non_vessels_temperatures(filepath_nc, vessels):
+    print()
     print('Calc non-vessel temperatures of {0}.'.format(filepath_nc))
 
     temp = surface_temperature_array_from_result(filepath_nc)
