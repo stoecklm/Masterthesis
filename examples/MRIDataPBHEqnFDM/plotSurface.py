@@ -54,7 +54,7 @@ def plot_heatmap(a, params, title, filepath):
     COORD_NODE_LAST = params['COORD_NODE_LAST']
     DIM = params['N_NODES']
     TUMOR_CENTER = params['TUMOR_CENTER']
-    RADIUS = params['PARAMETERS']['diameter']/2
+    RADIUS = params['PARAMETERS']['DIAMETER']/2
     x, y = np.meshgrid(np.linspace(COORD_NODE_FIRST[0], COORD_NODE_LAST[0],
                                    DIM[0]),
                        np.linspace(COORD_NODE_FIRST[1], COORD_NODE_LAST[1],
@@ -91,7 +91,7 @@ def plot_tumor(a, params, title, filepath):
     COORD_NODE_LAST = params['COORD_NODE_LAST']
     DIM = params['N_NODES']
     TUMOR_CENTER = params['TUMOR_CENTER']
-    RADIUS = params['PARAMETERS']['diameter']/2
+    RADIUS = params['PARAMETERS']['DIAMETER']/2
     x, z = np.meshgrid(np.linspace(COORD_NODE_FIRST[0], COORD_NODE_LAST[0],
                                    DIM[0]),
                        np.linspace(COORD_NODE_FIRST[2], COORD_NODE_LAST[2],

@@ -31,6 +31,7 @@ def parse_config_file(params):
 
     # Create configparser and open file.
     config = configparser.ConfigParser()
+    config.optionxform = str
     config.read(params['NAME_CONFIGFILE'])
     # Get values from section 'Dimension'.
     params['SPACE_DIM'] = config['Dimension'].getint('SPACE_DIM', fallback=3)
@@ -111,7 +112,7 @@ def parse_config_file(params):
     for key in parameters:
         parameters[key] = float(parameters[key])
     try:
-        parameters['diameter'] = 2.0 * parameters['radius']
+        parameters['DIAMETER'] = 2.0 * parameters['RADIUS']
     except KeyError:
         pass
     params['PARAMETERS'] = parameters
@@ -247,13 +248,13 @@ def check_variables(params):
     print('Done.')
 
 def calc_delta_time(params, material, parameters):
-    RHO = material['rho']
-    C = material['c']
-    LAMBDA = material['lambda']
-    RHO_BLOOD = material['rho_blood']
-    C_BLOOD = material['c_blood']
-    OMEGA = material['omega']
-    H = parameters['h']
+    RHO = material['RHO']
+    C = material['C']
+    LAMBDA = material['LAMBDA']
+    RHO_BLOOD = material['RHO_BLOOD']
+    C_BLOOD = material['C_BLOOD']
+    OMEGA = material['OMEGA']
+    H = parameters['H']
     GRIDSIZE = params['GRIDSIZE']
     SPACE_DIM = params['SPACE_DIM']
     # Pennes Bioheat Equation.
@@ -315,7 +316,7 @@ def calc_variables(params):
     TUMOR_CENTER.append((params['COORD_NODE_LAST'][1] \
                          + params['COORD_NODE_FIRST'][1]) / 2.0)
     TUMOR_CENTER.append(params['COORD_NODE_LAST'][2]
-                        - params['PARAMETERS']['depth'])
+                        - params['PARAMETERS']['DEPTH'])
     params['TUMOR_CENTER'] = TUMOR_CENTER
 
     # Calc CHECK_CONV parameters if they are a ratio.
@@ -385,7 +386,7 @@ def check_stability(params):
 
 def create_region_array(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
                         NAME_VARIABLE):
-    RADIUS = params['PARAMETERS']['diameter']/2
+    RADIUS = params['PARAMETERS']['DIAMETER']/2
     # Get file/grid dimensions.
     dim0, dim1, dim2 = params['N_NODES']
     COORD_NODE_FIRST = params['COORD_NODE_FIRST']
@@ -498,8 +499,8 @@ def create_init_array(params, nc_file, region, BRAIN_VALUE, TUMOR_VALUE,
 
 def create_surface_array(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
                          NAME_VARIABLE):
-    RADIUS = (params['PARAMETERS']['diameter'] \
-              * params['PARAMETERS']['hole_factor'])/2
+    RADIUS = (params['PARAMETERS']['DIAMETER'] \
+              * params['PARAMETERS']['HOLE_FACTOR'])/2
     # Get file/grid dimensions.
     dim0, dim1, dim2 = params['N_NODES']
     COORD_NODE_FIRST = params['COORD_NODE_FIRST']
@@ -681,9 +682,9 @@ def create_init_file(params):
 
     brain = params['BRAIN']
     tumor = params['TUMOR']
-    names = {'rho': 'rho', 'c': 'c', 'lambda': 'lambda',
-             'rho_blood': 'rho_blood', 'c_blood': 'c_blood', 'omega': 'omega',
-             't_blood': 'T_blood', 'q': 'q', 't': 'T'}
+    names = {'RHO': 'rho', 'C': 'c', 'LAMBDA': 'lambda',
+             'RHO_BLOOD': 'rho_blood', 'C_BLOOD': 'c_blood', 'OMEGA': 'omega',
+             'T_BLOOD': 'T_blood', 'Q': 'q', 'T': 'T'}
     for key, value in brain.items():
         create_init_array(params, nc_file, region, brain[key], tumor[key],
                           names[key], vessels, surface)
@@ -723,7 +724,7 @@ def set_environment_variables(params):
 
     print('Done.')
 
-def start_simulation(params, run_script):
+def call_simulation(params, run_script):
     # Check if run sript exists.
     if os.path.isfile(run_script) == False:
         print('* ERROR:', run_script, 'does not exist.')
@@ -803,7 +804,7 @@ def main():
         create_region_file(params)
     create_init_file(params)
     set_environment_variables(params)
-    start_simulation(params, run_script)
+    call_simulation(params, run_script)
     if params['NAME_RESULTFILE'] != '' and params['SPACE_DIM'] == 3:
         plot_surface(params['NAME_RESULTFILE'], params)
         surface_temperatures(params['NAME_RESULTFILE'])
