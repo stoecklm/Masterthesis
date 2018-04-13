@@ -8,8 +8,27 @@ import numpy as np
 from helperFunctions import temperature_array_from_result
 from helperFunctions import surface_temperature_array_from_result
 
-def region_array_from_file(filepath):
+def print_results(section, temp_mean, temp_max, temp_min, temp_std_dev):
+    print('Mean temp of {0}: {1}.'.format(section, temp_mean))
+    print('Max temp of {0}: {1}.'.format(section, temp_max))
+    print('Min temp of {0}: {1}.'.format(section, temp_min))
+    print('Std dev temp of {0}: {1}.'.format(section, temp_std_dev))
 
+def write_results_to_file(section, temp_mean, temp_max, temp_min, temp_std_dev,
+                          filepath, file_mode):
+    config = configparser.ConfigParser()
+    config[section] = {}
+    config[section]['Mean'] = str(temp_mean)
+    config[section]['Max'] = str(temp_max)
+    config[section]['Min'] = str(temp_min)
+    config[section]['Std_Dev'] = str(temp_std_dev)
+
+    print('Write results to {0}.'.format(filepath))
+
+    with open(filepath, file_mode) as configfile:
+        config.write(configfile)
+
+def region_array_from_file(filepath):
     filepath += '.nc'
     if os.path.isfile(filepath) == False:
         print(filepath, 'does not exist.')
@@ -55,26 +74,15 @@ def surface_temperatures(filepath):
         temp_max = np.max(temp[np.where(skull == 1)])
         temp_min = np.min(temp[np.where(skull == 1)])
         temp_std_dev = np.std(temp[np.where(skull == 1)])
-        print('Mean temp of open surface: {0}.'.format(temp_mean))
-        print('Max temp of open surface: {0}.'.format(temp_max))
-        print('Min temp of open surface: {0}.'.format(temp_min))
-        print('Std dev: {0}.'.format(temp_std_dev))
-
-        config = configparser.ConfigParser()
-
-        config['Open_Surface'] = {}
-        config['Open_Surface']['Mean'] = str(temp_mean)
-        config['Open_Surface']['Max'] = str(temp_max)
-        config['Open_Surface']['Min'] = str(temp_min)
-        config['Open_Surface']['Std_Dev'] = str(temp_std_dev)
 
         filepath = os.path.splitext(filepath)[0]
         filepath += '_results.dat'
 
-        print('Write results to {0}.'.format(filepath))
+        print_results('open surface', temp_mean, temp_max, temp_min,
+                      temp_std_dev)
+        write_results_to_file('Open_Surface', temp_mean, temp_max, temp_min,
+                              temp_std_dev, filepath, 'w')
 
-        with open(filepath, 'w') as configfile:
-            config.write(configfile)
     else:
         print('No open skull specified.')
         temp_mean = -1.0
@@ -94,26 +102,13 @@ def tumor_temperatures(filepath, region_filepath):
         temp_max = np.max(temp[np.where(tumor == 1)])
         temp_min = np.min(temp[np.where(tumor == 1)])
         temp_std_dev = np.std(temp[np.where(tumor == 1)])
-        print('Mean temp of tumor: {0}.'.format(temp_mean))
-        print('Max temp of tumor: {0}.'.format(temp_max))
-        print('Min temp of tumor: {0}.'.format(temp_min))
-        print('Std dev: {0}.'.format(temp_std_dev))
-
-        config = configparser.ConfigParser()
-
-        config['Tumor'] = {}
-        config['Tumor']['Mean'] = str(temp_mean)
-        config['Tumor']['Max'] = str(temp_max)
-        config['Tumor']['Min'] = str(temp_min)
-        config['Tumor']['Std_Dev'] = str(temp_std_dev)
 
         filepath = os.path.splitext(filepath)[0]
         filepath += '_results.dat'
 
-        print('Write results to {0}.'.format(filepath))
-
-        with open(filepath, 'a') as configfile:
-            config.write(configfile)
+        print_results('tumor', temp_mean, temp_max, temp_min, temp_std_dev)
+        write_results_to_file('Tumor', temp_mean, temp_max, temp_min,
+                              temp_std_dev, filepath, 'a')
     else:
         print('No tumor specified.')
         temp_mean = -1.0
@@ -139,26 +134,12 @@ def brain_temperatures(filepath, region_filepath):
         temp_min = np.min(temp)
         temp_std_dev = np.std(temp)
 
-    print('Mean temp of brain: {0}.'.format(temp_mean))
-    print('Max temp of brain: {0}.'.format(temp_max))
-    print('Min temp of brain: {0}.'.format(temp_min))
-    print('Std dev: {0}.'.format(temp_std_dev))
-
-    config = configparser.ConfigParser()
-
-    config['Brain'] = {}
-    config['Brain']['Mean'] = str(temp_mean)
-    config['Brain']['Max'] = str(temp_max)
-    config['Brain']['Min'] = str(temp_min)
-    config['Brain']['Std_Dev'] = str(temp_std_dev)
-
     filepath = os.path.splitext(filepath)[0]
     filepath += '_results.dat'
 
-    print('Write results to {0}.'.format(filepath))
-
-    with open(filepath, 'a') as configfile:
-        config.write(configfile)
+    print_results('brain', temp_mean, temp_max, temp_min, temp_std_dev)
+    write_results_to_file('Brain', temp_mean, temp_max, temp_min, temp_std_dev,
+                          filepath, 'a')
 
     print('Done.')
 
@@ -173,26 +154,13 @@ def domain_temperatures(filepath):
     temp_max = np.max(temp)
     temp_min = np.min(temp)
     temp_std_dev = np.std(temp)
-    print('Mean temp of domain: {0}.'.format(temp_mean))
-    print('Max temp of domain: {0}.'.format(temp_max))
-    print('Min temp of domain: {0}.'.format(temp_min))
-    print('Std dev: {0}.'.format(temp_std_dev))
-
-    config = configparser.ConfigParser()
-
-    config['Domain'] = {}
-    config['Domain']['Mean'] = str(temp_mean)
-    config['Domain']['Max'] = str(temp_max)
-    config['Domain']['Min'] = str(temp_min)
-    config['Domain']['Std_Dev'] = str(temp_std_dev)
 
     filepath = os.path.splitext(filepath)[0]
     filepath += '_results.dat'
 
-    print('Write results to {0}.'.format(filepath))
-
-    with open(filepath, 'a') as configfile:
-        config.write(configfile)
+    print_results('domain', temp_mean, temp_max, temp_min, temp_std_dev)
+    write_results_to_file('Domain', temp_mean, temp_max, temp_min, temp_std_dev,
+                          filepath, 'a')
 
     print('Done.')
 
@@ -209,28 +177,14 @@ def csv_result_temperatures(filepath, csv):
     temp_max = np.max(temp[np.where(temp != 0)])
     temp_min = np.min(temp[np.where(temp != 0)])
     temp_std_dev = np.std(temp[np.where(temp != 0)])
-    print('Mean temp: {0}.'.format(temp_mean))
-    print('Max temp: {0}.'.format(temp_max))
-    print('Min temp: {0}.'.format(temp_min))
-    print('Std dev: {0}.'.format(temp_std_dev))
-
-    config = configparser.ConfigParser()
 
     section = str(os.path.basename(csv))
-
-    config[section] = {}
-    config[section]['Mean'] = str(temp_mean)
-    config[section]['Max'] = str(temp_max)
-    config[section]['Min'] = str(temp_min)
-    config[section]['Std_Dev'] = str(temp_std_dev)
-
     filepath = os.path.splitext(filepath)[0]
     filepath += '_results.dat'
 
-    print('Write results to {0}.'.format(filepath))
-
-    with open(filepath, 'a') as configfile:
-        config.write(configfile)
+    print_results('thermo.csv', temp_mean, temp_max, temp_min, temp_std_dev)
+    write_results_to_file(section, temp_mean, temp_max, temp_min, temp_std_dev,
+                          filepath, 'a')
 
     print('Done.')
 
@@ -241,56 +195,32 @@ def vessels_temperatures(filepath_nc, vessels):
 
     temp = surface_temperature_array_from_result(filepath_nc)
 
-    temp_mean_vessel = np.mean(temp[np.where(vessels == 1)])
-    temp_max_vessel = np.max(temp[np.where(vessels == 1)])
-    temp_min_vessel = np.min(temp[np.where(vessels == 1)])
-    temp_std_dev_vessel = np.std(temp[np.where(vessels == 1)])
-    print('Mean temp of vessels: {0}.'.format(temp_mean_vessel))
-    print('Max temp of vessels: {0}.'.format(temp_max_vessel))
-    print('Min temp of vessels: {0}.'.format(temp_min_vessel))
-    print('Std dev: {0}.'.format(temp_std_dev_vessel))
-
-    config = configparser.ConfigParser()
-
-    config['Vessel'] = {}
-    config['Vessel']['Mean'] = str(temp_mean_vessel)
-    config['Vessel']['Max'] = str(temp_max_vessel)
-    config['Vessel']['Min'] = str(temp_min_vessel)
-    config['Vessel']['Std_Dev'] = str(temp_std_dev_vessel)
+    temp_mean = np.mean(temp[np.where(vessels == 1)])
+    temp_max = np.max(temp[np.where(vessels == 1)])
+    temp_min = np.min(temp[np.where(vessels == 1)])
+    temp_std_dev = np.std(temp[np.where(vessels == 1)])
+    temp_mean_vessel = temp_mean
 
     filepath = os.path.splitext(filepath_nc)[0]
     filepath += '_results.dat'
 
-    print('Write results to {0}.'.format(filepath))
-
-    with open(filepath, 'a') as configfile:
-        config.write(configfile)
+    print_results('vessels', temp_mean, temp_max, temp_min, temp_std_dev)
+    write_results_to_file('Vessel', temp_mean, temp_max, temp_min, temp_std_dev,
+                          filepath, 'a')
 
     print('Done.')
 
     print('Calc non-vessel temperatures of {0}.'.format(filepath_nc))
 
-    temp_mean_non_vessel = np.mean(temp[np.where(vessels == 0)])
-    temp_max_non_vessel = np.max(temp[np.where(vessels == 0)])
-    temp_min_non_vessel = np.min(temp[np.where(vessels == 0)])
-    temp_std_dev_non_vessel = np.std(temp[np.where(vessels == 0)])
-    print('Mean temp of non-vessels: {0}.'.format(temp_mean_non_vessel))
-    print('Max temp of non-vessels: {0}.'.format(temp_max_non_vessel))
-    print('Min temp of non-vessels: {0}.'.format(temp_min_non_vessel))
-    print('Std dev: {0}.'.format(temp_std_dev_non_vessel))
+    temp_mean = np.mean(temp[np.where(vessels == 0)])
+    temp_max = np.max(temp[np.where(vessels == 0)])
+    temp_min = np.min(temp[np.where(vessels == 0)])
+    temp_std_dev = np.std(temp[np.where(vessels == 0)])
+    temp_mean_non_vessel = temp_mean
 
-    config = configparser.ConfigParser()
-
-    config['Non_Vessel'] = {}
-    config['Non_Vessel']['Mean'] = str(temp_mean_non_vessel)
-    config['Non_Vessel']['Max'] = str(temp_max_non_vessel)
-    config['Non_Vessel']['Min'] = str(temp_min_non_vessel)
-    config['Non_Vessel']['Std_Dev'] = str(temp_std_dev_non_vessel)
-
-    print('Write results to {0}.'.format(filepath))
-
-    with open(filepath, 'a') as configfile:
-        config.write(configfile)
+    print_results('non-vessels', temp_mean, temp_max, temp_min, temp_std_dev)
+    write_results_to_file('Non_Vessel', temp_mean, temp_max, temp_min,
+                          temp_std_dev, filepath, 'a')
 
     print('Done.')
 
