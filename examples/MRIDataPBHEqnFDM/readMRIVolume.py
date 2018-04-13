@@ -143,7 +143,8 @@ def return_grid(data, header, case):
     k = 5
 
     new_data[i:i+dim0, j:j+dim1, k:k+dim2] = data
-    new_data = np.flip(new_data, 2)
+    #new_data = np.flip(new_data, 2)
+    new_data = new_data[:,:,::-1]
 
     if os.path.isfile('Template.ini') == True:
         copyfile('Template.ini', case + '.ini')
@@ -157,6 +158,7 @@ def return_grid(data, header, case):
     n_nodes = str(new_dim0) + 'x' + str(new_dim1) + 'x' + str(new_dim2)
 
     config = configparser.ConfigParser()
+    config.optionxform = str
     config['Geometry'] = {}
     config['Geometry']['COORD_NODE_FIRST'] = coord_node_first
     config['Geometry']['COORD_NODE_LAST'] = coord_node_last
