@@ -15,7 +15,9 @@ def check_results(filepath):
         if a_1.shape[0] != a_2.shape[0] or \
            a_1.shape[1] != a_2.shape[1] or \
            a_1.shape[2] != a_2.shape[2]:
-            print('Shape of files is not equal.')
+            print('WARNING: Shape of files is not equal.')
+            print('Aborting.')
+            exit()
         else:
             print('WARNING: Last timestep is NOT equal.')
 
