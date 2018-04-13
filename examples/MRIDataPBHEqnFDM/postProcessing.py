@@ -28,7 +28,7 @@ def write_results_to_file(section, temp_mean, temp_max, temp_min, temp_std_dev,
     with open(filepath, file_mode) as configfile:
         config.write(configfile)
 
-def region_array_from_file(filepath):
+def array_from_file(filepath, name):
     filepath += '.nc'
     if os.path.isfile(filepath) == False:
         print(filepath, 'does not exist.')
@@ -39,36 +39,38 @@ def region_array_from_file(filepath):
     dim0 = nc_file.dimensions['nNodes_0'].size
     dim1 = nc_file.dimensions['nNodes_1'].size
     dim2 = nc_file.dimensions['nNodes_2'].size
-    region = nc_file.variables['region']
+    nc_var = nc_file.variables[name]
 
-    tumor = np.zeros((dim2, dim1, dim0))
-    tumor[:,:,:] = region[-1,:,:,:]
+    np_array = np.zeros((dim2, dim1, dim0))
+    np_array[:,:,:] = nc_var[-1,:,:,:]
 
     nc_file.close()
 
-    return tumor
+    return np_array
 
-def open_surface_temperatures(filepath):
+def region_array_from_file(filepath):
+    region = array_from_file(filepath, 'region')
+
+    return region
+
+def surface_array_from_file(filepath):
+    surface = array_from_file(filepath, 'surface')
+
+    return surface
+
+def surface_vessels_array_from_file(filepath):
+    vessels = array_from_file(filepath, 'vessels')
+    vessels = vessels[-1,:,:]
+
+    return vessels
+
+def open_surface_temperatures(filepath, filepath_init):
     print()
     print('Calc open surface temperatures of {0}.'.format(filepath))
 
-    if os.path.isfile('init.nc') == False:
-        print('init.nc does not exist.')
-        print('Aborting.')
-        exit()
-
     temp = surface_temperature_array_from_result(filepath)
-
-    nc_file = nc.Dataset('init.nc')
-    dim0 = nc_file.dimensions['nNodes_0'].size
-    dim1 = nc_file.dimensions['nNodes_1'].size
-    dim2 = nc_file.dimensions['nNodes_2'].size
-    surface = nc_file.variables['surface']
-
-    skull = np.zeros((dim1, dim0))
-    skull[:,:] = surface[-1,-1,:,:]
-
-    nc_file.close()
+    surface = surface_array_from_file(filepath_init)
+    skull = surface[-1,:,:]
 
     if np.count_nonzero(skull == 1) != 0:
         temp_mean = np.mean(temp[np.where(skull == 1)])
@@ -232,11 +234,12 @@ def csv_result_temperatures(filepath, csv):
 
     return temp_mean
 
-def vessels_temperatures(filepath_nc, vessels):
+def vessels_temperatures(filepath_nc, filepath_vessels):
     print()
     print('Calc vessel temperatures of {0}.'.format(filepath_nc))
 
     temp = surface_temperature_array_from_result(filepath_nc)
+    vessels = surface_vessels_array_from_file(filepath_vessels)
 
     temp_mean = np.mean(temp[np.where(vessels == 1)])
     temp_max = np.max(temp[np.where(vessels == 1)])
@@ -254,11 +257,12 @@ def vessels_temperatures(filepath_nc, vessels):
 
     return temp_mean
 
-def non_vessels_temperatures(filepath_nc, vessels):
+def non_vessels_temperatures(filepath_nc, filepath_vessels):
     print()
     print('Calc non-vessel temperatures of {0}.'.format(filepath_nc))
 
     temp = surface_temperature_array_from_result(filepath_nc)
+    vessels = surface_vessels_array_from_file(filepath_vessels)
 
     temp_mean = np.mean(temp[np.where(vessels == 0)])
     temp_max = np.max(temp[np.where(vessels == 0)])

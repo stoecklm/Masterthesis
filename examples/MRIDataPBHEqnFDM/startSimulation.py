@@ -70,6 +70,8 @@ def parse_config_file(params):
                                                         fallback=False)
     params['CREATE_INITFILE'] = config['Input'].getboolean('CREATE_INITFILE',
                                                            fallback=False)
+    params['NAME_VESSELS_FILE'] = config['Input'].get('NAME_VESSELS_FILE',
+                                                      fallback='vessels')
     params['THRESHOLD'] = config['Input'].getfloat('THRESHOLD',
                                                    fallback=0.00001)
     params['CHECK_CONV_FIRST_AT_ITER'] = config['Input'].getfloat('CHECK_CONV_FIRST_AT_ITER',
@@ -455,7 +457,6 @@ def write_values_to_file(nc_file, values_array, NAME_VARIABLE):
     init_values[0,] = values_array
 
 def create_vessels_array(params, nc_file, surface):
-    global vessels
     vessels_small = read_vessels_segmentation(params)
 
     dim0, dim1, dim2 = params['N_NODES']
@@ -484,7 +485,18 @@ def create_vessels_array(params, nc_file, surface):
     vessels = np.ones(dim2*dim1*dim0).reshape(dim2, dim1, dim0)
     vessels *= -1.0
     vessels[-depth:,:,:] = vessels_big
+
+    # Create vessels file.
+    filepath = params['NAME_VESSELS_FILE'] + '.nc'
+    print(filepath)
+    nc_file = nc.Dataset(filepath, 'w', format='NETCDF3_CLASSIC')
+    time = nc_file.createDimension('time')
+    for dim in range(0, params['SPACE_DIM']):
+        nNodes = nc_file.createDimension('nNodes_' + str(dim),
+                                         params['N_NODES'][dim])
     write_values_to_file(nc_file, vessels, 'vessels')
+
+    nc_file.close()
 
     return vessels
 
@@ -816,7 +828,8 @@ def main():
     call_simulation(params, run_script)
     if params['NAME_RESULTFILE'] != '' and params['SPACE_DIM'] == 3:
         plot_surface(params['NAME_RESULTFILE'], params)
-        open_surface_temperatures(params['NAME_RESULTFILE'])
+        open_surface_temperatures(params['NAME_RESULTFILE'],
+                                  params['NAME_INITFILE'])
         tumor_temperatures(params['NAME_RESULTFILE'],
                            params['NAME_REGION_FILE'])
         tumor_near_surface_temperatures(params['NAME_RESULTFILE'],
@@ -825,8 +838,10 @@ def main():
                            params['NAME_REGION_FILE'])
         domain_temperatures(params['NAME_RESULTFILE'])
         if params['USE_VESSELS_SEGMENTATION'] == True:
-            vessels_temperatures(params['NAME_RESULTFILE'], vessels[-1,:,:])
-            non_vessels_temperatures(params['NAME_RESULTFILE'], vessels[-1,:,:])
+            vessels_temperatures(params['NAME_RESULTFILE'],
+                                 params['NAME_VESSELS_FILE'])
+            non_vessels_temperatures(params['NAME_RESULTFILE'],
+                                     params['NAME_VESSELS_FILE'])
         if params['MRI_DATA_CASE'] != '':
             csv_result_temperatures(params['NAME_RESULTFILE'],
                                     params['MRI_DATA_FOLDER'])
