@@ -48,7 +48,7 @@ def region_array_from_file(filepath):
 
     return tumor
 
-def surface_temperatures(filepath):
+def open_surface_temperatures(filepath):
     print('Calc open surface temperatures of {0}.'.format(filepath))
 
     if os.path.isfile('init.nc') == False:
@@ -108,6 +108,42 @@ def tumor_temperatures(filepath, region_filepath):
 
         print_results('tumor', temp_mean, temp_max, temp_min, temp_std_dev)
         write_results_to_file('Tumor', temp_mean, temp_max, temp_min,
+                              temp_std_dev, filepath, 'a')
+    else:
+        print('No tumor specified.')
+        temp_mean = -1.0
+
+    print('Done.')
+
+    return temp_mean
+
+def tumor_near_surface_temperatures(filepath, region_filepath):
+    print('Calc tumor temperatures near surface of {0}.'.format(filepath))
+
+    temp = temperature_array_from_result(filepath)
+    tumor = region_array_from_file(region_filepath)
+
+    dim2 = np.any(tumor, axis=(1, 2))
+    min2, max2 = np.where(dim2)[0][[0, -1]]
+
+    depth = 10
+
+    tumor = tumor[max2-depth+1:max2+1,:,:]
+    temp = temp[max2-depth+1:max2+1,:,:]
+
+    if np.count_nonzero(tumor == 1) != 0:
+        temp_mean = np.mean(temp[np.where(tumor == 1)])
+        temp_max = np.max(temp[np.where(tumor == 1)])
+        temp_min = np.min(temp[np.where(tumor == 1)])
+        temp_std_dev = np.std(temp[np.where(tumor == 1)])
+
+        filepath = os.path.splitext(filepath)[0]
+        filepath += '_results.dat'
+
+        section = 'tumor near surface (first ' + str(depth) + ' nodes)'
+        print_results(section, temp_mean, temp_max, temp_min, temp_std_dev)
+        section = 'Tumor_Near_Surface_' + str(depth) + '_Depth'
+        write_results_to_file(section, temp_mean, temp_max, temp_min,
                               temp_std_dev, filepath, 'a')
     else:
         print('No tumor specified.')

@@ -19,8 +19,9 @@ from readMRIData import interpolation
 from readMRIData import get_interpolated_path
 from readMRIData import get_path
 
-from postProcessing import surface_temperatures
+from postProcessing import open_surface_temperatures
 from postProcessing import tumor_temperatures
+from postProcessing import tumor_near_surface_temperatures
 from postProcessing import brain_temperatures
 from postProcessing import domain_temperatures
 from postProcessing import csv_result_temperatures
@@ -808,9 +809,11 @@ def main():
     call_simulation(params, run_script)
     if params['NAME_RESULTFILE'] != '' and params['SPACE_DIM'] == 3:
         plot_surface(params['NAME_RESULTFILE'], params)
-        surface_temperatures(params['NAME_RESULTFILE'])
+        open_surface_temperatures(params['NAME_RESULTFILE'])
         tumor_temperatures(params['NAME_RESULTFILE'],
                            params['NAME_REGION_FILE'])
+        tumor_near_surface_temperatures(params['NAME_RESULTFILE'],
+                                        params['NAME_REGION_FILE'])
         brain_temperatures(params['NAME_RESULTFILE'],
                            params['NAME_REGION_FILE'])
         domain_temperatures(params['NAME_RESULTFILE'])
