@@ -454,49 +454,55 @@ def write_values_to_file(nc_file, values_array, NAME_VARIABLE):
     # Write NumPy Array to file.
     init_values[0,] = values_array
 
+def create_vessels_array(params, nc_file, surface):
+    global vessels
+    vessels_small = read_vessels_segmentation(params)
+
+    dim0, dim1, dim2 = params['N_NODES']
+    num_elem = dim0 * dim1 * dim2
+    # Special Case: No trepanation domain is set,
+    # but vessel segmentation is read.
+    # Vessel will be used on the surface of the whole domain.
+    if np.count_nonzero(surface) == 0:
+        surface[-1,:,:] = 1
+    # Normal case: trepanation domain is set.
+    # - 1 = grid node outside of trepanation domain
+    # 0 = grid node inside trepanation domain, no vessel
+    # 1 = grid node is vessel inside trepanation domain
+    vessels_big = np.ones(dim1*dim0).reshape(dim1, dim0)
+    vessels_big *= -1.0
+    x_min = params['surface_cmin']
+    x_max = params['surface_cmax']
+    y_min = params['surface_rmin']
+    y_max = params['surface_rmax']
+    depth = params['VESSELS_DEPTH']
+    surface = surface[-1,:,:]
+    vessels_tmp = np.zeros(dim1*dim0).reshape(dim1, dim0)
+    vessels_tmp[y_min:y_max+1,x_min:x_max+1] = vessels_small[:,:]
+    vessels_big = np.where(surface == 1, vessels_tmp, vessels_big)
+    vessels_big = np.repeat(vessels_big[np.newaxis,:,:], depth, axis=0)
+    vessels = np.ones(dim2*dim1*dim0).reshape(dim2, dim1, dim0)
+    vessels *= -1.0
+    vessels[-depth:,:,:] = vessels_big
+    write_values_to_file(nc_file, vessels, 'vessels')
+
+    return vessels
+
 def create_init_array(params, nc_file, region, BRAIN_VALUE, TUMOR_VALUE,
                       NAME_VARIABLE, vessels, surface):
-    global vessels_big
-    # Get file/grid dimensions.
     dim0, dim1, dim2 = params['N_NODES']
-    # Resize temperature array.
     num_elem = dim0 * dim1 * dim2
     values_array = BRAIN_VALUE * np.ones(num_elem).reshape(dim2, dim1, dim0)
+
     if params['USE_VESSELS_SEGMENTATION'] == True:
         VARIABLES_VESSELS = params['VARIABLES_VESSELS']
         if NAME_VARIABLE in VARIABLES_VESSELS:
             VALUE_VESSEL = params['VALUES_VESSELS'][VARIABLES_VESSELS.index(NAME_VARIABLE)]
             VALUE_NON_VESSEL = params['VALUES_NON_VESSELS'][VARIABLES_VESSELS.index(NAME_VARIABLE)]
-            # Special Case: No trepanation domain is set,
-            # but vessel segmentation is read.
-            # Vessel will be used on the surface of the whole domain.
-            if np.count_nonzero(surface) == 0:
-                surface[-1,:,:] = 1
-            # Normal case: trepanation domain is set.
-            # - 1 = grid node outside of trepanation domain
-            # 0 = grid node inside trepanation domain, no vessel
-            # 1 = grid node is vessel inside trepanation domain
-            vessels_big = np.ones(dim1*dim0).reshape(dim1, dim0)
-            vessels_big *= -1.0
-            x_min = params['surface_cmin']
-            x_max = params['surface_cmax']
-            y_min = params['surface_rmin']
-            y_max = params['surface_rmax']
-            depth = params['VESSELS_DEPTH']
-            for elem_y in range(0, surface.shape[1]):
-                for elem_x in range(0, surface.shape[2]):
-                    if surface[-1, elem_y, elem_x] == 1:
-                        vessels_big[elem_y, elem_x] = 0
-                        values_array[dim2-depth:dim2,elem_y,elem_x] = VALUE_NON_VESSEL
-            for elem_y in range(0, vessels.shape[0]):
-                for elem_x in range(0, vessels.shape[1]):
-                    if vessels[elem_y, elem_x] == 1 \
-                        and surface[-1, elem_y+y_min, elem_x+x_min] == 1:
-                        vessels_big[elem_y+y_min, elem_x+x_min] = 1
-                        values_array[dim2-depth:dim2,elem_y+y_min,elem_x+x_min] = VALUE_VESSEL
-            VARIABLES_VESSELS.remove(NAME_VARIABLE)
+            values_array = np.where(vessels == 1, VALUE_VESSEL, values_array)
+            values_array = np.where(vessels == 0, VALUE_NON_VESSEL, values_array)
+
     values_array = np.where(region == 1, TUMOR_VALUE, values_array)
-    # Write NumPy array to netCDF file.
     write_values_to_file(nc_file, values_array, NAME_VARIABLE)
 
 def create_surface_array(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
@@ -637,6 +643,7 @@ def read_vessels_segmentation(params):
                               b.ravel(), (x_sparse, y_sparse), method='nearest')
 
     print('Done.')
+
     return vessels_sparse
 
 def create_init_file(params):
@@ -678,7 +685,7 @@ def create_init_file(params):
         surface = create_surface_array(params, nc_file, 0, 1, 'surface')
 
     if params['USE_VESSELS_SEGMENTATION'] == True:
-        vessels = read_vessels_segmentation(params)
+        vessels = create_vessels_array(params, nc_file, surface)
     else:
         vessels = 0
 
@@ -818,8 +825,8 @@ def main():
                            params['NAME_REGION_FILE'])
         domain_temperatures(params['NAME_RESULTFILE'])
         if params['USE_VESSELS_SEGMENTATION'] == True:
-            vessels_temperatures(params['NAME_RESULTFILE'], vessels_big)
-            non_vessels_temperatures(params['NAME_RESULTFILE'], vessels_big)
+            vessels_temperatures(params['NAME_RESULTFILE'], vessels[-1,:,:])
+            non_vessels_temperatures(params['NAME_RESULTFILE'], vessels[-1,:,:])
         if params['MRI_DATA_CASE'] != '':
             csv_result_temperatures(params['NAME_RESULTFILE'],
                                     params['MRI_DATA_FOLDER'])
