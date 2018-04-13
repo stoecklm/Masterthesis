@@ -25,6 +25,7 @@ from postProcessing import brain_temperatures
 from postProcessing import domain_temperatures
 from postProcessing import csv_result_temperatures
 from postProcessing import vessels_temperatures
+from postProcessing import non_vessels_temperatures
 
 def parse_config_file(params):
     print('Parsing {0}.'.format(params['NAME_CONFIGFILE']))
@@ -815,6 +816,7 @@ def main():
         domain_temperatures(params['NAME_RESULTFILE'])
         if params['USE_VESSELS_SEGMENTATION'] == True:
             vessels_temperatures(params['NAME_RESULTFILE'], vessels_big)
+            non_vessels_temperatures(params['NAME_RESULTFILE'], vessels_big)
         if params['MRI_DATA_CASE'] != '':
             csv_result_temperatures(params['NAME_RESULTFILE'],
                                     params['MRI_DATA_FOLDER'])

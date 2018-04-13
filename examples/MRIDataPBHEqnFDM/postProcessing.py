@@ -199,7 +199,6 @@ def vessels_temperatures(filepath_nc, vessels):
     temp_max = np.max(temp[np.where(vessels == 1)])
     temp_min = np.min(temp[np.where(vessels == 1)])
     temp_std_dev = np.std(temp[np.where(vessels == 1)])
-    temp_mean_vessel = temp_mean
 
     filepath = os.path.splitext(filepath_nc)[0]
     filepath += '_results.dat'
@@ -210,13 +209,20 @@ def vessels_temperatures(filepath_nc, vessels):
 
     print('Done.')
 
+    return temp_mean
+
+def non_vessels_temperatures(filepath_nc, vessels):
     print('Calc non-vessel temperatures of {0}.'.format(filepath_nc))
+
+    temp = surface_temperature_array_from_result(filepath_nc)
 
     temp_mean = np.mean(temp[np.where(vessels == 0)])
     temp_max = np.max(temp[np.where(vessels == 0)])
     temp_min = np.min(temp[np.where(vessels == 0)])
     temp_std_dev = np.std(temp[np.where(vessels == 0)])
-    temp_mean_non_vessel = temp_mean
+
+    filepath = os.path.splitext(filepath_nc)[0]
+    filepath += '_results.dat'
 
     print_results('non-vessels', temp_mean, temp_max, temp_min, temp_std_dev)
     write_results_to_file('Non_Vessel', temp_mean, temp_max, temp_min,
@@ -224,7 +230,7 @@ def vessels_temperatures(filepath_nc, vessels):
 
     print('Done.')
 
-    return temp_mean_vessel, temp_mean_non_vessel
+    return temp_mean
 
 
 def main():
