@@ -231,7 +231,7 @@ def csv_result_temperatures(filepath, csv):
 def vessels_temperatures(filepath_nc, vessels):
     print('Calc vessel temperatures of {0}.'.format(filepath_nc))
 
-    temp = temperature_array_from_result(filepath)
+    temp = surface_temperature_array_from_result(filepath_nc)
 
     temp_mean = np.mean(temp[np.where(vessels == 1)])
     temp_max = np.max(temp[np.where(vessels == 1)])
