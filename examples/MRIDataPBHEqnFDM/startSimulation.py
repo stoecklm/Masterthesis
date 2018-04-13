@@ -809,9 +809,9 @@ def main():
         plot_surface(params['NAME_RESULTFILE'], params)
         surface_temperatures(params['NAME_RESULTFILE'])
         tumor_temperatures(params['NAME_RESULTFILE'],
-                           params['NAME_REGION_FILE'] + '.nc')
+                           params['NAME_REGION_FILE'])
         brain_temperatures(params['NAME_RESULTFILE'],
-                           params['NAME_REGION_FILE'] + '.nc')
+                           params['NAME_REGION_FILE'])
         domain_temperatures(params['NAME_RESULTFILE'])
         if params['USE_VESSELS_SEGMENTATION'] == True:
             vessels_temperatures(params['NAME_RESULTFILE'], vessels_big)

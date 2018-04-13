@@ -9,6 +9,13 @@ from helperFunctions import temperature_array_from_result
 from helperFunctions import surface_temperature_array_from_result
 
 def region_array_from_file(filepath):
+
+    filepath += '.nc'
+    if os.path.isfile(filepath) == False:
+        print(filepath, 'does not exist.')
+        print('Aborting.')
+        exit()
+
     nc_file = nc.Dataset(filepath)
     dim0 = nc_file.dimensions['nNodes_0'].size
     dim1 = nc_file.dimensions['nNodes_1'].size
@@ -70,19 +77,17 @@ def surface_temperatures(filepath):
             config.write(configfile)
     else:
         print('No open skull specified.')
+        temp_mean = -1.0
 
     print('Done.')
 
-def tumor_temperatures(filepath, region_file):
+    return temp_mean
+
+def tumor_temperatures(filepath, region_filepath):
     print('Calc tumor temperatures of {0}.'.format(filepath))
 
-    if os.path.isfile(region_file) == False:
-        print(region_file, 'does not exist.')
-        print('Aborting.')
-        exit()
-
     temp = temperature_array_from_result(filepath)
-    tumor = region_array_from_file(region_file)
+    tumor = region_array_from_file(region_filepath)
 
     if np.count_nonzero(tumor == 1) != 0:
         temp_mean = np.mean(temp[np.where(tumor == 1)])
@@ -111,20 +116,17 @@ def tumor_temperatures(filepath, region_file):
             config.write(configfile)
     else:
         print('No tumor specified.')
+        temp_mean = -1.0
 
     print('Done.')
 
-def brain_temperatures(filepath, region_file):
+    return temp_mean
+
+def brain_temperatures(filepath, region_filepath):
     print('Calc brain temperatures of {0}.'.format(filepath))
 
     temp = temperature_array_from_result(filepath)
-
-    if os.path.isfile(region_file) == False:
-        print(region_file, 'does not exist.')
-        print('Aborting.')
-        exit()
-
-    tumor = region_array_from_file(region_file)
+    tumor = region_array_from_file(region_filepath)
 
     if np.count_nonzero(tumor == 1) != 0:
         temp_mean = np.mean(temp[np.where(tumor == 0)])
@@ -160,6 +162,8 @@ def brain_temperatures(filepath, region_file):
 
     print('Done.')
 
+    return temp_mean
+
 def domain_temperatures(filepath):
     print('Calc domain temperatures of {0}.'.format(filepath))
 
@@ -191,6 +195,8 @@ def domain_temperatures(filepath):
         config.write(configfile)
 
     print('Done.')
+
+    return temp_mean
 
 def csv_result_temperatures(filepath, csv):
     csv = os.path.join(csv, 'thermo.csv')
@@ -228,27 +234,29 @@ def csv_result_temperatures(filepath, csv):
 
     print('Done.')
 
+    return temp_mean
+
 def vessels_temperatures(filepath_nc, vessels):
     print('Calc vessel temperatures of {0}.'.format(filepath_nc))
 
     temp = surface_temperature_array_from_result(filepath_nc)
 
-    temp_mean = np.mean(temp[np.where(vessels == 1)])
-    temp_max = np.max(temp[np.where(vessels == 1)])
-    temp_min = np.min(temp[np.where(vessels == 1)])
-    temp_std_dev = np.std(temp[np.where(vessels == 1)])
-    print('Mean temp of vessels: {0}.'.format(temp_mean))
-    print('Max temp of vessels: {0}.'.format(temp_max))
-    print('Min temp of vessels: {0}.'.format(temp_min))
-    print('Std dev: {0}.'.format(temp_std_dev))
+    temp_mean_vessel = np.mean(temp[np.where(vessels == 1)])
+    temp_max_vessel = np.max(temp[np.where(vessels == 1)])
+    temp_min_vessel = np.min(temp[np.where(vessels == 1)])
+    temp_std_dev_vessel = np.std(temp[np.where(vessels == 1)])
+    print('Mean temp of vessels: {0}.'.format(temp_mean_vessel))
+    print('Max temp of vessels: {0}.'.format(temp_max_vessel))
+    print('Min temp of vessels: {0}.'.format(temp_min_vessel))
+    print('Std dev: {0}.'.format(temp_std_dev_vessel))
 
     config = configparser.ConfigParser()
 
     config['Vessel'] = {}
-    config['Vessel']['Mean'] = str(temp_mean)
-    config['Vessel']['Max'] = str(temp_max)
-    config['Vessel']['Min'] = str(temp_min)
-    config['Vessel']['Std_Dev'] = str(temp_std_dev)
+    config['Vessel']['Mean'] = str(temp_mean_vessel)
+    config['Vessel']['Max'] = str(temp_max_vessel)
+    config['Vessel']['Min'] = str(temp_min_vessel)
+    config['Vessel']['Std_Dev'] = str(temp_std_dev_vessel)
 
     filepath = os.path.splitext(filepath_nc)[0]
     filepath += '_results.dat'
@@ -262,22 +270,22 @@ def vessels_temperatures(filepath_nc, vessels):
 
     print('Calc non-vessel temperatures of {0}.'.format(filepath_nc))
 
-    temp_mean = np.mean(temp[np.where(vessels == 0)])
-    temp_max = np.max(temp[np.where(vessels == 0)])
-    temp_min = np.min(temp[np.where(vessels == 0)])
-    temp_std_dev = np.std(temp[np.where(vessels == 0)])
-    print('Mean temp of non-vessels: {0}.'.format(temp_mean))
-    print('Max temp of non-vessels: {0}.'.format(temp_max))
-    print('Min temp of non-vessels: {0}.'.format(temp_min))
-    print('Std dev: {0}.'.format(temp_std_dev))
+    temp_mean_non_vessel = np.mean(temp[np.where(vessels == 0)])
+    temp_max_non_vessel = np.max(temp[np.where(vessels == 0)])
+    temp_min_non_vessel = np.min(temp[np.where(vessels == 0)])
+    temp_std_dev_non_vessel = np.std(temp[np.where(vessels == 0)])
+    print('Mean temp of non-vessels: {0}.'.format(temp_mean_non_vessel))
+    print('Max temp of non-vessels: {0}.'.format(temp_max_non_vessel))
+    print('Min temp of non-vessels: {0}.'.format(temp_min_non_vessel))
+    print('Std dev: {0}.'.format(temp_std_dev_non_vessel))
 
     config = configparser.ConfigParser()
 
     config['Non_Vessel'] = {}
-    config['Non_Vessel']['Mean'] = str(temp_mean)
-    config['Non_Vessel']['Max'] = str(temp_max)
-    config['Non_Vessel']['Min'] = str(temp_min)
-    config['Non_Vessel']['Std_Dev'] = str(temp_std_dev)
+    config['Non_Vessel']['Mean'] = str(temp_mean_non_vessel)
+    config['Non_Vessel']['Max'] = str(temp_max_non_vessel)
+    config['Non_Vessel']['Min'] = str(temp_min_non_vessel)
+    config['Non_Vessel']['Std_Dev'] = str(temp_std_dev_non_vessel)
 
     print('Write results to {0}.'.format(filepath))
 
@@ -285,6 +293,8 @@ def vessels_temperatures(filepath_nc, vessels):
         config.write(configfile)
 
     print('Done.')
+
+    return temp_mean_vessel, temp_mean_non_vessel
 
 
 def main():
