@@ -64,7 +64,7 @@ def surface_vessels_array_from_file(filepath):
 
     return vessels
 
-def open_surface_temperatures(filepath, filepath_init):
+def open_surface_temperatures(filepath, filepath_init, do_print=True, do_write=True):
     print()
     print('Calc open surface temperatures of {0}.'.format(filepath))
 
@@ -78,13 +78,14 @@ def open_surface_temperatures(filepath, filepath_init):
         temp_min = np.min(temp[np.where(skull == 1)])
         temp_std_dev = np.std(temp[np.where(skull == 1)])
 
-        filepath = os.path.splitext(filepath)[0]
-        filepath += '_results.dat'
 
-        print_results('open surface', temp_mean, temp_max, temp_min,
-                      temp_std_dev)
-        write_results_to_file('Open_Surface', temp_mean, temp_max, temp_min,
-                              temp_std_dev, filepath, 'w')
+        if do_print == True:
+            print_results('open surface', temp_mean, temp_max, temp_min,
+                          temp_std_dev)
+        if do_write == True:
+            filepath = os.path.splitext(filepath)[0] + '_results.dat'
+            write_results_to_file('Open_Surface', temp_mean, temp_max, temp_min,
+                                  temp_std_dev, filepath, 'w')
 
     else:
         print('No open skull specified.')
@@ -94,7 +95,7 @@ def open_surface_temperatures(filepath, filepath_init):
 
     return temp_mean
 
-def tumor_temperatures(filepath, region_filepath):
+def tumor_temperatures(filepath, region_filepath, do_print=True, do_write=True):
     print()
     print('Calc tumor temperatures of {0}.'.format(filepath))
 
@@ -107,12 +108,12 @@ def tumor_temperatures(filepath, region_filepath):
         temp_min = np.min(temp[np.where(tumor == 1)])
         temp_std_dev = np.std(temp[np.where(tumor == 1)])
 
-        filepath = os.path.splitext(filepath)[0]
-        filepath += '_results.dat'
-
-        print_results('tumor', temp_mean, temp_max, temp_min, temp_std_dev)
-        write_results_to_file('Tumor', temp_mean, temp_max, temp_min,
-                              temp_std_dev, filepath, 'a')
+        if do_print == True:
+            print_results('tumor', temp_mean, temp_max, temp_min, temp_std_dev)
+        if do_write == True:
+            filepath = os.path.splitext(filepath)[0] + '_results.dat'
+            write_results_to_file('Tumor', temp_mean, temp_max, temp_min,
+                                  temp_std_dev, filepath, 'a')
     else:
         print('No tumor specified.')
         temp_mean = -1.0
@@ -121,7 +122,7 @@ def tumor_temperatures(filepath, region_filepath):
 
     return temp_mean
 
-def tumor_near_surface_temperatures(filepath, region_filepath):
+def tumor_near_surface_temperatures(filepath, region_filepath, do_print=True, do_write=True):
     print()
     print('Calc tumor temperatures near surface of {0}.'.format(filepath))
 
@@ -142,14 +143,14 @@ def tumor_near_surface_temperatures(filepath, region_filepath):
         temp_min = np.min(temp[np.where(tumor == 1)])
         temp_std_dev = np.std(temp[np.where(tumor == 1)])
 
-        filepath = os.path.splitext(filepath)[0]
-        filepath += '_results.dat'
-
-        section = 'tumor near surface (first ' + str(depth) + ' nodes)'
-        print_results(section, temp_mean, temp_max, temp_min, temp_std_dev)
-        section = 'Tumor_Near_Surface_' + str(depth) + '_Depth'
-        write_results_to_file(section, temp_mean, temp_max, temp_min,
-                              temp_std_dev, filepath, 'a')
+        if do_print == True:
+            section = 'tumor near surface (first ' + str(depth) + ' nodes)'
+            print_results(section, temp_mean, temp_max, temp_min, temp_std_dev)
+        if do_write == True:
+            filepath = os.path.splitext(filepath)[0] + '_results.dat'
+            section = 'Tumor_Near_Surface_' + str(depth) + '_Depth'
+            write_results_to_file(section, temp_mean, temp_max, temp_min,
+                                  temp_std_dev, filepath, 'a')
     else:
         print('No tumor specified.')
         temp_mean = -1.0
@@ -158,7 +159,7 @@ def tumor_near_surface_temperatures(filepath, region_filepath):
 
     return temp_mean
 
-def brain_temperatures(filepath, region_filepath):
+def brain_temperatures(filepath, region_filepath, do_print=True, do_write=True):
     print()
     print('Calc brain temperatures of {0}.'.format(filepath))
 
@@ -176,18 +177,18 @@ def brain_temperatures(filepath, region_filepath):
         temp_min = np.min(temp)
         temp_std_dev = np.std(temp)
 
-    filepath = os.path.splitext(filepath)[0]
-    filepath += '_results.dat'
-
-    print_results('brain', temp_mean, temp_max, temp_min, temp_std_dev)
-    write_results_to_file('Brain', temp_mean, temp_max, temp_min, temp_std_dev,
-                          filepath, 'a')
+    if do_print == True:
+        print_results('brain', temp_mean, temp_max, temp_min, temp_std_dev)
+    if do_write == True:
+        filepath = os.path.splitext(filepath)[0] + '_results.dat'
+        write_results_to_file('Brain', temp_mean, temp_max, temp_min, temp_std_dev,
+                              filepath, 'a')
 
     print('Done.')
 
     return temp_mean
 
-def domain_temperatures(filepath):
+def domain_temperatures(filepath, do_print=True, do_write=True):
     print()
     print('Calc domain temperatures of {0}.'.format(filepath))
 
@@ -198,18 +199,18 @@ def domain_temperatures(filepath):
     temp_min = np.min(temp)
     temp_std_dev = np.std(temp)
 
-    filepath = os.path.splitext(filepath)[0]
-    filepath += '_results.dat'
-
-    print_results('domain', temp_mean, temp_max, temp_min, temp_std_dev)
-    write_results_to_file('Domain', temp_mean, temp_max, temp_min, temp_std_dev,
-                          filepath, 'a')
+    if do_print == True:
+        print_results('domain', temp_mean, temp_max, temp_min, temp_std_dev)
+    if do_write == True:
+        filepath = os.path.splitext(filepath)[0] + '_results.dat'
+        write_results_to_file('Domain', temp_mean, temp_max, temp_min, temp_std_dev,
+                              filepath, 'a')
 
     print('Done.')
 
     return temp_mean
 
-def csv_result_temperatures(filepath, csv):
+def csv_result_temperatures(filepath, csv, do_print=True, do_write=True):
     csv = os.path.join(csv, 'thermo.csv')
     print()
     print('Calc temperatures of {0}.'.format(csv))
@@ -222,19 +223,20 @@ def csv_result_temperatures(filepath, csv):
     temp_min = np.min(temp[np.where(temp != 0)])
     temp_std_dev = np.std(temp[np.where(temp != 0)])
 
-    section = str(os.path.basename(csv))
-    filepath = os.path.splitext(filepath)[0]
-    filepath += '_results.dat'
 
-    print_results('thermo.csv', temp_mean, temp_max, temp_min, temp_std_dev)
-    write_results_to_file(section, temp_mean, temp_max, temp_min, temp_std_dev,
-                          filepath, 'a')
+    if do_print == True:
+        print_results('thermo.csv', temp_mean, temp_max, temp_min, temp_std_dev)
+    if do_write == True:
+        section = str(os.path.basename(csv))
+        filepath = os.path.splitext(filepath)[0] + '_results.dat'
+        write_results_to_file(section, temp_mean, temp_max, temp_min, temp_std_dev,
+                              filepath, 'a')
 
     print('Done.')
 
     return temp_mean
 
-def vessels_temperatures(filepath_nc, filepath_vessels):
+def vessels_temperatures(filepath_nc, filepath_vessels, do_print=True, do_write=True):
     print()
     print('Calc vessel temperatures of {0}.'.format(filepath_nc))
 
@@ -246,18 +248,18 @@ def vessels_temperatures(filepath_nc, filepath_vessels):
     temp_min = np.min(temp[np.where(vessels == 1)])
     temp_std_dev = np.std(temp[np.where(vessels == 1)])
 
-    filepath = os.path.splitext(filepath_nc)[0]
-    filepath += '_results.dat'
-
-    print_results('vessels', temp_mean, temp_max, temp_min, temp_std_dev)
-    write_results_to_file('Vessel', temp_mean, temp_max, temp_min, temp_std_dev,
-                          filepath, 'a')
+    if do_print == True:
+        print_results('vessels', temp_mean, temp_max, temp_min, temp_std_dev)
+    if do_write == True:
+        filepath = os.path.splitext(filepath_nc)[0] + '_results.dat'
+        write_results_to_file('Vessel', temp_mean, temp_max, temp_min, temp_std_dev,
+                              filepath, 'a')
 
     print('Done.')
 
     return temp_mean
 
-def non_vessels_temperatures(filepath_nc, filepath_vessels):
+def non_vessels_temperatures(filepath_nc, filepath_vessels, do_print=True, do_write=True):
     print()
     print('Calc non-vessel temperatures of {0}.'.format(filepath_nc))
 
@@ -269,12 +271,13 @@ def non_vessels_temperatures(filepath_nc, filepath_vessels):
     temp_min = np.min(temp[np.where(vessels == 0)])
     temp_std_dev = np.std(temp[np.where(vessels == 0)])
 
-    filepath = os.path.splitext(filepath_nc)[0]
-    filepath += '_results.dat'
-
-    print_results('non-vessels', temp_mean, temp_max, temp_min, temp_std_dev)
-    write_results_to_file('Non_Vessel', temp_mean, temp_max, temp_min,
-                          temp_std_dev, filepath, 'a')
+    if do_print == True:
+        print_results('non-vessels', temp_mean, temp_max, temp_min, temp_std_dev)
+    if do_write == True:
+        filepath = os.path.splitext(filepath_nc)[0]
+        filepath += '_results.dat'
+        write_results_to_file('Non_Vessel', temp_mean, temp_max, temp_min,
+                              temp_std_dev, filepath, 'a')
 
     print('Done.')
 
