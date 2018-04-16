@@ -72,6 +72,8 @@ def parse_config_file(params):
                                                            fallback=False)
     params['NAME_VESSELS_FILE'] = config['Input'].get('NAME_VESSELS_FILE',
                                                       fallback='vessels')
+    params['CREATE_VESSELS_FILE'] = config['Input'].getboolean('CREATE_VESSELS_FILE',
+                                                               fallback=True)
     params['THRESHOLD'] = config['Input'].getfloat('THRESHOLD',
                                                    fallback=0.00001)
     params['CHECK_CONV_FIRST_AT_ITER'] = config['Input'].getfloat('CHECK_CONV_FIRST_AT_ITER',
@@ -223,6 +225,12 @@ def check_variables(params):
         vessels_seg_path = os.path.join(folder, 'vessels_segmentation.csv')
         if os.path.isfile(vessels_seg_path) != True:
             print('* ERROR:', vessels_seg_path, 'does not exist.')
+            print('Aborting.')
+            exit()
+    # Check if file for vessels exist if none shall be created.
+    if params['USE_VESSELS_SEGMENTATION'] == True and params['CREATE_VESSELS_FILE'] == False:
+        if os.path.isfile(params['NAME_VESSELS_FILE'] + '.nc') == False:
+            print('* ERROR: File for vessels does not exist.')
             print('Aborting.')
             exit()
     # Check if names specified in VARIABLES for vessels are
@@ -456,7 +464,8 @@ def write_values_to_file(nc_file, values_array, NAME_VARIABLE):
     # Write NumPy Array to file.
     init_values[0,] = values_array
 
-def create_vessels_array(params, nc_file, surface):
+def create_vessels_array(params, surface):
+    print('Creating {0}.nc.'.format(params['NAME_VESSELS_FILE']))
     vessels_small = read_vessels_segmentation(params)
 
     dim0, dim1, dim2 = params['N_NODES']
@@ -488,7 +497,6 @@ def create_vessels_array(params, nc_file, surface):
 
     # Create vessels file.
     filepath = params['NAME_VESSELS_FILE'] + '.nc'
-    print(filepath)
     nc_file = nc.Dataset(filepath, 'w', format='NETCDF3_CLASSIC')
     time = nc_file.createDimension('time')
     for dim in range(0, params['SPACE_DIM']):
@@ -497,6 +505,8 @@ def create_vessels_array(params, nc_file, surface):
     write_values_to_file(nc_file, vessels, 'vessels')
 
     nc_file.close()
+
+    print('Done')
 
     return vessels
 
@@ -658,6 +668,22 @@ def read_vessels_segmentation(params):
 
     return vessels_sparse
 
+def read_vessels_array(params):
+    print('Reading {0}.nc.'.format(params['NAME_VESSELS_FILE']))
+    nc_file = nc.Dataset(params['NAME_VESSELS_FILE'] + '.nc')
+    dim0 = nc_file.dimensions['nNodes_0'].size
+    dim1 = nc_file.dimensions['nNodes_1'].size
+    dim2 = nc_file.dimensions['nNodes_2'].size
+    nc_var = nc_file.variables['vessels']
+    vessels = np.zeros((dim2, dim1, dim0), dtype=int)
+    vessels[:,:,:] = nc_var[-1,:,:,:]
+
+    nc_file.close()
+
+    print('Done.')
+
+    return vessels
+
 def create_init_file(params):
     filepath = params['NAME_INITFILE'] + '.nc'
     SPACE_DIM = params['SPACE_DIM']
@@ -696,8 +722,10 @@ def create_init_file(params):
     else:
         surface = create_surface_array(params, nc_file, 0, 1, 'surface')
 
-    if params['USE_VESSELS_SEGMENTATION'] == True:
-        vessels = create_vessels_array(params, nc_file, surface)
+    if params['USE_VESSELS_SEGMENTATION'] == True and params['CREATE_VESSELS_FILE'] == True:
+        vessels = create_vessels_array(params, surface)
+    elif params['USE_VESSELS_SEGMENTATION'] == True and params['CREATE_VESSELS_FILE'] == False:
+        vessels = read_vessels_array(params)
     else:
         vessels = 0
 

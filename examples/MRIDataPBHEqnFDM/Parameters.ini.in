@@ -83,6 +83,12 @@ NAME_INITFILE = init
 # if you want to use a init file.
 USE_INITFILE = True
 CREATE_INITFILE = True
+# Set to True if new vessels file shall be created.
+# If set to False and USE_VESSELS_SEGMENTATION is True,
+# then an old file will be read.
+CREATE_VESSELS_FILE = True
+# Name of file without file exentsion.
+NAME_VESSELS_FILE = vessels
 # Threshold for check of convergence.
 THRESHOLD = 1.0e-5
 # Parameters to reduce number of convergence checks.
