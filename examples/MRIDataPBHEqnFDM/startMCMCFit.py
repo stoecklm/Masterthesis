@@ -14,14 +14,13 @@ from startSimulation import create_init_file
 from startSimulation import set_environment_variables
 from startSimulation import call_simulation
 
-from postProcessing import open_surface_temperatures
-from postProcessing import tumor_temperatures
-from postProcessing import tumor_near_surface_temperatures
-from postProcessing import brain_temperatures
-from postProcessing import domain_temperatures
-from postProcessing import csv_result_temperatures
-from postProcessing import vessels_temperatures
-from postProcessing import non_vessels_temperatures
+from postProcessing import calc_tumor_near_surface_temperatures
+from postProcessing import calc_vessels_temperatures
+from postProcessing import calc_non_vessels_temperatures
+from postProcessing import region_array_from_file
+from postProcessing import surface_vessels_array_from_file
+
+from helperFunctions import temperature_array_from_result
 
 ## Variablen
 # Durchblutungsrate (Normal, Tumor, Vessel)
@@ -71,16 +70,15 @@ def fitSimulation(targetValues):
         call_simulation(params, 'RUN_HELPER.sh')
 
         # Compute temperatures of normal, tumor, vessel tisue.
-        T_tumor = tumor_near_surface_temperatures(params['NAME_RESULTFILE'],
-                                                  params['NAME_REGION_FILE'],
-                                                  do_print=False, do_write=False)
+        temp = temperature_array_from_result(params['NAME_RESULTFILE'])
+        tumor = region_array_from_file(params['NAME_REGION_FILE'])
+        vessels = surface_vessels_array_from_file(params['NAME_VESSELS_FILE'])
+
+        T_tumor,_,_,_ = calc_tumor_near_surface_temperatures(temp, tumor)
         if params['USE_VESSELS_SEGMENTATION'] == True:
-            T_vessel = vessels_temperatures(params['NAME_RESULTFILE'],
-                                            params['NAME_VESSELS_FILE'],
-                                            do_print=False, do_write=False)
-            T_normal = non_vessels_temperatures(params['NAME_RESULTFILE'],
-                                                params['NAME_VESSELS_FILE'],
-                                                do_print=False, do_write=False)
+            temp = temp[-1,:,:]
+            T_vessel,_,_,_ = calc_vessels_temperatures(temp, vessels)
+            T_normal,_,_,_ = calc_non_vessels_temperatures(temp, vessels)
         else:
             T_vessel = -1.0
             T_normal = -1.0
