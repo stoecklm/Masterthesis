@@ -71,26 +71,19 @@ def fitSimulation(targetValues):
         call_simulation(params, 'RUN_HELPER.sh')
 
         # Compute temperatures of normal, tumor, vessel tisue.
-        open_surface_temperatures(params['NAME_RESULTFILE'],
-                                  params['NAME_INITFILE'])
-        tumor_temperatures(params['NAME_RESULTFILE'],
-                           params['NAME_REGION_FILE'])
         T_tumor = tumor_near_surface_temperatures(params['NAME_RESULTFILE'],
-                                                  params['NAME_REGION_FILE'])
-        brain_temperatures(params['NAME_RESULTFILE'],
-                           params['NAME_REGION_FILE'])
-        domain_temperatures(params['NAME_RESULTFILE'])
+                                                  params['NAME_REGION_FILE'],
+                                                  do_print=False, do_write=False)
         if params['USE_VESSELS_SEGMENTATION'] == True:
             T_vessel = vessels_temperatures(params['NAME_RESULTFILE'],
-                                            params['NAME_VESSELS_FILE'])
+                                            params['NAME_VESSELS_FILE'],
+                                            do_print=False, do_write=False)
             T_normal = non_vessels_temperatures(params['NAME_RESULTFILE'],
-                                                params['NAME_VESSELS_FILE'])
+                                                params['NAME_VESSELS_FILE'],
+                                                do_print=False, do_write=False)
         else:
             T_vessel = -1.0
             T_normal = -1.0
-        if params['MRI_DATA_CASE'] != '':
-            csv_result_temperatures(params['NAME_RESULTFILE'],
-                                    params['MRI_DATA_FOLDER'])
 
         return [T_normal, T_tumor, T_vessel]
 
