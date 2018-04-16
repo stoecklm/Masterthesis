@@ -14,9 +14,14 @@ from startSimulation import create_init_file
 from startSimulation import set_environment_variables
 from startSimulation import call_simulation
 
+from postProcessing import open_surface_temperatures
+from postProcessing import tumor_temperatures
+from postProcessing import tumor_near_surface_temperatures
+from postProcessing import brain_temperatures
+from postProcessing import domain_temperatures
+from postProcessing import csv_result_temperatures
 from postProcessing import vessels_temperatures
 from postProcessing import non_vessels_temperatures
-from postProcessing import tumor_near_surface_temperatures
 
 ## Variablen
 # Durchblutungsrate (Normal, Tumor, Vessel)
@@ -31,9 +36,9 @@ from postProcessing import tumor_near_surface_temperatures
 # Tumortiefe vs. Temperatur an der Oberflaeche
 
 def fitSimulation(targetValues):
-    normal = pymc.Uniform('w_normal', 0.0025, 0.017, value= 0.00975)
-    tumor = pymc.Uniform('w_tumor', 0.004, 0.012, value= 0.008)
-    vessel = pymc.Uniform('w_vessel', 0.0025, 0.017, value= 0.00975)
+    normal = pymc.Uniform('w_normal', 0.0014, 0.014, value= 0.004)
+    tumor = pymc.Uniform('w_tumor', 0.0005, 0.017, value= 0.00975)
+    vessel = pymc.Uniform('w_vessel', 0.0014, 0.014, value= 0.004)
 
     @pymc.deterministic(plot=False)
     def callScaFES(normal=normal, tumor=tumor, vessel=vessel):
@@ -66,13 +71,26 @@ def fitSimulation(targetValues):
         call_simulation(params, 'RUN_HELPER.sh')
 
         # Compute temperatures of normal, tumor, vessel tisue.
+        open_surface_temperatures(params['NAME_RESULTFILE'],
+                                  params['NAME_INITFILE'])
+        tumor_temperatures(params['NAME_RESULTFILE'],
+                           params['NAME_REGION_FILE'])
+        T_tumor = tumor_near_surface_temperatures(params['NAME_RESULTFILE'],
+                                                  params['NAME_REGION_FILE'])
+        brain_temperatures(params['NAME_RESULTFILE'],
+                           params['NAME_REGION_FILE'])
+        domain_temperatures(params['NAME_RESULTFILE'])
         if params['USE_VESSELS_SEGMENTATION'] == True:
-            T_normal = non_vessels_temperatures(params['NAME_RESULTFILE'],
-                                                params['NAME_VESSELS_FILE'])
-            T_tumor = tumor_near_surface_temperatures(params['NAME_RESULTFILE'],
-                                                      params['NAME_REGION_FILE'])
             T_vessel = vessels_temperatures(params['NAME_RESULTFILE'],
                                             params['NAME_VESSELS_FILE'])
+            T_normal = non_vessels_temperatures(params['NAME_RESULTFILE'],
+                                                params['NAME_VESSELS_FILE'])
+        else:
+            T_vessel = -1.0
+            T_normal = -1.0
+        if params['MRI_DATA_CASE'] != '':
+            csv_result_temperatures(params['NAME_RESULTFILE'],
+                                    params['MRI_DATA_FOLDER'])
 
         return [T_normal, T_tumor, T_vessel]
 
@@ -85,11 +103,11 @@ def fitSimulation(targetValues):
 def main():
     # Target values for this dataset.
     # [T_normal, T_tumor, T_vessel]
-    targetValues = [33.0, 30.0, 35.0]
+    targetValues = [32.8, 30.0, 34.5]
 
     # Apply MCMC sampler.
     MDL = pymc.MCMC(fitSimulation(targetValues))
-    MDL.sample(iter=1000, burn=1000)
+    MDL.sample(iter=500, burn=50)
     print()
 
     # Extract and plot results.
