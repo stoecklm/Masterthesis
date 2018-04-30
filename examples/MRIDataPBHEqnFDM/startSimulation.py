@@ -83,8 +83,11 @@ def parse_config_file(params):
     # Get values from section 'MRI'.
     mri_case = config['MRI'].get('CASE', fallback='')
     params['MRI_DATA_CASE'] = mri_case.split('_')[0]
-    mri_folder = glob.glob(params['MRI_DATA_CASE'] + '*/')
-    params['MRI_DATA_FOLDER'] = mri_folder[0]
+    if params['MRI_DATA_CASE'] != '':
+        mri_folder = glob.glob(params['MRI_DATA_CASE'] + '*/')
+        params['MRI_DATA_FOLDER'] = mri_folder[0]
+    else:
+        params['MRI_DATA_FOLDER'] = ''
     params['USE_VESSELS_SEGMENTATION'] = config['MRI'].getboolean('USE_VESSELS_SEGMENTATION',
                                                                   fallback=False)
     VARIABLES_VESSELS = config['MRI'].get('VARIABLES_VESSELS', fallback=list())

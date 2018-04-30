@@ -170,7 +170,8 @@ def plot_surface(filepath, params):
     temperature[:,:] = T[:,int(dim1/2),:]
     plot_tumor(temperature, params, title, filepath_tumor)
 
-    plot_thermo(params['MRI_DATA_CASE'], params['MRI_DATA_FOLDER'])
+    if params['MRI_DATA_CASE'] != '':
+        plot_thermo(params['MRI_DATA_CASE'], params['MRI_DATA_FOLDER'])
 
     print('Done.')
 
