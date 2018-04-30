@@ -146,38 +146,6 @@ def return_grid(data, header, case):
     #new_data = np.flip(new_data, 2)
     new_data = new_data[:,:,::-1]
 
-    if os.path.isfile('Template.ini') == True:
-        copyfile('Template.ini', case + '.ini')
-    else:
-        print('Template.ini does not exist.')
-        print('Aborting.')
-        exit()
-
-    coord_node_first = '-0.06x-0.06x-0.06'
-    coord_node_last = '0.06x0.06x0'
-    n_nodes = str(new_dim0) + 'x' + str(new_dim1) + 'x' + str(new_dim2)
-
-    config = configparser.ConfigParser()
-    config.optionxform = str
-    config['Geometry'] = {}
-    config['Geometry']['COORD_NODE_FIRST'] = coord_node_first
-    config['Geometry']['COORD_NODE_LAST'] = coord_node_last
-    config['Geometry']['N_NODES'] = n_nodes
-    config['MRI'] = {}
-    config['MRI']['CASE'] = case
-    config['Input'] = {}
-    config['Input']['NAME_REGION_FILE'] = case + '_region'
-    config['Input']['USE_MRI_FILE'] = 'True'
-    config['Input']['NAME_INITFILE'] = 'init'
-    config['Input']['USE_INITFILE'] = 'True'
-    config['Input']['CREATE_INITFILE'] = 'True'
-    config['Input']['THRESHOLD'] = '1e-5'
-    config['Input']['CHECK_CONV_FIRST_AT_ITER'] = '0.5'
-    config['Input']['CHECK_CONV_AT_EVERY_N_ITER'] = '0.05'
-
-    with open(case + '.ini', 'a') as configfile:
-        config.write(configfile)
-
     return new_data
 
 def bounding_box(start, end):
@@ -191,6 +159,30 @@ def bounding_box(start, end):
                        [start[0], end[1], end[2]]])
 
     return bbox
+
+def write_ini_file(case):
+    print('Write {}.ini.'.format(case))
+
+    config = configparser.ConfigParser()
+    config.optionxform = str
+
+    if os.path.isfile('Parameters.ini') == True:
+        config.read('Parameters.ini')
+    else:
+        print('Parameters.ini does not exist.')
+        print('Aborting.')
+        exit()
+
+    config['MRI']['CASE'] = case
+    config['Input']['NAME_REGION_FILE'] = case + '_region'
+    config['Input']['USE_MRI_FILE'] = 'True'
+    config['Input']['USE_INITFILE'] = 'True'
+    config['Input']['CREATE_INITFILE'] = 'True'
+
+    with open(case + '.ini', 'w') as configfile:
+        config.write(configfile)
+
+    print('Done.')
 
 
 def main():
@@ -234,6 +226,8 @@ def main():
     end = np.asarray(header['sizes'])
     bbox = bounding_box(ijk_to_ras(start, header), ijk_to_ras(end, header))
     plot_lin_plane_fitting_with_bbox(iop, bbox, case + '_domain')
+
+    write_ini_file(case)
 
     print('Done.')
 
