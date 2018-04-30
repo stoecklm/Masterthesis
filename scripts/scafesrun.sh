@@ -603,7 +603,7 @@ endTestMpi=${nTestsMpi}-${oneAsInteger};
 endTestOpenMp=${nTestsOpenMp}-${oneAsInteger};
 currEndTest=${nTestsMpi}*${nTestsOpenMp};
 
-timestamp=$(date +%Y%m%d%H%M);
+timestamp=$(date +%Y%m%d%H%M%S);
 declare local nNodesMachine=1;
 
 currNameProblem=${nameProblem};
