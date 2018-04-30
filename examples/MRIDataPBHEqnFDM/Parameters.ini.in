@@ -9,20 +9,27 @@ VALUES_NON_VESSELS = 30
 # in N_NODES_2
 DEPTH = 3
 
-[Parameters]
-H = 10.0
-T_INF = 22.0
+# H = heat transfer coefficient [W/(m^2 K)]
+# T_INF = ambient temperature [deg C]
+# Q_SKULL = heat flux of top surface of area under skull [W/m^2]
+# Q_BC = heat flux of all other sides
 # Q > 0 => heat flux into region (source)
 # Q < 0 => heat flux out of region (sink)
 # Q = 0 => insulated
-Q_BC = 0.0
-Q_SKULL = 0.0
-# Thermal radiation: emissivity.
-EPSILON = 0.98
+# EPSILON = emissivity of thermal radiation [-]
+# RADIUS = radius of tumor [m]
 # RADIUS or DIAMETER
+# DEPTH = depth of tumor from top surface to center of sphere [m]
+# HOLE_FACTOR: Diameter for hole in skull = HOLE_FACTOR * DIAMETER [-]
+
+[Parameters]
+H = 10.0
+T_INF = 22.0
+Q_SKULL = 0.0
+Q_BC = 0.0
+EPSILON = 0.98
 RADIUS = 0.021135
 DEPTH = 0.024
-# Diameter for hole in skull = HOLE_FACTOR * DIAMETER
 HOLE_FACTOR = 1.10
 
 # RHO = density of brain or tumor [kg/m^3]
