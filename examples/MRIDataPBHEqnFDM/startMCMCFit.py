@@ -54,6 +54,9 @@ def fitSimulation(targetValues):
         global count
         count += 1
 
+        print()
+        print('##### ScaFES iteration: {} #####'.format(count))
+
         # Set normal, tumor, vessel,  perfusion to respective values.
         params = {'NAME_CONFIGFILE' : 'pymc_' + str(count) + '.ini'}
         params['NAME_RESULTFILE'] = ''
@@ -121,13 +124,22 @@ def fitSimulation(targetValues):
 
 
 def main():
+    print('Starting MCMC simulation and fit.')
+
+    sample_iterations = 5
+    sample_burns = 1
+    print('Number of sample iterations: {}.'.format(sample_iterations))
+    print('Number of sample burns: {}.'.format(sample_burns))
+
     # Target values for this dataset.
     # [T_normal, T_tumor, T_vessel]
     targetValues = [32.8, 30.0, 34.5]
+    print('Target values: [T_normal, T_tumor, T_vessel]')
+    print('Target values for this dataset: {}.'.format(targetValues))
 
     # Apply MCMC sampler.
     MDL = pymc.MCMC(fitSimulation(targetValues))
-    MDL.sample(iter=5, burn=1)
+    MDL.sample(iter=sample_iterations, burn=sample_burns)
     print()
 
     # Extract and plot results.
@@ -161,8 +173,11 @@ def main():
     graph = pymc.graph.graph(MDL)
     graph.write_png('graph.png')
 
+    print()
+    print('Number of ScaFES calls:', count)
+    print()
+
     print('Done.')
 
 if __name__ == "__main__":
-    print(np.__version__)
     main()
