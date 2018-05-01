@@ -22,38 +22,67 @@ from postProcessing import surface_vessels_array_from_file
 
 from helperFunctions import temperature_array_from_result
 
-## Variablen
-# Durchblutungsrate (Normal, Tumor, Vessel)
-# Waermeuebergangskoeff. (Randbedingung)
-# metabolische Waermeproduktion (Normal, Tumor)
-# T_A (Normal, Tumor)
-# T_Blut?
-# Lambda Temperaturleitfaehigkeit
-# (\rho c) zusammen gefasst
-
 ## Einflussgroessen (unabhaengig von der Simulation)
 # Tumortiefe vs. Temperatur an der Oberflaeche
 
+count = 0
+
 def fitSimulation(targetValues):
-    normal = pymc.Uniform('w_normal', 0.0014, 0.014, value= 0.004)
-    tumor = pymc.Uniform('w_tumor', 0.0005, 0.017, value= 0.00975)
-    vessel = pymc.Uniform('w_vessel', 0.0014, 0.014, value= 0.004)
+    omega_normal = pymc.Uniform('omega_normal', 0.0014, 0.014, value=0.004)
+    omega_tumor = pymc.Uniform('omega_tumor', 0.0005, 0.017, value=0.00975)
+    omega_vessel = pymc.Uniform('omega_vessel', 0.0014, 0.014, value=0.004)
+    T_blood = pymc.Uniform('T_blood', 36.7, 37.0, value=37.0)
+    q_brain = pymc.Uniform('q_brain', 5725, 25000, value=25000)
+    q_tumor = pymc.Uniform('q_tumor', 5725, 25000, value=25000)
+    lambda_bt = pymc.Uniform('lambda_bt', 0.45, 0.6, value=0.5)
+    rho_c_brain = pymc.Uniform('rho_c_brain', 3684600, 4388800, value=3796000)
+    rho_c_tumor = pymc.Uniform('rho_c_tumor', 3684600, 4388800, value=3796000)
+    h = pymc.Uniform('h', 8, 10, value=10)
 
     @pymc.deterministic(plot=False)
-    def callScaFES(normal=normal, tumor=tumor, vessel=vessel):
+    def callScaFES(omega_normal=omega_normal,
+                   omega_tumor=omega_tumor,
+                   omega_vessel=omega_vessel,
+                   T_blood=T_blood,
+                   q_brain=q_brain,
+                   q_tumor=q_tumor,
+                   lambda_bt=lambda_bt,
+                   rho_c_brain=rho_c_brain,
+                   rho_c_tumor=rho_c_tumor,
+                   h=h):
+
+        global count
+        count += 1
 
         # Set normal, tumor, vessel,  perfusion to respective values.
-        params = {'NAME_CONFIGFILE' : 'Parameters.ini'}
+        params = {'NAME_CONFIGFILE' : 'pymc_' + str(count) + '.ini'}
         params['NAME_RESULTFILE'] = ''
         config = configparser.ConfigParser()
         config.optionxform = str
-        config.read(params['NAME_CONFIGFILE'])
-        config['Tumor']['OMEGA'] = str(tumor)
-        config['Brain']['OMEGA'] = str(normal)
+        config.read('Parameters.ini')
+        # Omega.
+        config['Brain']['OMEGA'] = str(omega_normal)
+        config['Tumor']['OMEGA'] = str(omega_tumor)
         config['MRI']['USE_VESSELS_SEGMENTATION'] = 'True'
         config['MRI']['VARIABLES_VESSELS'] = 'omega'
-        config['MRI']['VALUES_VESSELS'] = str(vessel)
-        config['MRI']['VALUES_NON_VESSELS'] = str(normal)
+        config['MRI']['VALUES_VESSELS'] = str(omega_vessel)
+        config['MRI']['VALUES_NON_VESSELS'] = str(omega_normal)
+        # T_blood.
+        config['Brain']['T_BLOOD'] = str(T_blood)
+        config['Tumor']['T_BLOOD'] = str(T_blood)
+        # Q.
+        config['Brain']['Q'] = str(q_brain)
+        config['Tumor']['Q'] = str(q_tumor)
+        # lambda.
+        config['Brain']['LAMBDA'] = str(lambda_bt)
+        config['Tumor']['LAMBDA'] = str(lambda_bt)
+        # rho * c.
+        config['Brain']['RHO'] = str(rho_c_brain)
+        config['Brain']['C'] = str(1.0)
+        config['Tumor']['RHO'] = str(rho_c_tumor)
+        config['Tumor']['C'] = str(1.0)
+        # h.
+        config['Parameters']['H'] = str(h)
 
         with open(params['NAME_CONFIGFILE'], 'w') as configfile:
             config.write(configfile)
@@ -98,18 +127,37 @@ def main():
 
     # Apply MCMC sampler.
     MDL = pymc.MCMC(fitSimulation(targetValues))
-    MDL.sample(iter=500, burn=50)
+    MDL.sample(iter=5, burn=1)
     print()
 
     # Extract and plot results.
     temperatures = MDL.stats()['callScaFES']['mean']
-    normal = MDL.stats()['w_normal']['mean']
-    tumor = MDL.stats()['w_tumor']['mean']
-    vessel = MDL.stats()['w_vessel']['mean']
+    omega_normal = MDL.stats()['omega_normal']['mean']
+    omega_tumor = MDL.stats()['omega_tumor']['mean']
+    omega_vessel = MDL.stats()['omega_vessel']['mean']
+    T_blood = MDL.stats()['T_blood']['mean']
+    q_brain = MDL.stats()['q_brain']['mean']
+    q_tumor = MDL.stats()['q_tumor']['mean']
+    lambda_bt = MDL.stats()['lambda_bt']['mean']
+    rho_c_brain = MDL.stats()['rho_c_brain']['mean']
+    rho_c_tumor = MDL.stats()['rho_c_tumor']['mean']
+    h = MDL.stats()['h']['mean']
     pymc.Matplot.plot(MDL)
+    print()
     print('T_final: [T_normal, T_tumor, T_vessel]')
-    print('T_final: ', temperatures)
-    print('Perfusion rates: Normal:', normal, 'Tumor:', tumor, 'Vessel:', vessel)
+    print('T_final:', temperatures)
+    print()
+    print('omega_normal:', omega_normal)
+    print('omega_tumor:', omega_tumor)
+    print('omega_vessel:', omega_vessel)
+    print('T_blood:', T_blood)
+    print('q_brain:', q_brain)
+    print('q_tumor:', q_tumor)
+    print('lambda_bt:', lambda_bt)
+    print('rho_c_brain:', rho_c_brain)
+    print('rho_c_tumor:', rho_c_tumor)
+    print('h:', h)
+
     graph = pymc.graph.graph(MDL)
     graph.write_png('graph.png')
 
