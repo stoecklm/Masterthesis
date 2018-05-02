@@ -1,4 +1,6 @@
 import configparser
+import os
+import sys
 
 import matplotlib
 matplotlib.use('Agg')
@@ -26,6 +28,7 @@ from helperFunctions import temperature_array_from_result
 # Tumortiefe vs. Temperatur an der Oberflaeche
 
 count = 0
+params = {'NAME_CONFIGFILE_TEMPLATE' : ''}
 
 def fitSimulation(targetValues):
     omega_normal = pymc.Uniform('omega_normal', 0.0014, 0.014, value=0.004)
@@ -52,6 +55,7 @@ def fitSimulation(targetValues):
                    h=h):
 
         global count
+        global params
         count += 1
 
         print()
@@ -125,6 +129,30 @@ def fitSimulation(targetValues):
 
 def main():
     print('Starting MCMC simulation and fit.')
+    global params
+    # Check if path to configfile is provided and if file exists.
+    if len(sys.argv) > 1:
+        if os.path.isfile(sys.argv[1]) == True:
+            params['NAME_CONFIGFILE_TEMPLATE'] = sys.argv[1]
+            params['RUN_SCRIPT'] = 'RUN_HELPER.sh'
+        else:
+            print('* ERROR:', sys.argv[1], 'does not exist.')
+        if len(sys.argv) > 2:
+            if os.path.isfile(sys.argv[2]) == True:
+                params['RUN_SCRIPT'] = sys.argv[2]
+            else:
+                print('* ERROR: Optional run script', sys.argv[2],
+                      'does not exist.')
+                print('Aborting.')
+                exit()
+    else:
+        print('* ERROR: No command line argument for configfile provided.')
+
+    if params['NAME_CONFIGFILE_TEMPLATE'] == '':
+        print('Usage: python3', sys.argv[0],
+              '<PATH/TO/CONFIGFILE> [<PATH/TO/RUN/SCRIPT]')
+        print('Aborting.')
+        exit()
 
     sample_iterations = 5
     sample_burns = 1
