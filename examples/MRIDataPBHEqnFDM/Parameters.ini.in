@@ -9,6 +9,14 @@ VALUES_NON_VESSELS = 30
 # in N_NODES_2
 DEPTH = 3
 
+[PyMC]
+ITERATIONS = 5
+BURNS = 1
+# Target values in deg C.
+T_NORMAL = 32.8
+T_TUMOR = 30.0
+T_VESSEL = 34.5
+
 # H = heat transfer coefficient [W/(m^2 K)]
 # T_INF = ambient temperature [deg C]
 # Q_SKULL = heat flux of top surface of area under skull [W/m^2]

@@ -30,6 +30,21 @@ from helperFunctions import temperature_array_from_result
 count = 0
 params = {'NAME_CONFIGFILE_TEMPLATE' : ''}
 
+def parse_pymc_from_config_file(params):
+    print('Parsing {} for PyMC parameters.'.format(params['NAME_CONFIGFILE_TEMPLATE']))
+
+    config = configparser.ConfigParser()
+    config.optionxform = str
+    config.read(params['NAME_CONFIGFILE_TEMPLATE'])
+
+    params['ITERATIONS'] = config['PyMC'].getint('ITERATIONS', fallback=5)
+    params['BURNS'] = config['PyMC'].getint('BURNS', fallback=1)
+    params['T_NORMAL'] = config['PyMC'].getfloat('T_NORMAL', fallback=32.8)
+    params['T_TUMOR'] = config['PyMC'].getfloat('T_TUMOR', fallback=30.0)
+    params['T_VESSEL'] = config['PyMC'].getfloat('T_VESSEL', fallback=34.5)
+
+    print('Done.')
+
 def fitSimulation(targetValues):
     omega_normal = pymc.Uniform('omega_normal', 0.0014, 0.014, value=0.004)
     omega_tumor = pymc.Uniform('omega_tumor', 0.0005, 0.017, value=0.00975)
@@ -154,14 +169,13 @@ def main():
         print('Aborting.')
         exit()
 
-    sample_iterations = 5
-    sample_burns = 1
+    parse_pymc_from_config_file(params)
+
+    sample_iterations = params['ITERATIONS']
+    sample_burns = params['BURNS']
     print('Number of sample iterations: {}.'.format(sample_iterations))
     print('Number of sample burns: {}.'.format(sample_burns))
-
-    # Target values for this dataset.
-    # [T_normal, T_tumor, T_vessel]
-    targetValues = [32.8, 30.0, 34.5]
+    targetValues = [params['T_NORMAL'], params['T_TUMOR'], params['T_VESSEL']]
     print('Target values: [T_normal, T_tumor, T_vessel]')
     print('Target values for this dataset: {}.'.format(targetValues))
 
