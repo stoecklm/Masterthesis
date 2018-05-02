@@ -269,9 +269,14 @@ def calc_delta_time(params, material, parameters):
     RHO_BLOOD = material['RHO_BLOOD']
     C_BLOOD = material['C_BLOOD']
     OMEGA = material['OMEGA']
+    Q = material['Q']
+    T_I = material['T']
     H = parameters['H']
+    EPSILON = parameters['EPSILON']
     GRIDSIZE = params['GRIDSIZE']
     SPACE_DIM = params['SPACE_DIM']
+    SIGMA = 5.670367e-8
+    T_MAX = T_I + Q/(RHO_BLOOD*C_BLOOD*OMEGA)
     # Pennes Bioheat Equation.
     tmp = 0
     for dim in range(0, SPACE_DIM):
@@ -284,13 +289,15 @@ def calc_delta_time(params, material, parameters):
         # If time is infinity,
         # it will later not be considered for min(delta_time).
         DELTA_TIME = float('Inf')
-    # Border with convection.
-    DELTA_TIME_CONV = tmp + 2.0*(1.0/GRIDSIZE[SPACE_DIM-1]) \
-                                  * (H/(RHO*C))
-    DELTA_TIME_CONV += ((RHO_BLOOD*C_BLOOD)/(RHO*C)) * OMEGA
-    DELTA_TIME_CONV = 1.0/DELTA_TIME_CONV
+    # Border with convection and radiation:
+    DELTA_TIME_BC = tmp + 2.0*(1.0/GRIDSIZE[SPACE_DIM-1]) * (H/(RHO*C))
+    DELTA_TIME_BC += ((RHO_BLOOD*C_BLOOD)/(RHO*C)) * OMEGA
+    DELTA_TIME_BC += 2.0 * (1.0/GRIDSIZE[SPACE_DIM-1]) \
+                     * ((EPSILON*SIGMA)/(RHO*C)) \
+                     * ((T_MAX + 273.15)**3)
+    DELTA_TIME_BC = 1.0/DELTA_TIME_BC
 
-    return DELTA_TIME, DELTA_TIME_CONV
+    return DELTA_TIME, DELTA_TIME_BC
 
 def calc_variables(params):
     print('Calculating variables.')
@@ -307,14 +314,14 @@ def calc_variables(params):
         print('* WARNING: N_TIMESTEPS not specified.')
         print('  Calculate N_TIMESTEPS from stability criterion.')
         DELTA_TIME_BRAIN, \
-        DELTA_TIME_BRAIN_CONV = calc_delta_time(params, params['BRAIN'],
-                                                params['PARAMETERS'])
+        DELTA_TIME_BRAIN_BC = calc_delta_time(params, params['BRAIN'],
+                                              params['PARAMETERS'])
         DELTA_TIME_TUMOR, \
-        DELTA_TIME_TUMOR_CONV = calc_delta_time(params, params['TUMOR'],
-                                                params['PARAMETERS'])
+        DELTA_TIME_TUMOR_BC = calc_delta_time(params, params['TUMOR'],
+                                              params['PARAMETERS'])
         # Get minimum for calculation of timesteps.
-        DELTA_TIME_MIN = min((DELTA_TIME_BRAIN, DELTA_TIME_BRAIN_CONV,
-                              DELTA_TIME_TUMOR, DELTA_TIME_TUMOR_CONV))
+        DELTA_TIME_MIN = min((DELTA_TIME_BRAIN, DELTA_TIME_BRAIN_BC,
+                              DELTA_TIME_TUMOR, DELTA_TIME_TUMOR_BC))
         # Add five percent for safety reasons.
         params['N_TIMESTEPS'] = int(((params['END_TIME'] \
                                       - params['START_TIME']) \
@@ -356,14 +363,14 @@ def check_stability(params):
     print('Checking stability.')
 
     DELTA_TIME_BRAIN, \
-    DELTA_TIME_BRAIN_CONV = calc_delta_time(params, params['BRAIN'],
-                                            params['PARAMETERS'])
+    DELTA_TIME_BRAIN_BC = calc_delta_time(params, params['BRAIN'],
+                                          params['PARAMETERS'])
     DELTA_TIME_TUMOR, \
-    DELTA_TIME_TUMOR_CONV = calc_delta_time(params, params['TUMOR'],
-                                            params['PARAMETERS'])
+    DELTA_TIME_TUMOR_BC = calc_delta_time(params, params['TUMOR'],
+                                          params['PARAMETERS'])
     # Get minimum for calculation of timesteps.
-    DELTA_TIME_MIN = min((DELTA_TIME_BRAIN, DELTA_TIME_BRAIN_CONV,
-                          DELTA_TIME_TUMOR, DELTA_TIME_TUMOR_CONV))
+    DELTA_TIME_MIN = min((DELTA_TIME_BRAIN, DELTA_TIME_BRAIN_BC,
+                          DELTA_TIME_TUMOR, DELTA_TIME_TUMOR_BC))
 
     DELTA_TIME = params['DELTA_TIME']
     # Abort simulation if stability is not fulfilled.
@@ -381,19 +388,19 @@ def check_stability(params):
         print('Aborting.')
         exit()
     # Abort simulation if stability is not fulfilled.
-    if DELTA_TIME > DELTA_TIME_BRAIN_CONV:
+    if DELTA_TIME > DELTA_TIME_BRAIN_BC:
         print('* ERROR: Stability not fulfilled in healty brain region at \
-              border with convection.')
+              border with convection and thermal radiation.')
         print('  DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME,
-                                                                           DELTA_TIME_BRAIN_CONV))
+                                                                           DELTA_TIME_BRAIN_BC))
         print('Aborting.')
         exit()
     # Abort simulation if stability is not fulfilled.
-    if DELTA_TIME > DELTA_TIME_TUMOR_CONV:
+    if DELTA_TIME > DELTA_TIME_TUMOR_BC:
         print('* ERROR: Stability not fulfilled in tumor region at border \
-              with convection.')
+              with convection and thermal radiation.')
         print('  DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME,
-                                                                           DELTA_TIME_TUMOR_CONV))
+                                                                           DELTA_TIME_TUMOR_BC))
         print('Aborting.')
         exit()
 
