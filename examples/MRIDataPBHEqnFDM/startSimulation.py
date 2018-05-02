@@ -97,12 +97,12 @@ def parse_config_file(params):
         params['VARIABLES_VESSELS'] = VARIABLES_VESSELS
     VALUES_VESSELS = config['MRI'].get('VALUES_VESSELS', fallback=list())
     if len(VALUES_VESSELS) > 0:
-        params['VALUES_VESSELS'] = list(VALUES_VESSELS.split(' '))
+        params['VALUES_VESSELS'] = list(map(float, VALUES_VESSELS.split(' ')))
     else:
         params['VALUES_VESSELS'] = VALUES_VESSELS
     VALUES_NON_VESSELS = config['MRI'].get('VALUES_NON_VESSELS', fallback=list())
     if len(VALUES_VESSELS) > 0:
-        params['VALUES_NON_VESSELS'] = list(VALUES_NON_VESSELS.split(' '))
+        params['VALUES_NON_VESSELS'] = list(map(float, VALUES_NON_VESSELS.split(' ')))
     else:
         params['VALUES_NON_VESSELS'] = VALUES_NON_VESSELS
     params['VESSELS_DEPTH'] = config['MRI'].getint('DEPTH', fallback=1)
@@ -111,6 +111,15 @@ def parse_config_file(params):
     for key in brain:
         brain[key] = float(brain[key])
     params['BRAIN'] = brain
+    if params['USE_VESSELS_SEGMENTATION'] == True:
+        vessels = dict(config.items('Brain'))
+        for key in vessels:
+            vessels[key] = float(vessels[key])
+        params['VESSELS'] = vessels
+        non_vessels = dict(config.items('Brain'))
+        for key in non_vessels:
+            non_vessels[key] = float(non_vessels[key])
+        params['NON_VESSELS'] = non_vessels
     # Get values from section 'Tumor'.
     tumor = dict(config.items('Tumor'))
     for key in tumor:
@@ -262,42 +271,63 @@ def check_variables(params):
 
     print('Done.')
 
-def calc_delta_time(params, material, parameters):
+def calc_delta_time_helper(params, material, parameters):
     RHO = material['RHO']
     C = material['C']
     LAMBDA = material['LAMBDA']
     RHO_BLOOD = material['RHO_BLOOD']
     C_BLOOD = material['C_BLOOD']
     OMEGA = material['OMEGA']
-    Q = material['Q']
     T_I = material['T']
+    Q = material['Q']
+
     H = parameters['H']
     EPSILON = parameters['EPSILON']
+
     GRIDSIZE = params['GRIDSIZE']
     SPACE_DIM = params['SPACE_DIM']
+
     SIGMA = 5.670367e-8
     T_MAX = T_I + Q/(RHO_BLOOD*C_BLOOD*OMEGA)
+
     # Pennes Bioheat Equation.
     tmp = 0
     for dim in range(0, SPACE_DIM):
         tmp += (2.0/(GRIDSIZE[dim]*GRIDSIZE[dim])) * (LAMBDA/(RHO*C))
     # Inner nodes.
-    DELTA_TIME = tmp + ((RHO_BLOOD*C_BLOOD)/(RHO*C)) * OMEGA
-    if DELTA_TIME != 0:
-        DELTA_TIME = 1.0/DELTA_TIME
+    tmp += ((RHO_BLOOD*C_BLOOD)/(RHO*C)) * OMEGA
+    if tmp != 0:
+        DELTA_TIME = 1.0/tmp
     else:
         # If time is infinity,
         # it will later not be considered for min(delta_time).
         DELTA_TIME = float('Inf')
-    # Border with convection and radiation:
-    DELTA_TIME_BC = tmp + 2.0*(1.0/GRIDSIZE[SPACE_DIM-1]) * (H/(RHO*C))
-    DELTA_TIME_BC += ((RHO_BLOOD*C_BLOOD)/(RHO*C)) * OMEGA
-    DELTA_TIME_BC += 2.0 * (1.0/GRIDSIZE[SPACE_DIM-1]) \
+
+    # Border with convection and thermal radiation:
+    # Convection.
+    tmp += 2.0*(1.0/GRIDSIZE[SPACE_DIM-1]) * (H/(RHO*C))
+    # Thermal radiation.
+    tmp += 2.0 * (1.0/GRIDSIZE[SPACE_DIM-1]) \
                      * ((EPSILON*SIGMA)/(RHO*C)) \
                      * ((T_MAX + 273.15)**3)
-    DELTA_TIME_BC = 1.0/DELTA_TIME_BC
+    if tmp != 0:
+        DELTA_TIME_BC = 1.0/tmp
+    else:
+        # If time is infinity,
+        # it will later not be considered for min(delta_time).
+        DELTA_TIME_BC = float('Inf')
 
     return DELTA_TIME, DELTA_TIME_BC
+
+def calc_delta_time_inner_nodes(params, material, parameters):
+    tmp,_ = calc_delta_time_helper(params, material, parameters)
+
+    return tmp
+
+def calc_delta_time_boundary_condition(params, material, parameters):
+    _,tmp = calc_delta_time_helper(params, material, parameters)
+
+    return tmp
 
 def calc_variables(params):
     print('Calculating variables.')
@@ -309,19 +339,46 @@ def calc_variables(params):
                          - params['COORD_NODE_FIRST'][dim])
                         / (params['N_NODES'][dim]-1))
     params['GRIDSIZE'] = GRIDSIZE
+    # Create parameter collection for vessels.
+    if params['USE_VESSELS_SEGMENTATION'] == True:
+        VARIABLES_VESSELS = params['VARIABLES_VESSELS']
+        for NAME_VARIABLE in params['VARIABLES_VESSELS']:
+            if NAME_VARIABLE.upper() in params['VESSELS'].keys():
+                params['VESSELS'][NAME_VARIABLE.upper()] = params['VALUES_VESSELS'][VARIABLES_VESSELS.index(NAME_VARIABLE)]
+            if NAME_VARIABLE.upper() in params['NON_VESSELS'].keys():
+                params['NON_VESSELS'][NAME_VARIABLE.upper()] = params['VALUES_NON_VESSELS'][VARIABLES_VESSELS.index(NAME_VARIABLE)]
     # Calculate delta time.
     if params['N_TIMESTEPS'] < 1:
         print('* WARNING: N_TIMESTEPS not specified.')
         print('  Calculate N_TIMESTEPS from stability criterion.')
-        DELTA_TIME_BRAIN, \
-        DELTA_TIME_BRAIN_BC = calc_delta_time(params, params['BRAIN'],
-                                              params['PARAMETERS'])
-        DELTA_TIME_TUMOR, \
-        DELTA_TIME_TUMOR_BC = calc_delta_time(params, params['TUMOR'],
-                                              params['PARAMETERS'])
+        BRAIN = calc_delta_time_inner_nodes(params, params['BRAIN'],
+                                            params['PARAMETERS'])
+        BRAIN_BC = calc_delta_time_boundary_condition(params, params['BRAIN'],
+                                                      params['PARAMETERS'])
+        TUMOR = calc_delta_time_inner_nodes(params, params['TUMOR'],
+                                            params['PARAMETERS'])
+        TUMOR_BC = calc_delta_time_boundary_condition(params, params['TUMOR'],
+                                                      params['PARAMETERS'])
+        if params['USE_VESSELS_SEGMENTATION'] == True:
+            VESSELS = calc_delta_time_inner_nodes(params, params['VESSELS'],
+                                                  params['PARAMETERS'])
+            VESSELS_BC = calc_delta_time_boundary_condition(params,
+                                                            params['VESSELS'],
+                                                            params['PARAMETERS'])
+            NON_VESSELS = calc_delta_time_inner_nodes(params, params['NON_VESSELS'],
+                                                      params['PARAMETERS'])
+            NON_VESSELS_BC = calc_delta_time_boundary_condition(params,
+                                                                params['NON_VESSELS'],
+                                                                params['PARAMETERS'])
+        else:
+            VESSELS = float('Inf')
+            VESSELS_BC = float('Inf')
+            NON_VESSELS = float('Inf')
+            NON_VESSELS_BC = float('Inf')
+
         # Get minimum for calculation of timesteps.
-        DELTA_TIME_MIN = min((DELTA_TIME_BRAIN, DELTA_TIME_BRAIN_BC,
-                              DELTA_TIME_TUMOR, DELTA_TIME_TUMOR_BC))
+        DELTA_TIME_MIN = min((BRAIN, BRAIN_BC, TUMOR, TUMOR_BC,
+                              VESSELS, VESSELS_BC, NON_VESSELS, NON_VESSELS_BC))
         # Add five percent for safety reasons.
         params['N_TIMESTEPS'] = int(((params['END_TIME'] \
                                       - params['START_TIME']) \
@@ -362,47 +419,90 @@ def calc_variables(params):
 def check_stability(params):
     print('Checking stability.')
 
-    DELTA_TIME_BRAIN, \
-    DELTA_TIME_BRAIN_BC = calc_delta_time(params, params['BRAIN'],
-                                          params['PARAMETERS'])
-    DELTA_TIME_TUMOR, \
-    DELTA_TIME_TUMOR_BC = calc_delta_time(params, params['TUMOR'],
-                                          params['PARAMETERS'])
+    BRAIN = calc_delta_time_inner_nodes(params, params['BRAIN'],
+                                        params['PARAMETERS'])
+    BRAIN_BC = calc_delta_time_boundary_condition(params, params['BRAIN'],
+                                                  params['PARAMETERS'])
+    TUMOR = calc_delta_time_inner_nodes(params, params['TUMOR'],
+                                                  params['PARAMETERS'])
+    TUMOR_BC = calc_delta_time_boundary_condition(params, params['TUMOR'],
+                                                  params['PARAMETERS'])
+    if params['USE_VESSELS_SEGMENTATION'] == True:
+        VESSELS = calc_delta_time_inner_nodes(params, params['VESSELS'],
+                                              params['PARAMETERS'])
+        VESSELS_BC = calc_delta_time_boundary_condition(params,
+                                                        params['VESSELS'],
+                                                        params['PARAMETERS'])
+        NON_VESSELS = calc_delta_time_inner_nodes(params, params['NON_VESSELS'],
+                                                  params['PARAMETERS'])
+        NON_VESSELS_BC = calc_delta_time_boundary_condition(params,
+                                                            params['NON_VESSELS'],
+                                                            params['PARAMETERS'])
+    else:
+        VESSELS = float('Inf')
+        VESSELS_BC = float('Inf')
+        NON_VESSELS = float('Inf')
+        NON_VESSELS_BC = float('Inf')
+
     # Get minimum for calculation of timesteps.
-    DELTA_TIME_MIN = min((DELTA_TIME_BRAIN, DELTA_TIME_BRAIN_BC,
-                          DELTA_TIME_TUMOR, DELTA_TIME_TUMOR_BC))
+    DELTA_TIME_MIN = min((BRAIN, BRAIN_BC, TUMOR, TUMOR_BC,
+                          VESSELS, VESSELS_BC, NON_VESSELS, NON_VESSELS_BC))
 
     DELTA_TIME = params['DELTA_TIME']
     # Abort simulation if stability is not fulfilled.
-    if DELTA_TIME > DELTA_TIME_BRAIN:
+    if DELTA_TIME > BRAIN:
         print('* ERROR: Stability not fulfilled in healthy brain region.')
         print('  DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME,
-                                                                           DELTA_TIME_BRAIN))
+                                                                           BRAIN))
         print('Aborting.')
         exit()
-    # Abort simulation if stability is not fulfilled.
-    if DELTA_TIME > DELTA_TIME_TUMOR:
+    if DELTA_TIME > TUMOR:
         print('* ERROR: Stability not fulfilled in tumor region.')
         print('  DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME,
-                                                                           DELTA_TIME_TUMOR))
+                                                                           TUMOR))
         print('Aborting.')
         exit()
-    # Abort simulation if stability is not fulfilled.
-    if DELTA_TIME > DELTA_TIME_BRAIN_BC:
+    if DELTA_TIME > BRAIN_BC:
         print('* ERROR: Stability not fulfilled in healty brain region at \
               border with convection and thermal radiation.')
         print('  DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME,
-                                                                           DELTA_TIME_BRAIN_BC))
+                                                                           BRAIN_BC))
         print('Aborting.')
         exit()
-    # Abort simulation if stability is not fulfilled.
-    if DELTA_TIME > DELTA_TIME_TUMOR_BC:
+    if DELTA_TIME > TUMOR_BC:
         print('* ERROR: Stability not fulfilled in tumor region at border \
               with convection and thermal radiation.')
         print('  DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME,
-                                                                           DELTA_TIME_TUMOR_BC))
+                                                                           TUMOR_BC))
         print('Aborting.')
         exit()
+    if params['USE_VESSELS_SEGMENTATION'] == True:
+        if DELTA_TIME > VESSELS:
+            print('* ERROR: Stability not fulfilled in vessels region.')
+            print('  DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME,
+                                                                               VESSELS))
+            print('Aborting.')
+            exit()
+        if DELTA_TIME > NON_VESSELS:
+            print('* ERROR: Stability not fulfilled in non-vessels region.')
+            print('  DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME,
+                                                                               NON_VESSELS))
+            print('Aborting.')
+            exit()
+        if DELTA_TIME > VESSELS_BC:
+            print('* ERROR: Stability not fulfilled in vessels region at \
+                  border with convection and thermal radiation.')
+            print('  DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME,
+                                                                               VESSELS_BC))
+            print('Aborting.')
+            exit()
+        if DELTA_TIME > NON_VESSELS_BC:
+            print('* ERROR: Stability not fulfilled in non-vessels region at \
+                  border with convection and thermal radiation.')
+            print('  DELTA_TIME = {0}, but has to be DELTA_TIME < {1}.'.format(DELTA_TIME,
+                                                                               NON_VESSELS_BC))
+            print('Aborting.')
+            exit()
 
     print('Done.')
 
