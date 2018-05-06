@@ -148,7 +148,7 @@ def return_grid(data, header, case):
 
     return new_data
 
-def bounding_box(start, end):
+def ijk_bounding_box(start, end):
     bbox = np.asarray([[start[0], start[1], start[2]],
                        [end[0], start[1], start[2]],
                        [end[0], end[1], start[2]],
@@ -157,6 +157,12 @@ def bounding_box(start, end):
                        [end[0], start[1], end[2]],
                        [end[0], end[1], end[2]],
                        [start[0], end[1], end[2]]])
+
+    return bbox
+
+def ijk_bounding_box_to_ras(bbox, header):
+    for point in bbox:
+        point[...] = ijk_to_ras(point, header)
 
     return bbox
 
@@ -222,10 +228,11 @@ def main():
     save_as_netcdf(region, case + '_region.nc')
 
     iop = read_intra_op_points(folderpath)
-    start = np.asarray([0, 0, 0])
-    end = np.asarray(header['sizes'])
-    bbox = bounding_box(ijk_to_ras(start, header), ijk_to_ras(end, header))
-    plot_lin_plane_fitting_with_bbox(iop, bbox, case + '_domain')
+    start_ijk = np.asarray([0, 0, 0])
+    end_ijk = np.asarray(header['sizes']) - np.asarray([1.0, 1.0, 1.0])
+    bbox_ijk = ijk_bounding_box(start_ijk, end_ijk)
+    bbox_ras = ijk_bounding_box_to_ras(bbox_ijk, header)
+    plot_lin_plane_fitting_with_bbox(iop, bbox_ras, case + '_domain')
 
     write_ini_file(case)
 
