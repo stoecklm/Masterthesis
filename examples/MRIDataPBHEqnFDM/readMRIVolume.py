@@ -112,9 +112,9 @@ def get_regular_grid_interpolator(data):
     z = np.linspace(0, data.shape[2]-1, data.shape[2])
 
     reg_grid_interpolator = RegularGridInterpolator((x, y, z), data,
-                                                    method='nearest',
+                                                    method='linear',
                                                     bounds_error=False,
-                                                    fill_value=0.0)
+                                                    fill_value=0)
 
     return reg_grid_interpolator
 
