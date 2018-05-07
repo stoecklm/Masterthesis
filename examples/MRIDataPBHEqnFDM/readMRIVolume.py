@@ -168,7 +168,9 @@ def write_ini_file(params, filename):
         exit()
 
     config['MRI']['CASE'] = case
-    config['Input']['NAME_REGION_FILE'] = folderpath + '/' + case + '_region'
+    config['Input']['NAME_REGION_FILE'] = os.path.join(folderpath, 'region')
+    config['Input']['NAME_VESSELS_FILE'] = os.path.join(folderpath, 'vessels')
+    config['Input']['NAME_INITFILE'] = os.path.join(folderpath, 'init')
     config['Input']['USE_MRI_FILE'] = 'True'
     config['Input']['USE_INITFILE'] = 'True'
     config['Input']['CREATE_INITFILE'] = 'True'
@@ -200,6 +202,11 @@ def rotate_tumor_data(params, data, iop, header_rot):
     y_min = np.min(iop[:,1])
     y_max = np.max(iop[:,1])
 
+    #z = np.polyfit(iop[:,0], iop[:,2], 0)
+    z = np.max(iop[:,2])
+    #z = np.min(iop[:,2])
+    z = np.ceil(z)
+
     x_size = x_max - x_min
     y_size = y_max - y_min
 
@@ -207,12 +214,13 @@ def rotate_tumor_data(params, data, iop, header_rot):
     missing_y = dim1_length - y_size
 
     x_start = x_min - missing_x/2.0
-    x_end = x_max + missing_x/2.0
+    x_start = np.floor(x_start)
+    x_end = dim0_length + x_start
 
     y_start = y_min - missing_y/2.0
-    y_end = y_max + missing_y/2.0
+    y_start = np.floor(y_start)
+    y_end = y_start + dim1_length
 
-    z = np.polyfit(iop[:,0], iop[:,2], 0)
     z_start = float(z) - dim2_length
     z_end = float(z)
 
@@ -220,6 +228,7 @@ def rotate_tumor_data(params, data, iop, header_rot):
     end = [x_end, y_end, z_end]
 
     params['START'] = start
+
     params['END'] = end
 
     dim0 = params['N_NODES'][0]
@@ -308,7 +317,7 @@ def main():
     params['FOLDERPATH'] = folderpath
 
     data, header = read_nrrd_file(filepath)
-    save_as_netcdf(data, folderpath + '/' + case + '_seg_tumor.nc')
+    save_as_netcdf(data, os.path.join(folderpath, 'tumor.nc'))
     read_default_ini_file(params)
 
     iop = read_intra_op_points(folderpath)
@@ -325,7 +334,7 @@ def main():
 
     final_data = rotate_tumor_data(params, data, iop, header_rot)
     final_data = data_as_binary_data(final_data)
-    filename = folderpath + '/' + case + '_region.nc'
+    filename = os.path.join(folderpath, 'region.nc')
     save_as_netcdf(final_data, filename)
     write_ini_file(params, filename)
 
