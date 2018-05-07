@@ -32,7 +32,7 @@ def save_as_netcdf(data, filename):
 
 def data_as_binary_data(data):
     binary_data = np.zeros(data.shape)
-    binary_data = np.where(data == 255, 1, 0)
+    binary_data = np.where(data > 1.0, 1, 0)
 
     return binary_data
 
@@ -42,10 +42,8 @@ def get_ijk_to_lps(header):
 
     row0 = return_string_list_as_float_numpy_array(header['space directions'][0])
     row0 = np.append(row0, 0)
-    #row1 = list(map(float, header['space directions'][1]))
     row1 = return_string_list_as_float_numpy_array(header['space directions'][1])
     row1 = np.append(row1, 0)
-    #row2 = list(map(float, header['space directions'][2]))
     row2 = return_string_list_as_float_numpy_array(header['space directions'][2])
     row2 = np.append(row2, 0)
     ijk_to_lps = np.array([row0, row1, row2, space_origin]).T
@@ -106,25 +104,7 @@ def switch_space(point):
 
     switched_point = np.matmul(point, switch_mat)
 
-    return switched_point
-
-def volume_dimensions(header):
-    start = np.asarray([0, 0, 0])
-    end = np.asarray(header['sizes'])
-
-    dim0_length = np.subtract(ijk_to_ras(start, header),
-                              ijk_to_ras([end[0],start[1],start[2]], header))
-    dim0_length = LA.norm(dim0_length)
-
-    dim1_length = np.subtract(ijk_to_ras(start, header),
-                              ijk_to_ras([start[0],end[1],start[2]], header))
-    dim1_length = LA.norm(dim1_length)
-
-    dim2_length = np.subtract(ijk_to_ras(start, header),
-                              ijk_to_ras([start[0],start[1],end[2]], header))
-    dim2_length = LA.norm(dim2_length)
-
-    return dim0_length, dim1_length, dim2_length
+    return switched_point[0:3]
 
 def get_regular_grid_interpolator(data):
     x = np.linspace(0, data.shape[0]-1, data.shape[0])
@@ -134,87 +114,15 @@ def get_regular_grid_interpolator(data):
     reg_grid_interpolator = RegularGridInterpolator((x, y, z), data,
                                                     method='nearest',
                                                     bounds_error=False,
-                                                    fill_value=0)
+                                                    fill_value=0.0)
 
     return reg_grid_interpolator
 
-def interpolate_data(data, header):
-    dim0_length, dim1_length, dim2_length = volume_dimensions(header)
-
-    x_mri = np.linspace(0, dim0_length, data.shape[0])
-    y_mri = np.linspace(0, dim1_length, data.shape[1])
-    z_mri = np.linspace(0, dim2_length, data.shape[2])
-
-    dim0_gridsize = 120/(120-1)
-    dim1_gridsize = 120/(120-1)
-    dim2_gridsize = 60/(50-1)
-
-    dim0 = int(dim0_length/dim0_gridsize)+1
-    dim1 = int(dim1_length/dim1_gridsize)+1
-    dim2 = int(dim2_length/dim2_gridsize)+1
-
-    x_scafes = np.linspace(0, dim0_length, dim0)
-    y_scafes = np.linspace(0, dim1_length, dim1)
-    z_scafes = np.linspace(0, dim2_length, dim2)
-
-    my_interpolating_function = RegularGridInterpolator((x_mri, y_mri, z_mri),
-                                                        data, method='nearest',
-                                                        bounds_error=False,
-                                                        fill_value=0)
-
-    new_data = np.zeros(dim0*dim1*dim2).reshape((dim0, dim1, dim2))
-
-    for elem_x in range(0, new_data.shape[0]):
-        for elem_y in range(0, new_data.shape[1]):
-            for elem_z in range(0, new_data.shape[2]):
-                tmp = my_interpolating_function([x_scafes[elem_x],
-                                                 y_scafes[elem_y],
-                                                 z_scafes[elem_z]])
-                new_data[elem_x, elem_y, elem_z] = tmp
-
-    return new_data
-
-def return_grid(data, header, case):
-    dim0, dim1, dim2 = data.shape
-
-    new_dim0 = 120
-    new_dim1 = 120
-    new_dim2 = 50
-
-    num_elem = new_dim0 * new_dim1 * new_dim2
-    new_data = np.zeros(num_elem).reshape((new_dim0, new_dim1, new_dim2))
-
-    i = int((new_dim0-dim0)/2)
-    j = int((new_dim1-dim1)/2)
-    #k = int((new_dim2-dim2)/2)
-    k = 5
-
-    new_data[i:i+dim0, j:j+dim1, k:k+dim2] = data
-    #new_data = np.flip(new_data, 2)
-    new_data = new_data[:,:,::-1]
-
-    return new_data
-
-def ijk_bounding_box(start, end):
-    bbox = np.asarray([[start[0], start[1], start[2]],
-                       [end[0], start[1], start[2]],
-                       [end[0], end[1], start[2]],
-                       [start[0], end[1], start[2]],
-                       [start[0], start[1], end[2]],
-                       [end[0], start[1], end[2]],
-                       [end[0], end[1], end[2]],
-                       [start[0], end[1], end[2]]])
-
-    return bbox
-
-def ijk_bounding_box_to_ras(bbox, header):
-    for point in bbox:
-        point[...] = ijk_to_ras(point, header)
-
-    return bbox
-
-def write_ini_file(case):
+def write_ini_file(case, start, end):
     print('Write {}.ini.'.format(case))
+
+    start_as_string = str(start[0]/1000) + 'x' + str(start[1]/1000) + 'x' + str(start[2]/1000)
+    end_as_string = str(end[0]/1000) + 'x' + str(end[1]/1000) + 'x' + str(end[2]/1000)
 
     config = configparser.ConfigParser()
     config.optionxform = str
@@ -232,6 +140,10 @@ def write_ini_file(case):
     config['Input']['USE_INITFILE'] = 'True'
     config['Input']['CREATE_INITFILE'] = 'True'
 
+    config['Geometry']['COORD_NODE_FIRST'] = start_as_string
+    config['Geometry']['COORD_NODE_LAST'] = end_as_string
+
+
     with open(case + '.ini', 'w') as configfile:
         config.write(configfile)
 
@@ -247,6 +159,104 @@ def return_float_numpy_array_as_string_list(array_to_list):
 
     return string_list
 
+def rotate_tumor_data(header, folderpath, data, case):
+    iop = read_intra_op_points(folderpath)
+
+    for point in iop:
+        point[...] = switch_space(point)
+
+    rmat = get_rotation_matrix(iop)
+
+    for point in iop:
+        point[...] = rotate_point_by_rotation_matrix(point, rmat)
+
+    space_dir_0 = return_string_list_as_float_numpy_array(header['space directions'][0])
+    space_dir_1 = return_string_list_as_float_numpy_array(header['space directions'][1])
+    space_dir_2 = return_string_list_as_float_numpy_array(header['space directions'][2])
+    space_origin = return_string_list_as_float_numpy_array(header['space origin'])
+
+    space_dir_0_rot = rotate_point_by_rotation_matrix(space_dir_0, rmat)
+    space_dir_1_rot = rotate_point_by_rotation_matrix(space_dir_1, rmat)
+    space_dir_2_rot = rotate_point_by_rotation_matrix(space_dir_2, rmat)
+    space_origin_rot = rotate_point_by_rotation_matrix(space_origin, rmat)
+
+    header_rot = {'keyvaluepairs': ''}
+    header_rot['space directions'] = [return_float_numpy_array_as_string_list(space_dir_0_rot),
+                                      return_float_numpy_array_as_string_list(space_dir_1_rot),
+                                      return_float_numpy_array_as_string_list(space_dir_2_rot)]
+    header_rot['space origin'] = return_float_numpy_array_as_string_list(space_origin_rot)
+
+    x_min = np.min(iop[:,0])
+    x_max = np.max(iop[:,0])
+    y_min = np.min(iop[:,1])
+    y_max = np.max(iop[:,1])
+
+    x_size = x_max - x_min
+    y_size = y_max - y_min
+
+    missing_x = 120 - x_size
+    missing_y = 120 - y_size
+
+    x_start = x_min - missing_x/2.0
+    x_end = x_max + missing_x/2.0
+
+    y_start = y_min - missing_y/2.0
+    y_end = y_max + missing_y/2.0
+
+    z = np.polyfit(iop[:,0], iop[:,2], 0)
+    z_start = float(z) - 60
+    z_end = float(z)
+
+    start = [x_start, y_start, z_start]
+    end = [x_end, y_end, z_end]
+
+    dim0 = 120
+    dim1 = 120
+    dim2 = 50
+
+    delta_x = 120/(dim0-1)
+    delta_y = 120/(dim1-1)
+    delta_z = 60/(dim2-1)
+
+    coord_lps = np.zeros(dim0*dim1*dim2*3).reshape((dim0, dim1, dim2, 3))
+
+    for elem_x in range(0, coord_lps.shape[0]):
+        x = x_start + elem_x * delta_x
+        for elem_y in range(0, coord_lps.shape[1]):
+            y = y_start + elem_y * delta_y
+            for elem_z in range(0, coord_lps.shape[2]):
+                z = z_start + elem_z * delta_z
+                coord_lps[elem_x, elem_y, elem_z] = np.asarray([x, y, z])
+
+    coord_ijk = np.zeros(dim0*dim1*dim2*3).reshape((dim0, dim1, dim2, 3))
+
+    for elem_x in range(0, coord_ijk.shape[0]):
+        for elem_y in range(0, coord_ijk.shape[1]):
+            for elem_z in range(0, coord_ijk.shape[2]):
+                coord_ijk[elem_x, elem_y, elem_z] = lps_to_ijk(coord_lps[elem_x, elem_y, elem_z], header_rot)
+
+    reg_grid_inter = get_regular_grid_interpolator(data)
+
+    final_data = np.zeros(dim0*dim1*dim2).reshape((dim0, dim1, dim2))
+
+    for elem_x in range(0, final_data.shape[0]):
+        for elem_y in range(0, final_data.shape[1]):
+            for elem_z in range(0, final_data.shape[2]):
+                tmp = coord_ijk[elem_x, elem_y, elem_z]
+                data_pt = reg_grid_inter(tmp)
+                final_data[elem_x, elem_y, elem_z] = data_pt
+
+    final_data = data_as_binary_data(final_data)
+    save_as_netcdf(final_data, 'region_linear.nc')
+
+    x_end = np.max(coord_lps[:,:,:,0])
+    x_start = np.min(coord_lps[:,:,:,0])
+    y_end = np.max(coord_lps[:,:,:,1])
+    y_start = np.min(coord_lps[:,:,:,1])
+    z_end = np.max(coord_lps[:,:,:,2])
+    z_start = np.min(coord_lps[:,:,:,2])
+
+    write_ini_file(case, start, end)
 
 def main():
     if len(sys.argv) > 1:
@@ -275,23 +285,7 @@ def main():
     data, header = read_nrrd_file(filepath)
     save_as_netcdf(data, case + '_seg_tumor.nc')
 
-    binary_data = data_as_binary_data(data)
-    save_as_netcdf(binary_data, case + '_binary_tumor.nc')
-
-    interpolated_data = interpolate_data(binary_data, header)
-    save_as_netcdf(interpolated_data, case + '_interpolated_data.nc')
-
-    region = return_grid(interpolated_data, header, case)
-    save_as_netcdf(region, case + '_region.nc')
-
-    iop = read_intra_op_points(folderpath)
-    start_ijk = np.asarray([0, 0, 0])
-    end_ijk = np.asarray(header['sizes']) - np.asarray([1.0, 1.0, 1.0])
-    bbox_ijk = ijk_bounding_box(start_ijk, end_ijk)
-    bbox_ras = ijk_bounding_box_to_ras(bbox_ijk, header)
-    plot_lin_plane_fitting_with_bbox(iop, bbox_ras, case + '_domain')
-
-    write_ini_file(case)
+    rotate_tumor_data(header, folderpath, data, case)
 
     print('Done.')
 
