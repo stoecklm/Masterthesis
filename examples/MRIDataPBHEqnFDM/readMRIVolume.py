@@ -9,8 +9,10 @@ from numpy import linalg as LA
 import nrrd
 from scipy.interpolate import RegularGridInterpolator
 
+from readMRIData import get_rotation_matrix
 from readMRIData import plot_lin_plane_fitting_with_bbox
 from readMRIData import read_intra_op_points
+from readMRIData import rotate_point_by_rotation_matrix
 
 def read_nrrd_file(filepath):
     data, header = nrrd.read(filepath)
@@ -35,18 +37,30 @@ def data_as_binary_data(data):
     return binary_data
 
 def get_ijk_to_lps(header):
-    space_origin = list(map(float, header['space origin']))
-    space_origin.append(1)
+    space_origin = return_string_list_as_float_numpy_array(header['space origin'])
+    space_origin = np.append(space_origin, 1)
 
-    row0 = list(map(float, header['space directions'][0]))
-    row0.append(0)
-    row1 = list(map(float, header['space directions'][1]))
-    row1.append(0)
-    row2 = list(map(float, header['space directions'][2]))
-    row2.append(0)
+    row0 = return_string_list_as_float_numpy_array(header['space directions'][0])
+    row0 = np.append(row0, 0)
+    #row1 = list(map(float, header['space directions'][1]))
+    row1 = return_string_list_as_float_numpy_array(header['space directions'][1])
+    row1 = np.append(row1, 0)
+    #row2 = list(map(float, header['space directions'][2]))
+    row2 = return_string_list_as_float_numpy_array(header['space directions'][2])
+    row2 = np.append(row2, 0)
     ijk_to_lps = np.array([row0, row1, row2, space_origin]).T
 
     return ijk_to_lps
+
+def ijk_to_lps(ijk, header):
+    if len(ijk) == 3:
+        ijk = np.append(ijk, 1)
+
+    ijk_to_lps = get_ijk_to_lps(header)
+
+    lps = np.dot(ijk_to_lps, ijk)
+
+    return lps[0:3]
 
 def ijk_to_ras(ijk, header):
     if len(ijk) == 3:
@@ -60,6 +74,17 @@ def ijk_to_ras(ijk, header):
 
     return ras[0:3]
 
+def lps_to_ijk(lps, header):
+    if len(lps) == 3:
+        lps = np.append(lps, 1)
+
+    ijk_to_lps = get_ijk_to_lps(header)
+    lps_to_ijk = LA.inv(ijk_to_lps)
+
+    ijk = np.dot(lps_to_ijk, lps)
+
+    return ijk[0:3]
+
 def ras_to_ijk(ras, header):
     if len(ras) == 3:
         ras = np.append(ras, 1)
@@ -72,6 +97,16 @@ def ras_to_ijk(ras, header):
     ijk = np.dot(lps_to_ijk, lps)
 
     return ijk[0:3]
+
+def switch_space(point):
+    if len(point) == 3:
+        point = np.append(point, 1)
+
+    switch_mat = np.diag([-1, -1, 1, 1])
+
+    switched_point = np.matmul(point, switch_mat)
+
+    return switched_point
 
 def volume_dimensions(header):
     start = np.asarray([0, 0, 0])
@@ -90,6 +125,18 @@ def volume_dimensions(header):
     dim2_length = LA.norm(dim2_length)
 
     return dim0_length, dim1_length, dim2_length
+
+def get_regular_grid_interpolator(data):
+    x = np.linspace(0, data.shape[0]-1, data.shape[0])
+    y = np.linspace(0, data.shape[1]-1, data.shape[1])
+    z = np.linspace(0, data.shape[2]-1, data.shape[2])
+
+    reg_grid_interpolator = RegularGridInterpolator((x, y, z), data,
+                                                    method='nearest',
+                                                    bounds_error=False,
+                                                    fill_value=0)
+
+    return reg_grid_interpolator
 
 def interpolate_data(data, header):
     dim0_length, dim1_length, dim2_length = volume_dimensions(header)
@@ -189,6 +236,16 @@ def write_ini_file(case):
         config.write(configfile)
 
     print('Done.')
+
+def return_string_list_as_float_numpy_array(list_to_array):
+    numpy_array = np.asarray(list(map(float, list_to_array)))
+
+    return numpy_array
+
+def return_float_numpy_array_as_string_list(array_to_list):
+    string_list = list(map(str, array_to_list))
+
+    return string_list
 
 
 def main():
