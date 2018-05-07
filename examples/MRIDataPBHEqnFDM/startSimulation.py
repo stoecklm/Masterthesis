@@ -19,6 +19,8 @@ from readMRIData import interpolation
 from readMRIData import get_interpolated_path
 from readMRIData import get_path
 
+from readMRIVolume import switch_space
+
 from postProcessing import open_surface_temperatures
 from postProcessing import tumor_temperatures
 from postProcessing import tumor_near_surface_temperatures
@@ -691,45 +693,80 @@ def create_surface_from_mri(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
     filepath = params['MRI_DATA_FOLDER']
     iop = read_intra_op_points(filepath)
     t = read_tumor_point(filepath)
-    iop, t = rotate_points(iop, t)
-    iop, t = move_points(iop, t, t)
+    if params['USE_MRI_FILE'] == False:
+        iop, t = rotate_points(iop, t)
+        iop, t = move_points(iop, t, t)
 
-    path = get_interpolated_path(iop)
-    #path = get_path(iop)
+        path = get_interpolated_path(iop)
+        #path = get_path(iop)
 
-    # Get tumor center location.
-    TUMOR_CENTER = params['TUMOR_CENTER']
+        # Get tumor center location.
+        TUMOR_CENTER = params['TUMOR_CENTER']
 
-    # Get points to define open skull.
-    pts = interpolation(iop)
-    # mm to m.
-    pts[:,0] /= 1000
-    pts[:,1] /= 1000
-    # Transform/move points according to new coordinate system.
-    pts[:,0] += TUMOR_CENTER[0]
-    pts[:,1] += TUMOR_CENTER[1]
-    params['HOLE'] = pts
+        # Get points to define open skull.
+        pts = interpolation(iop)
+        # mm to m.
+        pts[:,0] /= 1000
+        pts[:,1] /= 1000
+        # Transform/move points according to new coordinate system.
+        pts[:,0] += TUMOR_CENTER[0]
+        pts[:,1] += TUMOR_CENTER[1]
+        params['HOLE'] = pts
 
-    # Get file/grid dimensions.
-    dim0, dim1, dim2 = params['N_NODES']
-    COORD_NODE_FIRST = params['COORD_NODE_FIRST']
-    # Resize array.
-    num_elem = dim0 * dim1 * dim2
-    values_array = BRAIN_VALUE \
-                   * np.ones(num_elem, dtype=int).reshape(dim2, dim1, dim0)
-    # Iterate through array.
-    for elem_y in range(0, dim1):
-        for elem_x in range(0, dim0):
-            # Calculate location of current node.
-            x = (elem_x * params['GRIDSIZE'][0]) + COORD_NODE_FIRST[0]
-            y = (elem_y * params['GRIDSIZE'][1]) + COORD_NODE_FIRST[1]
-            # Transform current node to tumor center system.
-            x_trans = (x - TUMOR_CENTER[0])*1000
-            y_trans = (y - TUMOR_CENTER[1])*1000
-            # Check if current point is inside open skill
-            # If yes, set value to tumor specific value.
-            if path.contains_point((x_trans,y_trans)) == True:
-                values_array[-1, elem_y, elem_x] = TUMOR_VALUE
+        # Get file/grid dimensions.
+        dim0, dim1, dim2 = params['N_NODES']
+        COORD_NODE_FIRST = params['COORD_NODE_FIRST']
+        # Resize array.
+        num_elem = dim0 * dim1 * dim2
+        values_array = BRAIN_VALUE \
+                       * np.ones(num_elem, dtype=int).reshape(dim2, dim1, dim0)
+        # Iterate through array.
+        for elem_y in range(0, dim1):
+            for elem_x in range(0, dim0):
+                # Calculate location of current node.
+                x = (elem_x * params['GRIDSIZE'][0]) + COORD_NODE_FIRST[0]
+                y = (elem_y * params['GRIDSIZE'][1]) + COORD_NODE_FIRST[1]
+                # Transform current node to tumor center system.
+                x_trans = (x - TUMOR_CENTER[0])*1000
+                y_trans = (y - TUMOR_CENTER[1])*1000
+                # Check if current point is inside open skill
+                # If yes, set value to tumor specific value.
+                if path.contains_point((x_trans,y_trans)) == True:
+                    values_array[-1, elem_y, elem_x] = TUMOR_VALUE
+
+    if params['USE_MRI_FILE'] == True:
+        for point in iop:
+            point[...] = switch_space(point)
+        iop, t = rotate_points(iop, t)
+        path = get_interpolated_path(iop)
+        # Get points to define open skull.
+        pts = interpolation(iop)
+        # mm to m.
+        pts[:,0] /= 1000
+        pts[:,1] /= 1000
+        params['HOLE'] = pts
+
+        # Get file/grid dimensions.
+        dim0, dim1, dim2 = params['N_NODES']
+        COORD_NODE_FIRST = params['COORD_NODE_FIRST']
+        # Resize array.
+        num_elem = dim0 * dim1 * dim2
+        values_array = BRAIN_VALUE \
+                       * np.ones(num_elem, dtype=int).reshape(dim2, dim1, dim0)
+        # Iterate through array.
+        for elem_y in range(0, dim1):
+            for elem_x in range(0, dim0):
+                # Calculate location of current node.
+                x = (elem_x * params['GRIDSIZE'][0]) + COORD_NODE_FIRST[0]
+                y = (elem_y * params['GRIDSIZE'][1]) + COORD_NODE_FIRST[1]
+                # Transform current node to tumor center system.
+                x_trans = x * 1000
+                y_trans = y * 1000
+                # Check if current point is inside open skill
+                # If yes, set value to tumor specific value.
+                if path.contains_point((x_trans,y_trans)) == True:
+                    values_array[-1, elem_y, elem_x] = TUMOR_VALUE
+
     # Create netCDF variable.
     nNodes = []
     nNodes.append('time')
