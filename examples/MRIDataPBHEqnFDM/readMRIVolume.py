@@ -118,11 +118,44 @@ def get_regular_grid_interpolator(data):
 
     return reg_grid_interpolator
 
-def write_ini_file(case, start, end):
+def read_default_ini_file(params):
+
+    config = configparser.ConfigParser()
+    config.optionxform = str
+
+    if os.path.isfile('Parameters.ini') == True:
+        config.read('Parameters.ini')
+    else:
+        print('Parameters.ini does not exist.')
+        print('Aborting.')
+        exit()
+
+    COORD_NODE_FIRST = config['Geometry'].get('COORD_NODE_FIRST')
+    COORD_NODE_FIRST = list(map(float, COORD_NODE_FIRST.split('x')))
+    params['COORD_NODE_FIRST'] = COORD_NODE_FIRST
+
+    COORD_NODE_LAST = config['Geometry'].get('COORD_NODE_LAST')
+    COORD_NODE_LAST = list(map(float, COORD_NODE_LAST.split('x')))
+    params['COORD_NODE_LAST'] = COORD_NODE_LAST
+
+    N_NODES = config['Geometry'].get('N_NODES')
+    N_NODES = list(map(int, N_NODES.split('x')))
+    params['N_NODES'] = N_NODES
+
+    return params
+
+def write_ini_file(params, filename):
+    case = params['CASE']
     print('Write {}.ini.'.format(case))
 
-    start_as_string = str(start[0]/1000) + 'x' + str(start[1]/1000) + 'x' + str(start[2]/1000)
-    end_as_string = str(end[0]/1000) + 'x' + str(end[1]/1000) + 'x' + str(end[2]/1000)
+    folderpath = params['FOLDERPATH']
+    start = params['START']
+    end = params['END']
+
+    start_as_string = str(start[0]/1000) + 'x' + str(start[1]/1000) + 'x' \
+                      + str(start[2]/1000)
+    end_as_string = str(end[0]/1000) + 'x' + str(end[1]/1000) + 'x' \
+                    + str(end[2]/1000)
 
     config = configparser.ConfigParser()
     config.optionxform = str
@@ -135,14 +168,12 @@ def write_ini_file(case, start, end):
         exit()
 
     config['MRI']['CASE'] = case
-    config['Input']['NAME_REGION_FILE'] = case + '_region'
+    config['Input']['NAME_REGION_FILE'] = folderpath + '/' + case + '_region'
     config['Input']['USE_MRI_FILE'] = 'True'
     config['Input']['USE_INITFILE'] = 'True'
     config['Input']['CREATE_INITFILE'] = 'True'
-
     config['Geometry']['COORD_NODE_FIRST'] = start_as_string
     config['Geometry']['COORD_NODE_LAST'] = end_as_string
-
 
     with open(case + '.ini', 'w') as configfile:
         config.write(configfile)
@@ -159,32 +190,10 @@ def return_float_numpy_array_as_string_list(array_to_list):
 
     return string_list
 
-def rotate_tumor_data(header, folderpath, data, case):
-    iop = read_intra_op_points(folderpath)
-
-    for point in iop:
-        point[...] = switch_space(point)
-
-    rmat = get_rotation_matrix(iop)
-
-    for point in iop:
-        point[...] = rotate_point_by_rotation_matrix(point, rmat)
-
-    space_dir_0 = return_string_list_as_float_numpy_array(header['space directions'][0])
-    space_dir_1 = return_string_list_as_float_numpy_array(header['space directions'][1])
-    space_dir_2 = return_string_list_as_float_numpy_array(header['space directions'][2])
-    space_origin = return_string_list_as_float_numpy_array(header['space origin'])
-
-    space_dir_0_rot = rotate_point_by_rotation_matrix(space_dir_0, rmat)
-    space_dir_1_rot = rotate_point_by_rotation_matrix(space_dir_1, rmat)
-    space_dir_2_rot = rotate_point_by_rotation_matrix(space_dir_2, rmat)
-    space_origin_rot = rotate_point_by_rotation_matrix(space_origin, rmat)
-
-    header_rot = {'keyvaluepairs': ''}
-    header_rot['space directions'] = [return_float_numpy_array_as_string_list(space_dir_0_rot),
-                                      return_float_numpy_array_as_string_list(space_dir_1_rot),
-                                      return_float_numpy_array_as_string_list(space_dir_2_rot)]
-    header_rot['space origin'] = return_float_numpy_array_as_string_list(space_origin_rot)
+def rotate_tumor_data(params, data, iop, header_rot):
+    dim0_length = (params['COORD_NODE_LAST'][0] - params['COORD_NODE_FIRST'][0])*1000
+    dim1_length = (params['COORD_NODE_LAST'][1] - params['COORD_NODE_FIRST'][1])*1000
+    dim2_length = (params['COORD_NODE_LAST'][2] - params['COORD_NODE_FIRST'][2])*1000
 
     x_min = np.min(iop[:,0])
     x_max = np.max(iop[:,0])
@@ -194,8 +203,8 @@ def rotate_tumor_data(header, folderpath, data, case):
     x_size = x_max - x_min
     y_size = y_max - y_min
 
-    missing_x = 120 - x_size
-    missing_y = 120 - y_size
+    missing_x = dim0_length - x_size
+    missing_y = dim1_length - y_size
 
     x_start = x_min - missing_x/2.0
     x_end = x_max + missing_x/2.0
@@ -204,19 +213,22 @@ def rotate_tumor_data(header, folderpath, data, case):
     y_end = y_max + missing_y/2.0
 
     z = np.polyfit(iop[:,0], iop[:,2], 0)
-    z_start = float(z) - 60
+    z_start = float(z) - dim2_length
     z_end = float(z)
 
     start = [x_start, y_start, z_start]
     end = [x_end, y_end, z_end]
 
-    dim0 = 120
-    dim1 = 120
-    dim2 = 50
+    params['START'] = start
+    params['END'] = end
 
-    delta_x = 120/(dim0-1)
-    delta_y = 120/(dim1-1)
-    delta_z = 60/(dim2-1)
+    dim0 = params['N_NODES'][0]
+    dim1 = params['N_NODES'][1]
+    dim2 = params['N_NODES'][2]
+
+    delta_x = dim0_length/(dim0-1)
+    delta_y = dim1_length/(dim1-1)
+    delta_z = dim2_length/(dim2-1)
 
     coord_lps = np.zeros(dim0*dim1*dim2*3).reshape((dim0, dim1, dim2, 3))
 
@@ -246,19 +258,30 @@ def rotate_tumor_data(header, folderpath, data, case):
                 data_pt = reg_grid_inter(tmp)
                 final_data[elem_x, elem_y, elem_z] = data_pt
 
-    final_data = data_as_binary_data(final_data)
-    save_as_netcdf(final_data, 'region_linear.nc')
+    return final_data
 
-    x_end = np.max(coord_lps[:,:,:,0])
-    x_start = np.min(coord_lps[:,:,:,0])
-    y_end = np.max(coord_lps[:,:,:,1])
-    y_start = np.min(coord_lps[:,:,:,1])
-    z_end = np.max(coord_lps[:,:,:,2])
-    z_start = np.min(coord_lps[:,:,:,2])
+def build_rotated_header(header, rmat):
+    space_dir_0 = return_string_list_as_float_numpy_array(header['space directions'][0])
+    space_dir_1 = return_string_list_as_float_numpy_array(header['space directions'][1])
+    space_dir_2 = return_string_list_as_float_numpy_array(header['space directions'][2])
+    space_origin = return_string_list_as_float_numpy_array(header['space origin'])
 
-    write_ini_file(case, start, end)
+    space_dir_0_rot = rotate_point_by_rotation_matrix(space_dir_0, rmat)
+    space_dir_1_rot = rotate_point_by_rotation_matrix(space_dir_1, rmat)
+    space_dir_2_rot = rotate_point_by_rotation_matrix(space_dir_2, rmat)
+    space_origin_rot = rotate_point_by_rotation_matrix(space_origin, rmat)
+
+    header_rot = {'keyvaluepairs': ''}
+    header_rot['space directions'] = [return_float_numpy_array_as_string_list(space_dir_0_rot),
+                                      return_float_numpy_array_as_string_list(space_dir_1_rot),
+                                      return_float_numpy_array_as_string_list(space_dir_2_rot)]
+    header_rot['space origin'] = return_float_numpy_array_as_string_list(space_origin_rot)
+
+    return header_rot
+
 
 def main():
+    params = {'keyvaluepairs' : ''}
     if len(sys.argv) > 1:
         if os.path.isdir(sys.argv[1]) == True:
             tmp = os.path.join(os.sys.argv[1], '_1.nrrd')
@@ -281,11 +304,30 @@ def main():
     print('Create region file.')
 
     case = filepath.split('_')[0]
+    params['CASE'] = case
+    params['FOLDERPATH'] = folderpath
 
     data, header = read_nrrd_file(filepath)
-    save_as_netcdf(data, case + '_seg_tumor.nc')
+    save_as_netcdf(data, folderpath + '/' + case + '_seg_tumor.nc')
+    read_default_ini_file(params)
 
-    rotate_tumor_data(header, folderpath, data, case)
+    iop = read_intra_op_points(folderpath)
+
+    for point in iop:
+        point[...] = switch_space(point)
+
+    rmat = get_rotation_matrix(iop)
+
+    for point in iop:
+        point[...] = rotate_point_by_rotation_matrix(point, rmat)
+
+    header_rot = build_rotated_header(header, rmat)
+
+    final_data = rotate_tumor_data(params, data, iop, header_rot)
+    final_data = data_as_binary_data(final_data)
+    filename = folderpath + '/' + case + '_region.nc'
+    save_as_netcdf(final_data, filename)
+    write_ini_file(params, filename)
 
     print('Done.')
 
