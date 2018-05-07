@@ -238,8 +238,7 @@ def lin_plane_fitting(points):
     return C
 
 # https://stackoverflow.com/a/9423864
-def rotate_points(points, tumor):
-    print('Rotate IntraOp points and tumor.')
+def get_rotation_matrix(points):
     C = lin_plane_fitting(points)
     M = np.array([-1.0*C[0], -1.0*C[1], 1])
     N = np.array([0, 0, 1])
@@ -259,10 +258,24 @@ def rotate_points(points, tumor):
                      [y*x*C+z*s, y*y*C+c, y*z*C-x*s],
                      [z*x*C-y*s, z*y*C+x*s, z*z*C+c]])
 
-    for point in points:
-        point[...] = np.dot(rmat, point)
+    return rmat
 
-    tumor = np.dot(rmat, tumor)
+# https://stackoverflow.com/a/9423864
+def rotate_point_by_rotation_matrix(point, rmat):
+    point = np.dot(rmat, point)
+
+    return point
+
+# https://stackoverflow.com/a/9423864
+def rotate_points(points, tumor):
+    print('Rotate IntraOp points and tumor.')
+
+    rmat = get_rotation_matrix(points)
+
+    for point in points:
+        point[...] = rotate_point_by_rotation_matrix(point, rmat)
+
+    tumor = rotate_point_by_rotation_matrix(tumor, rmat)
 
     print('Done.')
     return points, tumor
