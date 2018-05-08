@@ -292,6 +292,7 @@ def main():
     # if file exists and if file has .csv extension.
     if len(sys.argv) > 1:
         if os.path.isdir(sys.argv[1]) == True:
+            folderpath = sys.argv[1]
             tmp1 = os.path.join(os.sys.argv[1], 'fiducials.csv')
             tmp2 = os.path.join(os.sys.argv[1], 'OpenIGTLink.fcsv')
             if os.path.isfile(tmp1) != True and os.path.isfile(tmp2) != True:
@@ -320,15 +321,15 @@ def main():
     t = read_tumor_point(filepath)
     print('Tumor point:')
     print(t)
-    plot_points(iop, case + '_org_points')
-    plot_lin_plane_fitting(iop, case + '_org_plane')
-    plot_interpolation(iop, case + '_org_inter')
+    plot_points(iop, os.path.join(folderpath, 'org_points'))
+    plot_lin_plane_fitting(iop, os.path.join(folderpath, 'org_plane'))
+    plot_interpolation(iop, os.path.join(folderpath, 'org_interpolated'))
     print()
     # Rotation of points.
     iop, t = rotate_points(iop, t)
-    plot_points(iop, case + '_rot_points')
-    plot_lin_plane_fitting(iop, case + '_rot_plane')
-    plot_interpolation(iop, case + '_rot_inter')
+    plot_points(iop, os.path.join(folderpath, 'rot_points'))
+    plot_lin_plane_fitting(iop, os.path.join(folderpath, 'rot_plane'))
+    plot_interpolation(iop, os.path.join(folderpath, 'rot_inter'))
     print('Set of IntraOp points after rotation:')
     print(iop)
     print('Tumor point after rotation:')
@@ -336,9 +337,9 @@ def main():
     print()
     # Move tumor to origin.
     iop, t = move_points(iop, t, t)
-    plot_points(iop, case + '_move_points')
-    plot_lin_plane_fitting(iop, case + '_move_plane')
-    plot_interpolation(iop, case + '_move_inter')
+    plot_points(iop, os.path.join(folderpath, 'moved_points'))
+    plot_lin_plane_fitting(iop, os.path.join(folderpath, 'moved_plane'))
+    plot_interpolation(iop, os.path.join(folderpath, 'moved_interpolated'))
     print('Set of IntraOp points after moving:')
     print(iop)
     print('Tumor point after moving:')
