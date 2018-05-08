@@ -20,6 +20,7 @@ def read_nrrd_file(filepath):
     return data, header
 
 def save_as_netcdf(data, filename):
+    print('Save data to {}.'.format(filename))
     nc_file = nc.Dataset(filename, 'w', format='NETCDF3_CLASSIC')
     nc_file.createDimension('nNodes_0', data.shape[0])
     nc_file.createDimension('nNodes_1', data.shape[1])
@@ -29,6 +30,8 @@ def save_as_netcdf(data, filename):
                                                     'nNodes_1', 'nNodes_0'))
     brain[0,] = np.swapaxes(data, 0, 2)
     nc_file.close()
+
+    print('Done.')
 
 def data_as_binary_data(data):
     binary_data = np.zeros(data.shape)
@@ -193,9 +196,12 @@ def return_float_numpy_array_as_string_list(array_to_list):
     return string_list
 
 def rotate_tumor_data(params, data, iop, header_rot):
-    dim0_length = (params['COORD_NODE_LAST'][0] - params['COORD_NODE_FIRST'][0])*1000
-    dim1_length = (params['COORD_NODE_LAST'][1] - params['COORD_NODE_FIRST'][1])*1000
-    dim2_length = (params['COORD_NODE_LAST'][2] - params['COORD_NODE_FIRST'][2])*1000
+    dim0_length = (params['COORD_NODE_LAST'][0] \
+                   - params['COORD_NODE_FIRST'][0])*1000
+    dim1_length = (params['COORD_NODE_LAST'][1] \
+                   - params['COORD_NODE_FIRST'][1])*1000
+    dim2_length = (params['COORD_NODE_LAST'][2] \
+                   - params['COORD_NODE_FIRST'][2])*1000
 
     x_min = np.min(iop[:,0])
     x_max = np.max(iop[:,0])
@@ -239,6 +245,8 @@ def rotate_tumor_data(params, data, iop, header_rot):
     delta_y = dim1_length/(dim1-1)
     delta_z = dim2_length/(dim2-1)
 
+    print('Create LPS coordinates array.')
+
     coord_lps = np.zeros(dim0*dim1*dim2*3).reshape((dim0, dim1, dim2, 3))
 
     for elem_x in range(0, coord_lps.shape[0]):
@@ -249,12 +257,21 @@ def rotate_tumor_data(params, data, iop, header_rot):
                 z = z_start + elem_z * delta_z
                 coord_lps[elem_x, elem_y, elem_z] = np.asarray([x, y, z])
 
+    print('Done.')
+    print('Create IJK coordinates array.')
+
     coord_ijk = np.zeros(dim0*dim1*dim2*3).reshape((dim0, dim1, dim2, 3))
 
     for elem_x in range(0, coord_ijk.shape[0]):
         for elem_y in range(0, coord_ijk.shape[1]):
             for elem_z in range(0, coord_ijk.shape[2]):
-                coord_ijk[elem_x, elem_y, elem_z] = lps_to_ijk(coord_lps[elem_x, elem_y, elem_z], header_rot)
+                coord_ijk[elem_x, elem_y, elem_z] = lps_to_ijk(coord_lps[elem_x,
+                                                                         elem_y,
+                                                                         elem_z],
+                                                               header_rot)
+
+    print('Done.')
+    print('Interpolate data.')
 
     reg_grid_inter = get_regular_grid_interpolator(data)
 
@@ -266,6 +283,8 @@ def rotate_tumor_data(params, data, iop, header_rot):
                 tmp = coord_ijk[elem_x, elem_y, elem_z]
                 data_pt = reg_grid_inter(tmp)
                 final_data[elem_x, elem_y, elem_z] = data_pt
+
+    print('Done.')
 
     return final_data
 
@@ -287,6 +306,24 @@ def build_rotated_header(header, rmat):
     header_rot['space origin'] = return_float_numpy_array_as_string_list(space_origin_rot)
 
     return header_rot
+
+def ijk_bounding_box(start, end):
+    bbox = np.asarray([[start[0], start[1], start[2]],
+                       [end[0], start[1], start[2]],
+                       [end[0], end[1], start[2]],
+                       [start[0], end[1], start[2]],
+                       [start[0], start[1], end[2]],
+                       [end[0], start[1], end[2]],
+                       [end[0], end[1], end[2]],
+                       [start[0], end[1], end[2]]])
+
+    return bbox
+
+def ijk_bounding_box_to_lps(bbox, header):
+    for point in bbox:
+        point[...] = ijk_to_lps(point, header)
+
+    return bbox
 
 
 def main():
@@ -326,6 +363,13 @@ def main():
         point[...] = switch_space(point)
 
     rmat = get_rotation_matrix(iop)
+
+    start_ijk = np.asarray([0, 0, 0])
+    end_ijk = np.asarray(header['sizes']) - np.asarray([1.0, 1.0, 1.0])
+    bbox_ijk = ijk_bounding_box(start_ijk, end_ijk)
+    bbox_lps = ijk_bounding_box_to_lps(bbox_ijk, header)
+    plot_lin_plane_fitting_with_bbox(iop, bbox_lps,
+                                     os.path.join(folderpath, 'iop_and_bbox'))
 
     for point in iop:
         point[...] = rotate_point_by_rotation_matrix(point, rmat)
