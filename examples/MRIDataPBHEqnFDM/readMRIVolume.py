@@ -376,6 +376,11 @@ def main():
 
     header_rot = build_rotated_header(header, rmat)
 
+    bbox_ijk = ijk_bounding_box(start_ijk, end_ijk)
+    bbox_lps_rot = ijk_bounding_box_to_lps(bbox_ijk, header_rot)
+    plot_lin_plane_fitting_with_bbox(iop, bbox_lps_rot,
+                                     os.path.join(folderpath, 'iop_and_bbox_rot'))
+
     final_data = rotate_tumor_data(params, data, iop, header_rot)
     final_data = data_as_binary_data(final_data)
     filename = os.path.join(folderpath, 'region.nc')
