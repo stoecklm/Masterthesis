@@ -690,19 +690,27 @@ def create_surface_array(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
 
 def create_surface_from_mri(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
                             NAME_VARIABLE):
+    # Get file/grid dimensions.
+    dim0, dim1, dim2 = params['N_NODES']
+    COORD_NODE_FIRST = params['COORD_NODE_FIRST']
+    # Resize array.
+    num_elem = dim0 * dim1 * dim2
+    values_array = BRAIN_VALUE \
+                   * np.ones(num_elem, dtype=int).reshape(dim2, dim1, dim0)
+
     filepath = params['MRI_DATA_FOLDER']
     iop = read_intra_op_points(filepath)
     t = read_tumor_point(filepath)
+    for point in iop:
+        point[...] = switch_space(point)
+    t = switch_space(t)
+    iop, t = rotate_points(iop, t)
+
     if params['USE_MRI_FILE'] == False:
-        iop, t = rotate_points(iop, t)
         iop, t = move_points(iop, t, t)
-
         path = get_interpolated_path(iop)
-        #path = get_path(iop)
-
         # Get tumor center location.
         TUMOR_CENTER = params['TUMOR_CENTER']
-
         # Get points to define open skull.
         pts = interpolation(iop)
         # mm to m.
@@ -712,14 +720,6 @@ def create_surface_from_mri(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
         pts[:,0] += TUMOR_CENTER[0]
         pts[:,1] += TUMOR_CENTER[1]
         params['HOLE'] = pts
-
-        # Get file/grid dimensions.
-        dim0, dim1, dim2 = params['N_NODES']
-        COORD_NODE_FIRST = params['COORD_NODE_FIRST']
-        # Resize array.
-        num_elem = dim0 * dim1 * dim2
-        values_array = BRAIN_VALUE \
-                       * np.ones(num_elem, dtype=int).reshape(dim2, dim1, dim0)
         # Iterate through array.
         for elem_y in range(0, dim1):
             for elem_x in range(0, dim0):
@@ -735,9 +735,6 @@ def create_surface_from_mri(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
                     values_array[-1, elem_y, elem_x] = TUMOR_VALUE
 
     if params['USE_MRI_FILE'] == True:
-        for point in iop:
-            point[...] = switch_space(point)
-        iop, t = rotate_points(iop, t)
         path = get_interpolated_path(iop)
         # Get points to define open skull.
         pts = interpolation(iop)
@@ -745,14 +742,6 @@ def create_surface_from_mri(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
         pts[:,0] /= 1000
         pts[:,1] /= 1000
         params['HOLE'] = pts
-
-        # Get file/grid dimensions.
-        dim0, dim1, dim2 = params['N_NODES']
-        COORD_NODE_FIRST = params['COORD_NODE_FIRST']
-        # Resize array.
-        num_elem = dim0 * dim1 * dim2
-        values_array = BRAIN_VALUE \
-                       * np.ones(num_elem, dtype=int).reshape(dim2, dim1, dim0)
         # Iterate through array.
         for elem_y in range(0, dim1):
             for elem_x in range(0, dim0):
