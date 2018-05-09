@@ -12,6 +12,7 @@ import numpy as np
 import numpy.ma as ma
 
 from helperFunctions import temperature_array_from_result
+from postProcessing import surface_array_from_file
 
 CMAP = cm.viridis
 
@@ -86,6 +87,38 @@ def plot_heatmap(a, params, title, filepath):
     plt.gcf().clear()
     plt.close()
 
+def plot_heatmap_scaled(temp, params, title, filepath):
+    surface = surface_array_from_file(params['NAME_INITFILE'])
+    skull = surface[-1,:,:]
+    if np.count_nonzero(skull == 1) != 0:
+        temp[np.where(skull == 0)] = float('nan')
+        temp = ma.masked_where(np.isnan(temp), temp)
+    else:
+        print('No open surface specified.')
+
+    COORD_NODE_FIRST = params['COORD_NODE_FIRST']
+    COORD_NODE_LAST = params['COORD_NODE_LAST']
+    DIM = params['N_NODES']
+    TUMOR_CENTER = params['TUMOR_CENTER']
+    RADIUS = params['PARAMETERS']['DIAMETER']/2
+    x, y = np.meshgrid(np.linspace(COORD_NODE_FIRST[0], COORD_NODE_LAST[0],
+                                   DIM[0]),
+                       np.linspace(COORD_NODE_FIRST[1], COORD_NODE_LAST[1],
+                                   DIM[1]))
+    fig, ax = plt.subplots()
+    heatmap = ax.pcolormesh(x, y, temp, cmap=CMAP, rasterized=True)
+    fig.suptitle('Heatmap in deg C for\n' + title, fontsize=12)
+    ax.set_xlabel('x in m')
+    ax.set_ylabel('y in m')
+    ticks = np.linspace(temp.min(), temp.max(), 11)
+    fig.colorbar(heatmap, ticks=ticks, orientation='vertical', shrink=0.75,
+                 aspect=20)
+    plt.gca().set_aspect('equal', adjustable='box')
+    print('Save figure to {}.'.format(filepath))
+    plt.savefig(filepath)
+    plt.gcf().clear()
+    plt.close()
+
 def plot_tumor(a, params, title, filepath):
     COORD_NODE_FIRST = params['COORD_NODE_FIRST']
     COORD_NODE_LAST = params['COORD_NODE_LAST']
@@ -153,17 +186,17 @@ def plot_surface(filepath, params):
 
     filepath = os.path.splitext(filepath)[0]
     title = filepath
-    filepath_heatmap = filepath
-    filepath_tumor = filepath
-    filepath += '_surface.eps'
-    filepath_heatmap += '_heatmap.eps'
-    filepath_tumor += '_tumor.eps'
+    filepath_surface = filepath + '_surface.eps'
+    filepath_heatmap = filepath + '_heatmap.eps'
+    filepath_heatmap_scaled = filepath + '_heatmap_scaled.eps'
+    filepath_tumor = filepath + '_tumor.eps'
 
     # Surface data.
     temperature = np.zeros((dim1, dim0))
     temperature[:,:] = T[-1,:,:]
-    plot_3d_surface(temperature, params, title, filepath)
+    plot_3d_surface(temperature, params, title, filepath_surface)
     plot_heatmap(temperature, params, title, filepath_heatmap)
+    plot_heatmap_scaled(temperature, params, title, filepath_heatmap_scaled)
 
     # x-z-plane data.
     temperature = np.zeros((dim2, dim0))
