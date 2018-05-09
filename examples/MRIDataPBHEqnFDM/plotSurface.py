@@ -129,12 +129,13 @@ def plot_tumor(a, params, title, filepath):
                                    DIM[0]),
                        np.linspace(COORD_NODE_FIRST[2], COORD_NODE_LAST[2],
                                    DIM[2]))
-    circle = plt.Circle((TUMOR_CENTER[0], TUMOR_CENTER[2]), RADIUS, color='r',
-                         fill=False, linestyle='dashed')
     # Plot heatmap with circle around tumor.
     fig, ax = plt.subplots()
     heatmap = ax.pcolormesh(x, z, a, cmap=CMAP, rasterized=True)
-    ax.add_artist(circle)
+    if params['USE_MRI_FILE'] == False:
+        circle = plt.Circle((TUMOR_CENTER[0], TUMOR_CENTER[2]), RADIUS, color='r',
+                             fill=False, linestyle='dashed')
+        ax.add_artist(circle)
     # Title.
     fig.suptitle('Heatmap in deg C for\n' + title, fontsize=12)
     # Customize z axis.
