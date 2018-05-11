@@ -2,6 +2,7 @@ import netCDF4 as nc
 import numpy as np
 
 def temperature_array_from_result(filepath):
+    print('Read {}.'.format(filepath))
     nc_file = nc.Dataset(filepath)
     dim0 = nc_file.dimensions['nNodes_0'].size
     dim1 = nc_file.dimensions['nNodes_1'].size

@@ -1,3 +1,4 @@
+import configparser
 import os
 import sys
 
@@ -10,14 +11,29 @@ from matplotlib.ticker import LinearLocator
 from matplotlib.ticker import FormatStrFormatter
 import netCDF4 as nc
 import numpy as np
-from scipy.interpolate import griddata
+from scipy.interpolate import RegularGridInterpolator
 
 from helperFunctions import temperature_array_from_result
-from helperFunctions import surface_temperature_array_from_result
 
 CMAP = cm.viridis
 
+def save_as_netcdf(data, filepath):
+    print('Save data to {}.'.format(filepath))
+    nc_file = nc.Dataset(filepath, 'w', format='NETCDF3_CLASSIC')
+    nc_file.createDimension('time')
+    for dim in range(0, len(data.shape)):
+        nNodes = nc_file.createDimension('nNodes_' + str(dim), data.shape[2-dim])
+    nNodes = []
+    nNodes.append('time')
+    for dim in range(len(data.shape), 0, -1):
+        nNodes.append('nNodes_' + str(dim-1))
+    init_values = nc_file.createVariable('TDiff', 'f8', nNodes)
+    init_values[0,] = data
+
+    nc_file.close()
+
 def plot_diff_on_surface(data, filepath):
+    print('Save figure to {}.'.format(filepath))
     fig = plt.figure()
     ax = fig.gca(projection='3d')
     x, y = np.meshgrid(np.linspace(0, data.shape[1]-1, data.shape[1]),
@@ -32,282 +48,187 @@ def plot_diff_on_surface(data, filepath):
     ticks = np.linspace(data.min(), data.max(), 11)
     fig.colorbar(surf, ticks=ticks, orientation='vertical', shrink=0.75,
                  aspect=20)
-    print('Save figure to {}.'.format(filepath))
     plt.savefig(filepath)
     plt.gcf().clear()
     plt.close()
 
-def two_netcdf_files_surface(filepath, a_1, a_2):
-    filepath = os.path.splitext(filepath[0])[0] + '_' \
-               + os.path.basename(os.path.splitext(filepath[1])[0]) \
-               + '_diff_surface.nc'
-    print('Write surface data to {0}.'.format(filepath))
-    if a_1.shape[2] == a_2.shape[2] and \
-       a_1.shape[1] == a_2.shape[1]:
-        dim0_sparse = a_1.shape[2]
-        dim1_sparse = a_1.shape[1]
-        a_3 = np.subtract(a_1[-1,:,:], a_2[-1,:,:])
-    elif a_1.shape[2] != a_2.shape[2] and \
-         a_1.shape[1] != a_2.shape[1]:
-        print('* WARNING: Shape in x dim and y dim is not equal.')
-        print('  Using downsampling and cubic interpolation to calc diff',
-              'between results.')
-        if a_1.shape[1] < a_2.shape[1]:
-            # a_1 = sparse
-            # a_2 = dense
-            dim0_sparse = a_1.shape[2]
-            dim1_sparse = a_1.shape[1]
-            dim0_dense = a_2.shape[2]
-            dim1_dense = a_2.shape[1]
-        else:
-            # a_1 = dense
-            # a_2 = sparse
-            dim0_sparse = a_2.shape[2]
-            dim1_sparse = a_2.shape[1]
-            dim0_dense = a_1.shape[2]
-            dim1_dense = a_1.shape[1]
+def get_regular_grid_interpolator(data):
+    x = np.linspace(0, data.shape[0]-1, data.shape[0])
+    y = np.linspace(0, data.shape[1]-1, data.shape[1])
+    z = np.linspace(0, data.shape[2]-1, data.shape[2])
 
-        x_sparse, y_sparse = np.meshgrid(np.linspace(0, dim0_sparse-1,
-                                                     dim0_sparse),
-                                         np.linspace(0, dim1_sparse-1,
-                                                     dim1_sparse))
-        x_dense, y_dense = np.meshgrid(np.linspace(0, dim0_sparse-1,
-                                                   dim0_dense),
-                                       np.linspace(0, dim1_sparse-1,
-                                                   dim1_dense))
-        if a_1.shape[1] < a_2.shape[1]:
-            # a_1 = sparse
-            # a_2 = dense
-            a_sparse = griddata(np.array([x_dense.ravel(),
-                                          y_dense.ravel()]).T,
-                                a_2[-1,:,:].ravel(),
-                                (x_sparse, y_sparse), method='cubic')
-            a_3 = np.subtract(a_1[-1,:,:], a_sparse[:,:])
-        else:
-            # a_1 = dense
-            # a_2 = sparse
-            a_sparse = griddata(np.array([x_dense.ravel(), y_dense.ravel()]).T,
-                                a_1[-1,:,:].ravel(),
-                                (x_sparse, y_sparse), method='cubic')
-            a_3 = np.subtract(a_sparse[:,:], a_2[-1,:,:])
+    reg_grid_interpolator = RegularGridInterpolator((x, y, z), data,
+                                                    method='linear',
+                                                    bounds_error=False,
+                                                    fill_value=0)
 
-    nc_file = nc.Dataset(filepath, 'w', format='NETCDF3_CLASSIC')
-    nNodes = nc_file.createDimension('nNodes_0', dim0_sparse)
-    nNodes = nc_file.createDimension('nNodes_1', dim1_sparse)
-    time = nc_file.createDimension('time')
-    diff = nc_file.createVariable('TDiff', 'f8', ('time', 'nNodes_1',
-                                                  'nNodes_0'))
+    return reg_grid_interpolator
 
-    diff[0,] = a_3
+def diff_of_two_equal_files(temp_1, temp_2, filepath):
+    temp_diff = np.subtract(temp_1, temp_2)
+    temp_diff = np.absolute(temp_diff)
 
-    nc_file.close()
+    config = configparser.ConfigParser()
+    config.optionxform = str
 
-    max_diff = np.amax(np.absolute(a_3))
-    sum_diff = np.mean(np.absolute(a_3))
-    print('Surface:  max(abs(diff)) = {0}.'.format(max_diff))
-    print('Surface: mean(abs(diff)) = {0}.'.format(sum_diff))
+    mean_diff = np.mean(temp_diff)
+    max_diff = np.amax(temp_diff)
+    min_diff = np.amin(temp_diff)
+    print('Volume:  mean(abs(diff)) = {:02.3e}.'.format(mean_diff))
+    print('Volume:   max(abs(diff)) = {:02.3e}.'.format(max_diff))
+    print('Volume:   min(abs(diff)) = {:02.3e}.'.format(min_diff))
+    config['Volume'] = {}
+    config['Volume']['Mean'] = str(mean_diff)
+    config['Volume']['Max'] = str(max_diff)
+    config['Volume']['Min'] = str(min_diff)
 
-    filepath = os.path.splitext(filepath)[0]
-    filepath += '.dat'
-    text_file = open(filepath, 'w')
+    mean_diff = np.mean(temp_diff[-1,:,:])
+    max_diff = np.amax(temp_diff[-1,:,:])
+    min_diff = np.amin(temp_diff[-1,:,:])
+    print('Surface: mean(abs(diff)) = {:02.3e}.'.format(mean_diff))
+    print('Surface:  max(abs(diff)) = {:02.3e}.'.format(max_diff))
+    print('Surface:  min(abs(diff)) = {:02.3e}.'.format(min_diff))
+    config['Surface'] = {}
+    config['Surface']['Mean'] = str(mean_diff)
+    config['Surface']['Max'] = str(max_diff)
+    config['Surface']['Min'] = str(min_diff)
 
-    print('Write surface data to {0}.'.format(filepath))
+    print('Write results to {0}.'.format(filepath))
 
-    for elem_y in range(0, a_3.shape[0]):
-        for elem_x in range(0, a_3.shape[1]):
-            text_file.write('{0} {1} {2}\n'.format(str(elem_x), str(elem_y),
-                                                   str(a_3[elem_y, elem_x])))
-        text_file.write('\n')
+    with open(filepath, 'w') as configfile:
+        config.write(configfile)
 
-    text_file.close()
+    return temp_diff
 
-def two_netcdf_files_volume(filepath, a_1, a_2):
-    filepath = os.path.splitext(filepath[0])[0] + '_' \
-               + os.path.basename(os.path.splitext(filepath[1])[0]) \
+def diff_of_file_dimensions_not_equal(temp_1, temp_2, filepath):
+    if temp_1.shape[0] >= temp_2.shape[0] \
+        and temp_1.shape[1] >= temp_2.shape[1] \
+        and temp_1.shape[2] >= temp_2.shape[2]:
+        temp_dense = temp_1
+        temp_sparse = temp_2
+    elif temp_1.shape[0] <= temp_2.shape[0] \
+        and temp_1.shape[1] <= temp_2.shape[1] \
+        and temp_1.shape[2] <= temp_2.shape[2]:
+        temp_sparse = temp_1
+        temp_dense = temp_2
+    else:
+        temp_diff = diff_of_weird_file_dimensions(temp_1, temp_2, filepath)
+        return temp_diff
+
+    dense_interpolator = get_regular_grid_interpolator(temp_dense)
+
+    dim0_sparse, dim1_sparse, dim2_sparse = reversed(temp_sparse.shape)
+    dim0_dense, dim1_dense, dim2_dense = reversed(temp_dense.shape)
+
+    dim0_lin = np.linspace(0, dim0_dense-1, dim0_sparse)
+    dim1_lin = np.linspace(0, dim1_dense-1, dim1_sparse)
+    dim2_lin = np.linspace(0, dim2_dense-1, dim2_sparse)
+
+    dim2_mesh, dim1_mesh, dim0_mesh = np.meshgrid(dim2_lin, dim1_lin, dim0_lin,
+                                                  indexing='ij')
+
+    temp_dense_to_sparse = dense_interpolator((dim2_mesh, dim1_mesh, dim0_mesh))
+
+    temp_diff = diff_of_two_equal_files(temp_sparse, temp_dense_to_sparse,
+                                        filepath)
+
+    return temp_diff
+
+def diff_of_weird_file_dimensions(temp_1, temp_2, filepath):
+    dim0_1, dim1_1, dim2_1 = reversed(temp_1.shape)
+    dim0_2, dim1_2, dim2_2 = reversed(temp_2.shape)
+
+    if dim0_1 > dim0_2:
+        dim0_dense = dim0_1
+        dim0_sparse = dim0_2
+    else:
+        dim0_sparse = dim0_1
+        dim0_dense = dim0_2
+
+    if dim1_1 > dim1_2:
+        dim1_dense = dim1_1
+        dim1_sparse = dim1_2
+    else:
+        dim1_sparse = dim1_1
+        dim1_dense = dim1_2
+
+    if dim2_1 > dim2_2:
+        dim2_dense = dim2_1
+        dim2_sparse = dim2_2
+    else:
+        dim2_sparse = dim2_1
+        dim2_dense = dim2_2
+
+    temp_1_interpolator = get_regular_grid_interpolator(temp_1)
+    temp_2_interpolator = get_regular_grid_interpolator(temp_2)
+
+    dim0_lin = np.linspace(0, dim0_1-1, dim0_sparse)
+    dim1_lin = np.linspace(0, dim1_1-1, dim1_sparse)
+    dim2_lin = np.linspace(0, dim2_1-1, dim2_sparse)
+
+    dim2_mesh, dim1_mesh, dim0_mesh = np.meshgrid(dim2_lin, dim1_lin, dim0_lin,
+                                                  indexing='ij')
+
+    temp_1_new_dim = temp_1_interpolator((dim2_mesh, dim1_mesh, dim0_mesh))
+
+    dim0_lin = np.linspace(0, dim0_2-1, dim0_sparse)
+    dim1_lin = np.linspace(0, dim1_2-1, dim1_sparse)
+    dim2_lin = np.linspace(0, dim2_2-1, dim2_sparse)
+
+    dim2_mesh, dim1_mesh, dim0_mesh = np.meshgrid(dim2_lin, dim1_lin, dim0_lin,
+                                                  indexing='ij')
+
+    temp_2_new_dim = temp_2_interpolator((dim2_mesh, dim1_mesh, dim0_mesh))
+
+    temp_diff = diff_of_two_equal_files(temp_1_new_dim, temp_2_new_dim,
+                                        filepath)
+
+    return temp_diff
+
+def calc_diff(filepaths):
+    temp_1 = temperature_array_from_result(filepaths[0])
+    temp_2 = temperature_array_from_result(filepaths[1])
+
+    filepath = os.path.splitext(filepaths[0])[0] + '_' \
+               + os.path.basename(os.path.splitext(filepaths[1])[0]) \
                + '_diff'
-    filepath_nc = filepath + '_volume.nc'
-    print('Write volume data to {0}.'.format(filepath_nc))
+    filepath_dat = filepath + '.dat'
 
-    dim2, dim1, dim0 = a_1.shape
-
-    nc_file = nc.Dataset(filepath_nc, 'w', format='NETCDF3_CLASSIC')
-    nNodes = nc_file.createDimension('nNodes_0', dim0)
-    nNodes = nc_file.createDimension('nNodes_1', dim1)
-    nNodes = nc_file.createDimension('nNodes_2', dim2)
-    time = nc_file.createDimension('time')
-    diff = nc_file.createVariable('TDiff', 'f8', ('time', 'nNodes_2',
-                                                  'nNodes_1', 'nNodes_0'))
-    a_3 = np.subtract(a_1, a_2)
-    diff[0,] = a_3
-
-    nc_file.close()
-
-    max_diff = np.amax(np.absolute(a_3))
-    max_diff_index = np.unravel_index(np.argmax(np.absolute(a_3)), a_3.shape)
-    max_diff_index = max_diff_index[::-1]
-    sum_diff = np.mean(np.absolute(a_3))
-    print('Volume:   max(abs(diff)) = {0} at {1}.'.format(max_diff,
-                                                          max_diff_index))
-    print('Volume:  mean(abs(diff)) = {0}.'.format(sum_diff))
-    max_diff = np.amax(np.absolute(a_3[-1,:,:]))
-    max_diff_index = np.unravel_index(np.argmax(np.absolute(a_3[-1,:,:])),
-                                      a_3.shape)
-    max_diff_index = max_diff_index[::-1]
-    max_diff_index = max_diff_index[0], max_diff_index[1], dim2-1
-    sum_diff = np.mean(np.absolute(a_3[-1,:,:]))
-    print('Surface:  max(abs(diff)) = {0} at {1}.'.format(max_diff,
-                                                          max_diff_index))
-    print('Surface: mean(abs(diff)) = {0}.'.format(sum_diff))
+    if temp_1.shape == temp_2.shape:
+        temp_diff = diff_of_two_equal_files(temp_1, temp_2, filepath_dat)
+    else:
+        temp_diff = diff_of_file_dimensions_not_equal(temp_1, temp_2,
+                                                      filepath_dat)
 
     filepath_fig = filepath + '_surface.eps'
-    plot_diff_on_surface(a_3[-1,:,:], filepath_fig)
+    plot_diff_on_surface(temp_diff[-1,:,:], filepath_fig)
+    filepath_nc = filepath + '.nc'
+    save_as_netcdf(temp_diff, filepath_nc)
 
-def two_netcdf_files(filepath):
-    a_1 = temperature_array_from_result(filepath[0])
-    a_2 = temperature_array_from_result(filepath[1])
-
-    if a_1.shape[0] == a_2.shape[0] and \
-       a_1.shape[1] == a_2.shape[1] and \
-       a_1.shape[2] == a_2.shape[2]:
-        print('All shapes of files are equal.')
-        print('Calc diff of volume and surface.')
-        two_netcdf_files_volume(filepath, a_1, a_2)
-    elif a_1.shape[1] <= a_2.shape[1] and \
-         a_1.shape[2] <= a_2.shape[2]:
-        print('Not all shapes of files are equal.')
-        print('Calc diff only of surface.')
-        two_netcdf_files_surface(filepath, a_1, a_2)
-    elif a_1.shape[1] >= a_2.shape[1] and \
-         a_1.shape[2] >= a_2.shape[2]:
-        print('Not all shapes of files are equal.')
-        print('Calc diff only of surface.')
-        two_netcdf_files_surface(filepath, a_1, a_2)
-    else:
-        print('One dim of surface of file 1 is bigger than same dim of',
-              'surface of file 2.')
-        print('The other dim of surface of file 1 is smaller than same dim of',
-              'surface of file 2.')
-        print('Cannot work with shape of files.')
-        print('Aborting.')
-        exit()
-
-def two_dat_files(filepath):
-    print('Read data from {0}.'.format(filepath[0]))
-    a_1 = np.loadtxt(filepath[0])
-    print('Read data from {0}.'.format(filepath[1]))
-    a_2 = np.loadtxt(filepath[1])
-
-    filepath_dat = os.path.splitext(filepath[0])[0] + '_' \
-               + os.path.basename(os.path.splitext(filepath[1])[0]) \
-               + '_diff'
-
-    print('Write surface data to {0}.'.format(filepath_dat + '_abs.dat'))
-    diff_file_abs = open(filepath_dat + '_abs.dat', 'w')
-    print('Write surface data to {0}.'.format(filepath_dat + '_rel.dat'))
-    diff_file_rel = open(filepath_dat + '_rel.dat', 'w')
-
-    diff_max = 0.0
-    diff_sum = 0.0
-
-    if a_1.shape[0] != a_2.shape[0]:
-        print('Number of lines do not match')
-        print('Aborting.')
-        exit()
-    for num in range(0, a_1.shape[0]):
-        if a_1.shape[1] != 3:
-            print('Not three values in file {0} in line {1}.'.format(filepath_1,
-                                                                     num))
-            print('Aborting.')
-            exit()
-        if a_2.shape[1] != 3:
-            print('Not three values in file {0} in line {1}.'.format(filepath_2,
-                                                                     num))
-            print('Aborting.')
-            exit()
-        if int(a_1[num,0]) != int(a_2[num,0]):
-            print('X coordinates do not match in line {0}.')
-            print('Aborting.')
-            exit()
-        if int(a_1[num,1]) != int(a_2[num,1]):
-            print('Y coordinates do not match in line {0}.')
-            print('Aborting.')
-            exit()
-        diff = a_1[num,2] - a_2[num,2]
-        diff_sum += abs(diff)
-        if abs(diff) > abs(diff_max):
-            diff_max = diff
-        string = str(int(a_1[num,0])) + ' ' + str(int(a_1[num,1])) + ' '
-        string_abs = string + str(diff) + '\n'
-        string_rel = string + str((diff/a_1[num,2])*100) + '\n'
-        diff_file_abs.write(string_abs)
-        diff_file_rel.write(string_rel)
-
-    diff_mean = diff_sum/a_1.shape[0]
-    print('Surface:  max(abs(diff)) = {0}.'.format(abs(diff_max)))
-    print('Surface: mean(abs(diff)) = {0}.'.format(diff_mean))
-
-    diff_file_abs.close()
-    diff_file_rel.close()
-
-def netcdf_and_dat_file(filepath):
-    if os.path.splitext(filepath[0])[1] == '.nc':
-        print('Read data from {0}.'.format(filepath[0]))
-        a = surface_temperature_array_from_result(filepath[0])
-        filepath[0] = os.path.splitext(filepath[0])[0]
-        filepath[0] += '_surface.dat'
-        print('Write surface data to {0}.'.format(filepath[0]))
-        text_file = open(filepath[0], 'w')
-    else:
-        print('Read data from {0}.'.format(filepath[1]))
-        a = surface_temperature_array_from_result(filepath[1])
-        filepath[1] = os.path.splitext(filepath[1])[0]
-        filepath[1] += '_surface.dat'
-        print('Write surface data to {0}.'.format(filepath[1]))
-        text_file = open(filepath[1], 'w')
-
-    for elem_y in range(0, a.shape[0]):
-        for elem_x in range(0, a.shape[1]):
-            text_file.write('{0} {1} {2}\n'.format(str(elem_x), str(elem_y),
-                                                   str(a[elem_y, elem_x])))
-        text_file.write('\n')
-
-    text_file.close()
-
-    two_dat_files(filepath)
 
 def main():
-    filepath = []
-    # Check if paths to two files (netCDF or .dat file, i.e. resuls) are provided,
-    # if files exist and if files either have .nc or .dat extension.
+    filepaths = []
+    # Check if paths to two netCDF files are provided.
     if len(sys.argv) > 2:
         for elem in range(1, 3):
             if os.path.isfile(sys.argv[elem]) == True:
-                if os.path.splitext(sys.argv[elem])[1] == '.nc' or \
-                   os.path.splitext(sys.argv[elem])[1] == '.dat':
-                    filepath.append(sys.argv[elem])
+                if os.path.splitext(sys.argv[elem])[1] == '.nc':
+                    filepaths.append(sys.argv[elem])
                 else:
                     print(sys.argv[elem],
-                          'does not have .nc or .dat extension.')
+                          'does not have .nc extension.')
             else:
                 print(sys.argv[elem], 'does not exist.')
     else:
-        print('Not enough command line arguments for netCDF files or .dat',
-              'files provided.')
+        print('Not enough command line arguments for netCDF files.')
 
-    if len(filepath) < 2:
+    if len(filepaths) < 2:
         print('Usage: python3', sys.argv[0],
               '<PATH/TO/FILE_1> <PATH/TO/FILE_2>')
         print('Aborting.')
         exit()
 
-    if os.path.splitext(filepath[0])[1] == '.nc' and \
-       os.path.splitext(filepath[1])[1] == '.nc':
-        two_netcdf_files(filepath)
-    elif os.path.splitext(filepath[0])[1] == '.dat' and \
-         os.path.splitext(filepath[1])[1] == '.dat':
-        two_dat_files(filepath)
-    else:
-        netcdf_and_dat_file(filepath)
+    calc_diff(filepaths)
 
     print('Done.')
 
