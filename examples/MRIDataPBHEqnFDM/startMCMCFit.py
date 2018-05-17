@@ -31,6 +31,8 @@ from helperFunctions import temperature_array_from_result
 count = 0
 params = {'NAME_CONFIGFILE_TEMPLATE' : ''}
 
+TESTED_VARIABLES = 'all'
+
 def parse_pymc_from_config_file(params):
     print('Parsing {} for PyMC parameters.'.format(params['NAME_CONFIGFILE_TEMPLATE']))
 
@@ -68,8 +70,8 @@ def fitSimulation(targetValues):
     q_brain = pymc.Uniform('q_brain', 5725, 25000, value=25000)
     q_tumor = pymc.Uniform('q_tumor', 5725, 25000, value=25000)
     lambda_bt = pymc.Uniform('lambda_bt', 0.45, 0.6, value=0.5)
-    rho_c_brain = pymc.Uniform('rho_c_brain', 3684600, 4388800, value=3796000)
-    rho_c_tumor = pymc.Uniform('rho_c_tumor', 3684600, 4388800, value=3796000)
+    rho_c_brain = pymc.Uniform('rho_c_brain', 3684.600, 4388.800, value=3796.000)
+    rho_c_tumor = pymc.Uniform('rho_c_tumor', 3684.600, 4388.800, value=3796.000)
     h = pymc.Uniform('h', 8, 10, value=10)
 
     @pymc.deterministic(plot=False)
@@ -92,11 +94,12 @@ def fitSimulation(targetValues):
         print('##### ScaFES iteration: {} #####'.format(count))
 
         # Set normal, tumor, vessel,  perfusion to respective values.
-        params = {'NAME_CONFIGFILE' : 'pymc_' + str(count) + '.ini'}
+        tested_variables = TESTED_VARIABLES
+        params['NAME_CONFIGFILE'] = 'pymc_' + tested_variables + '.ini'
         params['NAME_RESULTFILE'] = ''
         config = configparser.ConfigParser()
         config.optionxform = str
-        config.read('Parameters.ini')
+        config.read(params['NAME_CONFIGFILE_TEMPLATE'])
         # Omega.
         config['Brain']['OMEGA'] = str(omega_normal)
         config['Tumor']['OMEGA'] = str(omega_tumor)
@@ -114,10 +117,10 @@ def fitSimulation(targetValues):
         config['Brain']['LAMBDA'] = str(lambda_bt)
         config['Tumor']['LAMBDA'] = str(lambda_bt)
         # rho * c.
-        config['Brain']['RHO'] = str(rho_c_brain)
-        config['Brain']['C'] = str(1.0)
-        config['Tumor']['RHO'] = str(rho_c_tumor)
-        config['Tumor']['C'] = str(1.0)
+        config['Brain']['C'] = str(rho_c_brain)
+        config['Brain']['RHO'] = str(1000.0)
+        config['Tumor']['C'] = str(rho_c_tumor)
+        config['Tumor']['RHO'] = str(1000.0)
         # h.
         config['Parameters']['H'] = str(h)
 
@@ -133,7 +136,7 @@ def fitSimulation(targetValues):
             create_region_file(params)
         create_init_file(params)
         set_environment_variables(params)
-        call_simulation(params, 'RUN_HELPER.sh')
+        call_simulation(params, params['RUN_SCRIPT'])
 
         # Compute temperatures of normal, tumor, vessel tisue.
         temp = temperature_array_from_result(params['NAME_RESULTFILE'])
@@ -184,7 +187,7 @@ def main():
         print('Aborting.')
         exit()
 
-    tested_variables = 'all'
+    tested_variables = TESTED_VARIABLES
     db_name = create_database_name(tested_variables, params)
     parse_pymc_from_config_file(params)
 
