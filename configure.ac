@@ -774,6 +774,7 @@ AC_CONFIG_LINKS([examples/MRIDataPBHEqnFDM/postProcessing.py:examples/MRIDataPBH
 AC_CONFIG_LINKS([examples/MRIDataPBHEqnFDM/readMRIData.py:examples/MRIDataPBHEqnFDM/readMRIData.py])
 AC_CONFIG_LINKS([examples/MRIDataPBHEqnFDM/readMRIVolume.py:examples/MRIDataPBHEqnFDM/readMRIVolume.py])
 AC_CONFIG_LINKS([examples/MRIDataPBHEqnFDM/startMCMCFit.py:examples/MRIDataPBHEqnFDM/startMCMCFit.py])
+AC_CONFIG_LINKS([examples/MRIDataPBHEqnFDM/startMCMCFit_omega.py:examples/MRIDataPBHEqnFDM/startMCMCFit_omega.py])
 AC_CONFIG_LINKS([examples/MRIDataPBHEqnFDM/startSimulation.py:examples/MRIDataPBHEqnFDM/startSimulation.py])
 
 AC_CONFIG_FILES(examples/ZhangExampleFDM/Makefile)
