@@ -1,6 +1,7 @@
 import configparser
 import os
 import sys
+import time
 
 import matplotlib
 matplotlib.use('Agg')
@@ -44,6 +45,20 @@ def parse_pymc_from_config_file(params):
     params['T_VESSEL'] = config['PyMC'].getfloat('T_VESSEL', fallback=34.5)
 
     print('Done.')
+
+def create_database_name(tested_variable, params):
+    case = params['NAME_CONFIGFILE_TEMPLATE'].split('.')[0]
+    case = case.split('_')[0]
+    config = configparser.ConfigParser()
+    config.optionxform = str
+    config.read(params['NAME_CONFIGFILE_TEMPLATE'])
+
+    n_nodes = config['Geometry'].get('N_NODES')
+    current_time = time.strftime("%Y%m%d%H%M%S", time.localtime())
+    db_name = tested_variable + '_' + case + '_' + n_nodes + '_' \
+              + current_time + '.pickle'
+
+    return db_name
 
 def fitSimulation(targetValues):
     omega_normal = pymc.Uniform('omega_normal', 0.0014, 0.014, value=0.004)
@@ -169,6 +184,8 @@ def main():
         print('Aborting.')
         exit()
 
+    tested_variables = 'all'
+    db_name = create_database_name(tested_variables, params)
     parse_pymc_from_config_file(params)
 
     sample_iterations = params['ITERATIONS']
@@ -180,7 +197,8 @@ def main():
     print('Target values for this dataset: {}.'.format(targetValues))
 
     # Apply MCMC sampler.
-    MDL = pymc.MCMC(fitSimulation(targetValues))
+    MDL = pymc.MCMC(fitSimulation(targetValues), db='pickle',
+                    dbname=db_name)
     MDL.sample(iter=sample_iterations, burn=sample_burns)
     print()
 
@@ -219,6 +237,7 @@ def main():
     print('Number of ScaFES calls:', count)
     print()
 
+    MDL.db.close()
     print('Done.')
 
 if __name__ == "__main__":
