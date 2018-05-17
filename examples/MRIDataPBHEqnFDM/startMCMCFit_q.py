@@ -63,8 +63,10 @@ def create_database_name(tested_variable, params):
     return db_name
 
 def fitSimulation(targetValues):
-    q_brain = pymc.Uniform('q_brain', 5725, 25000, value=25000)
-    q_tumor = pymc.Uniform('q_tumor', 5725, 25000, value=25000)
+    #q_brain = pymc.Uniform('q_brain', 5725, 25000, value=25000)
+    q_brain = pymc.Uniform('q_brain', 2500.0, 30000.0, value=25000.0)
+    #q_tumor = pymc.Uniform('q_tumor', 5725, 25000, value=25000)
+    q_tumor = pymc.Uniform('q_tumor', 2500.0, 30000.0, value=25000.0)
 
     @pymc.deterministic(plot=False)
     def callScaFES(q_brain=q_brain,

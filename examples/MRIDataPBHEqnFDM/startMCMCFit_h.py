@@ -63,7 +63,8 @@ def create_database_name(tested_variable, params):
     return db_name
 
 def fitSimulation(targetValues):
-    h = pymc.Uniform('h', 8, 10, value=10)
+    #h = pymc.Uniform('h', 8, 10, value=10)
+    h = pymc.Uniform('h', 2.0, 15.0, value=10.0)
 
     @pymc.deterministic(plot=False)
     def callScaFES(h=h):

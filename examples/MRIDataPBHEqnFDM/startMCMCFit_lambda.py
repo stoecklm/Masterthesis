@@ -63,7 +63,8 @@ def create_database_name(tested_variable, params):
     return db_name
 
 def fitSimulation(targetValues):
-    lambda_bt = pymc.Uniform('lambda_bt', 0.45, 0.6, value=0.5)
+    #lambda_bt = pymc.Uniform('lambda_bt', 0.45, 0.6, value=0.5)
+    lambda_bt = pymc.Uniform('lambda_bt', 0.35, 0.70, value=0.5)
 
     @pymc.deterministic(plot=False)
     def callScaFES(lambda_bt=lambda_bt):

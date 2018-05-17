@@ -63,9 +63,12 @@ def create_database_name(tested_variable, params):
     return db_name
 
 def fitSimulation(targetValues):
-    omega_normal = pymc.Uniform('omega_normal', 0.0014, 0.014, value=0.004)
-    omega_tumor = pymc.Uniform('omega_tumor', 0.0005, 0.017, value=0.00975)
-    omega_vessel = pymc.Uniform('omega_vessel', 0.0014, 0.014, value=0.004)
+    #omega_normal = pymc.Uniform('omega_normal', 0.0014, 0.014, value=0.004)
+    omega_normal = pymc.Uniform('omega_normal', 0.001, 0.017, value=0.004)
+    #omega_tumor = pymc.Uniform('omega_tumor', 0.0005, 0.017, value=0.00975)
+    omega_tumor = pymc.Uniform('omega_tumor', 0.0003, 0.020, value=0.00975)
+    #omega_vessel = pymc.Uniform('omega_vessel', 0.0014, 0.014, value=0.004)
+    omega_vessel = pymc.Uniform('omega_vessel', 0.001, 0.017, value=0.004)
 
     @pymc.deterministic(plot=False)
     def callScaFES(omega_normal=omega_normal,

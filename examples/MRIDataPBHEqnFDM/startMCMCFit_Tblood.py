@@ -63,7 +63,8 @@ def create_database_name(tested_variable, params):
     return db_name
 
 def fitSimulation(targetValues):
-    T_blood = pymc.Uniform('T_blood', 36.7, 37.0, value=37.0)
+    #T_blood = pymc.Uniform('T_blood', 36.7, 37.0, value=37.0)
+    T_blood = pymc.Uniform('T_blood', 30.0, 38.0, value=35.0)
 
     @pymc.deterministic(plot=False)
     def callScaFES(T_blood=T_blood):

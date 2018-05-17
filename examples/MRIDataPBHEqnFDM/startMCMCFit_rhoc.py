@@ -63,8 +63,10 @@ def create_database_name(tested_variable, params):
     return db_name
 
 def fitSimulation(targetValues):
-    rho_c_brain = pymc.Uniform('rho_c_brain', 3684.600, 4388.800, value=3796.000)
-    rho_c_tumor = pymc.Uniform('rho_c_tumor', 3684.600, 4388.800, value=3796.000)
+    #rho_c_brain = pymc.Uniform('rho_c_brain', 3684.6, 4388.8, value=3796.0)
+    rho_c_brain = pymc.Uniform('rho_c_brain', 3300.0, 4700.0, value=3796.0)
+    #rho_c_tumor = pymc.Uniform('rho_c_tumor', 3684.6, 4388.8, value=3796.0)
+    rho_c_tumor = pymc.Uniform('rho_c_tumor', 3300.0, 4700.0, value=3796.0)
 
     @pymc.deterministic(plot=False)
     def callScaFES(rho_c_brain=rho_c_brain,
