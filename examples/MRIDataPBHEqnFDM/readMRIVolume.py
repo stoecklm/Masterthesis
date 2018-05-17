@@ -142,14 +142,17 @@ def read_default_ini_file(params):
     params['COORD_NODE_LAST'] = COORD_NODE_LAST
 
     N_NODES = config['Geometry'].get('N_NODES')
+    params['N_NODES_ENV'] = N_NODES
     N_NODES = list(map(int, N_NODES.split('x')))
     params['N_NODES'] = N_NODES
 
     return params
 
-def write_ini_file(params, filename):
+def write_ini_file(params):
     case = params['CASE']
-    print('Write {}.ini.'.format(case))
+    n_nodes = params['N_NODES_ENV']
+    filename = case + '_' + n_nodes + '.ini'
+    print('Write {}.'.format(filename))
 
     folderpath = params['FOLDERPATH']
     start = params['START']
@@ -171,16 +174,19 @@ def write_ini_file(params, filename):
         exit()
 
     config['MRI']['CASE'] = case
-    config['Input']['NAME_REGION_FILE'] = os.path.join(folderpath, 'region')
-    config['Input']['NAME_VESSELS_FILE'] = os.path.join(folderpath, 'vessels')
-    config['Input']['NAME_INITFILE'] = os.path.join(folderpath, 'init')
+    config['Input']['NAME_REGION_FILE'] = os.path.join(folderpath,
+                                                       'region_' + n_nodes)
+    config['Input']['NAME_VESSELS_FILE'] = os.path.join(folderpath,
+                                                        'vessels_' + n_nodes)
+    config['Input']['NAME_INITFILE'] = os.path.join(folderpath,
+                                                    'init_' + n_nodes)
     config['Input']['USE_MRI_FILE'] = 'True'
     config['Input']['USE_INITFILE'] = 'True'
     config['Input']['CREATE_INITFILE'] = 'True'
     config['Geometry']['COORD_NODE_FIRST'] = start_as_string
     config['Geometry']['COORD_NODE_LAST'] = end_as_string
 
-    with open(case + '.ini', 'w') as configfile:
+    with open(filename, 'w') as configfile:
         config.write(configfile)
 
     print('Done.')
@@ -356,6 +362,7 @@ def main():
     data, header = read_nrrd_file(filepath)
     save_as_netcdf(data, os.path.join(folderpath, 'tumor.nc'))
     read_default_ini_file(params)
+    n_nodes = params['N_NODES_ENV']
 
     iop = read_intra_op_points(folderpath)
 
@@ -383,9 +390,9 @@ def main():
 
     final_data = rotate_tumor_data(params, data, iop, header_rot)
     final_data = data_as_binary_data(final_data)
-    filename = os.path.join(folderpath, 'region.nc')
+    filename = os.path.join(folderpath, 'region_' + n_nodes + '.nc')
     save_as_netcdf(final_data, filename)
-    write_ini_file(params, filename)
+    write_ini_file(params)
 
     print('Done.')
 
