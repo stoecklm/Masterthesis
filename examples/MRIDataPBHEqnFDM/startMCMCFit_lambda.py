@@ -7,6 +7,7 @@ import matplotlib
 matplotlib.use('Agg')
 import pymc
 import numpy as np # use numpy 1.11.3.. newer version break pymc
+import netCDF4 as nc
 
 from startSimulation import parse_config_file
 from startSimulation import check_variables
@@ -48,7 +49,7 @@ def parse_pymc_from_config_file(params):
 
     print('Done.')
 
-def create_database_name(tested_variable, params):
+def create_testcase_name(params):
     case = params['NAME_CONFIGFILE_TEMPLATE'].split('.')[0]
     case = case.split('_')[0]
     config = configparser.ConfigParser()
@@ -57,10 +58,21 @@ def create_database_name(tested_variable, params):
 
     n_nodes = config['Geometry'].get('N_NODES')
     current_time = time.strftime("%Y%m%d%H%M%S", time.localtime())
-    db_name = tested_variable + '_' + case + '_' + n_nodes + '_' \
-              + current_time + '.pickle'
+    name = TESTED_VARIABLES + '_' + case + '_' + n_nodes + '_' + current_time
 
-    return db_name
+    return name
+
+def save_as_netcdf(l2_norm, variable, filename):
+    print('Save data to {}.'.format(filename))
+    nc_file = nc.Dataset(filename, 'w', format='NETCDF3_CLASSIC')
+    nc_file.createDimension('iterations', l2_norm.shape[0])
+    values = nc_file.createVariable('L2_Norm', 'f8', ('iterations'))
+    values[:] = l2_norm[:]
+    values = nc_file.createVariable(TESTED_VARIABLES, 'f8', ('iterations'))
+    values[:] = variable[:]
+    nc_file.close()
+
+    print('Done.')
 
 def fitSimulation(targetValues):
     #lambda_bt = pymc.Uniform('lambda_bt', 0.45, 0.6, value=0.5)
@@ -77,8 +89,7 @@ def fitSimulation(targetValues):
         print('##### ScaFES iteration: {} #####'.format(count))
 
         # Set normal, tumor, vessel,  perfusion to respective values.
-        tested_variables = TESTED_VARIABLES
-        params['NAME_CONFIGFILE'] = 'pymc_' + tested_variables + '.ini'
+        params['NAME_CONFIGFILE'] = 'pymc_' + TESTED_VARIABLES + '.ini'
         params['NAME_RESULTFILE'] = ''
         config = configparser.ConfigParser()
         config.optionxform = str
@@ -150,8 +161,8 @@ def main():
         print('Aborting.')
         exit()
 
-    tested_variables = TESTED_VARIABLES
-    db_name = create_database_name(tested_variables, params)
+    name = create_testcase_name(params)
+    db_name = name + '.pickle'
     parse_pymc_from_config_file(params)
 
     sample_iterations = params['ITERATIONS']
@@ -184,6 +195,9 @@ def main():
     print()
     print('Number of ScaFES calls:', count)
     print()
+
+    l2_norm = np.linalg.norm(np.subtract(MDL.trace('callScaFES')[:], targetValues), 2, axis=1)
+    save_as_netcdf(l2_norm, MDL.trace('lambda_bt')[:], 'l2_norm_' + name + '.nc')
 
     MDL.db.close()
     print('Done.')
