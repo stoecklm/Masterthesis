@@ -23,44 +23,22 @@ from postProcessing import calc_non_vessels_temperatures
 from postProcessing import region_array_from_file
 from postProcessing import surface_vessels_array_from_file
 
-from helperFunctions import save_1d_mcmc_fit_results_as_netcdf
+from helperFunctions import close_nc_file
+from helperFunctions import create_mcmc_netcdf_file
+from helperFunctions import create_testcase_name
+from helperFunctions import parse_pymc_from_config_file
+from helperFunctions import save_vector_to_mcmc_file
 from helperFunctions import temperature_array_from_result
+from helperFunctions import write_ini_file_to_nc_file
+
 
 ## Einflussgroessen (unabhaengig von der Simulation)
 # Tumortiefe vs. Temperatur an der Oberflaeche
 
 count = 0
 params = {'NAME_CONFIGFILE_TEMPLATE' : ''}
-
 TESTED_VARIABLES = 'Tblood'
 
-def parse_pymc_from_config_file(params):
-    print('Parsing {} for PyMC parameters.'.format(params['NAME_CONFIGFILE_TEMPLATE']))
-
-    config = configparser.ConfigParser()
-    config.optionxform = str
-    config.read(params['NAME_CONFIGFILE_TEMPLATE'])
-
-    params['ITERATIONS'] = config['PyMC'].getint('ITERATIONS', fallback=5)
-    params['BURNS'] = config['PyMC'].getint('BURNS', fallback=1)
-    params['T_NORMAL'] = config['PyMC'].getfloat('T_NORMAL', fallback=32.8)
-    params['T_TUMOR'] = config['PyMC'].getfloat('T_TUMOR', fallback=30.0)
-    params['T_VESSEL'] = config['PyMC'].getfloat('T_VESSEL', fallback=34.5)
-
-    print('Done.')
-
-def create_testcase_name(params):
-    case = params['NAME_CONFIGFILE_TEMPLATE'].split('.')[0]
-    case = case.split('_')[0]
-    config = configparser.ConfigParser()
-    config.optionxform = str
-    config.read(params['NAME_CONFIGFILE_TEMPLATE'])
-
-    n_nodes = config['Geometry'].get('N_NODES')
-    current_time = time.strftime("%Y%m%d%H%M%S", time.localtime())
-    name = TESTED_VARIABLES + '_' + case + '_' + n_nodes + '_' + current_time
-
-    return name
 
 def fitSimulation(targetValues):
     #T_blood = pymc.Uniform('T_blood', 36.7, 37.0, value=37.0)
@@ -149,7 +127,7 @@ def main():
         print('Aborting.')
         exit()
 
-    name = create_testcase_name(params)
+    name = create_testcase_name(TESTED_VARIABLES, params)
     db_name = name + '.pickle'
     parse_pymc_from_config_file(params)
 
@@ -184,13 +162,25 @@ def main():
     print('Number of ScaFES calls:', count)
     print()
 
-    variable_1D = MDL.trace('T_blood')[:]
+    T_normal = MDL.trace('callScaFES')[:,0]
+    T_tumor = MDL.trace('callScaFES')[:,1]
+    T_vessel = MDL.trace('callScaFES')[:,2]
+    T_blood = MDL.trace('T_blood')[:]
+
     l2_norm = np.linalg.norm(np.subtract(MDL.trace('callScaFES')[:],
                                          targetValues), 2, axis=1)
-    save_1d_mcmc_fit_results_as_netcdf(l2_norm, variable_1D,
-                                       'l2_norm_' + name + '.nc')
+    iterations = l2_norm.shape[0]
+    nc_file = create_mcmc_netcdf_file('pymc_' + name + '.nc', iterations)
+    save_vector_to_mcmc_file(nc_file, T_blood, 'T_blood')
+    save_vector_to_mcmc_file(nc_file, l2_norm, 'L2-norm')
+    save_vector_to_mcmc_file(nc_file, T_normal, 'T_normal')
+    save_vector_to_mcmc_file(nc_file, T_tumor, 'T_tumor')
+    save_vector_to_mcmc_file(nc_file, T_vessel, 'T_vessel')
+    write_ini_file_to_nc_file(nc_file, params['NAME_CONFIGFILE_TEMPLATE'])
+    close_nc_file(nc_file)
 
     MDL.db.close()
+    print()
     print('Done.')
 
 if __name__ == "__main__":
