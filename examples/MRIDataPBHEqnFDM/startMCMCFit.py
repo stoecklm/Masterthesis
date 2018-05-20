@@ -1,7 +1,6 @@
 import configparser
 import os
 import sys
-import time
 
 import matplotlib
 matplotlib.use('Agg')
@@ -23,48 +22,25 @@ from postProcessing import calc_non_vessels_temperatures
 from postProcessing import region_array_from_file
 from postProcessing import surface_vessels_array_from_file
 
+from helperFunctions import close_nc_file
+from helperFunctions import create_mcmc_netcdf_file
+from helperFunctions import create_testcase_name
+from helperFunctions import parse_pymc_from_config_file
+from helperFunctions import save_vector_to_mcmc_file
 from helperFunctions import temperature_array_from_result
+from helperFunctions import write_ini_file_to_nc_file
+
 
 ## Einflussgroessen (unabhaengig von der Simulation)
 # Tumortiefe vs. Temperatur an der Oberflaeche
 
 count = 0
 params = {'NAME_CONFIGFILE_TEMPLATE' : ''}
-
 TESTED_VARIABLES = 'all'
 
-def parse_pymc_from_config_file(params):
-    print('Parsing {} for PyMC parameters.'.format(params['NAME_CONFIGFILE_TEMPLATE']))
-
-    config = configparser.ConfigParser()
-    config.optionxform = str
-    config.read(params['NAME_CONFIGFILE_TEMPLATE'])
-
-    params['ITERATIONS'] = config['PyMC'].getint('ITERATIONS', fallback=5)
-    params['BURNS'] = config['PyMC'].getint('BURNS', fallback=1)
-    params['T_NORMAL'] = config['PyMC'].getfloat('T_NORMAL', fallback=32.8)
-    params['T_TUMOR'] = config['PyMC'].getfloat('T_TUMOR', fallback=30.0)
-    params['T_VESSEL'] = config['PyMC'].getfloat('T_VESSEL', fallback=34.5)
-
-    print('Done.')
-
-def create_database_name(tested_variable, params):
-    case = params['NAME_CONFIGFILE_TEMPLATE'].split('.')[0]
-    case = case.split('_')[0]
-    config = configparser.ConfigParser()
-    config.optionxform = str
-    config.read(params['NAME_CONFIGFILE_TEMPLATE'])
-
-    n_nodes = config['Geometry'].get('N_NODES')
-    current_time = time.strftime("%Y%m%d%H%M%S", time.localtime())
-    db_name = tested_variable + '_' + case + '_' + n_nodes + '_' \
-              + current_time + '.pickle'
-
-    return db_name
-
 def fitSimulation(targetValues):
-    #omega_normal = pymc.Uniform('omega_normal', 0.0014, 0.014, value=0.004)
-    omega_normal = pymc.Uniform('omega_normal', 0.001, 0.017, value=0.004)
+    #omega_brain = pymc.Uniform('omega_brain', 0.0014, 0.014, value=0.004)
+    omega_brain = pymc.Uniform('omega_brain', 0.001, 0.017, value=0.004)
     #omega_tumor = pymc.Uniform('omega_tumor', 0.0005, 0.017, value=0.00975)
     omega_tumor = pymc.Uniform('omega_tumor', 0.0003, 0.020, value=0.00975)
     #omega_vessel = pymc.Uniform('omega_vessel', 0.0014, 0.014, value=0.004)
@@ -85,7 +61,7 @@ def fitSimulation(targetValues):
     h = pymc.Uniform('h', 2.0, 15.0, value=10.0)
 
     @pymc.deterministic(plot=False)
-    def callScaFES(omega_normal=omega_normal,
+    def callScaFES(omega_brain=omega_brain,
                    omega_tumor=omega_tumor,
                    omega_vessel=omega_vessel,
                    T_blood=T_blood,
@@ -103,20 +79,18 @@ def fitSimulation(targetValues):
         print()
         print('##### ScaFES iteration: {} #####'.format(count))
 
-        # Set normal, tumor, vessel,  perfusion to respective values.
-        tested_variables = TESTED_VARIABLES
-        params['NAME_CONFIGFILE'] = 'pymc_' + tested_variables + '.ini'
+        params['NAME_CONFIGFILE'] = 'pymc_' + TESTED_VARIABLES + '.ini'
         params['NAME_RESULTFILE'] = ''
         config = configparser.ConfigParser()
         config.optionxform = str
         config.read(params['NAME_CONFIGFILE_TEMPLATE'])
         # Omega.
-        config['Brain']['OMEGA'] = str(omega_normal)
+        config['Brain']['OMEGA'] = str(omega_brain)
         config['Tumor']['OMEGA'] = str(omega_tumor)
         config['MRI']['USE_VESSELS_SEGMENTATION'] = 'True'
         config['MRI']['VARIABLES_VESSELS'] = 'omega'
         config['MRI']['VALUES_VESSELS'] = str(omega_vessel)
-        config['MRI']['VALUES_NON_VESSELS'] = str(omega_normal)
+        config['MRI']['VALUES_NON_VESSELS'] = str(omega_brain)
         # T_blood.
         config['Brain']['T_BLOOD'] = str(T_blood)
         config['Tumor']['T_BLOOD'] = str(T_blood)
@@ -197,8 +171,8 @@ def main():
         print('Aborting.')
         exit()
 
-    tested_variables = TESTED_VARIABLES
-    db_name = create_database_name(tested_variables, params)
+    name = create_testcase_name(TESTED_VARIABLES, params)
+    db_name = name + '.pickle'
     parse_pymc_from_config_file(params)
 
     sample_iterations = params['ITERATIONS']
@@ -217,7 +191,7 @@ def main():
 
     # Extract and plot results.
     temperatures = MDL.stats()['callScaFES']['mean']
-    omega_normal = MDL.stats()['omega_normal']['mean']
+    omega_brain = MDL.stats()['omega_brain']['mean']
     omega_tumor = MDL.stats()['omega_tumor']['mean']
     omega_vessel = MDL.stats()['omega_vessel']['mean']
     T_blood = MDL.stats()['T_blood']['mean']
@@ -232,7 +206,7 @@ def main():
     print('T_final: [T_normal, T_tumor, T_vessel]')
     print('T_final:', temperatures)
     print()
-    print('omega_normal:', omega_normal)
+    print('omega_brain:', omega_brain)
     print('omega_tumor:', omega_tumor)
     print('omega_vessel:', omega_vessel)
     print('T_blood:', T_blood)
@@ -250,7 +224,43 @@ def main():
     print('Number of ScaFES calls:', count)
     print()
 
+    T_normal = MDL.trace('callScaFES')[:,0]
+    T_tumor = MDL.trace('callScaFES')[:,1]
+    T_vessel = MDL.trace('callScaFES')[:,2]
+    omega_brain = MDL.trace('omega_brain')[:]
+    omega_tumor = MDL.trace('omega_tumor')[:]
+    omega_vessel = MDL.trace('omega_vessel')[:]
+    T_blood = MDL.trace('T_blood')[:]
+    q_brain = MDL.trace('q_brain')[:]
+    q_tumor = MDL.trace('q_tumor')[:]
+    lambda_bt = MDL.trace('lambda_bt')[:]
+    rho_c_brain = MDL.trace('rho_c_brain')[:]
+    rho_c_tumor = MDL.trace('rho_c_tumor')[:]
+    h = MDL.trace('h')[:]
+
+    l2_norm = np.linalg.norm(np.subtract(MDL.trace('callScaFES')[:],
+                                         targetValues), 2, axis=1)
+    iterations = l2_norm.shape[0]
+    nc_file = create_mcmc_netcdf_file('pymc_' + name + '.nc', iterations)
+    save_vector_to_mcmc_file(nc_file, omega_brain, 'omega_brain')
+    save_vector_to_mcmc_file(nc_file, omega_tumor, 'omega_tumor')
+    save_vector_to_mcmc_file(nc_file, omega_vessel, 'omega_vessel')
+    save_vector_to_mcmc_file(nc_file, T_blood, 'T_blood')
+    save_vector_to_mcmc_file(nc_file, q_brain, 'q_brain')
+    save_vector_to_mcmc_file(nc_file, q_tumor, 'q_tumor')
+    save_vector_to_mcmc_file(nc_file, lambda_bt, 'lambda_bt')
+    save_vector_to_mcmc_file(nc_file, rho_c_brain, 'rho_c_brain')
+    save_vector_to_mcmc_file(nc_file, rho_c_tumor, 'rho_c_tumor')
+    save_vector_to_mcmc_file(nc_file, h, 'h')
+    save_vector_to_mcmc_file(nc_file, l2_norm, 'L2-norm')
+    save_vector_to_mcmc_file(nc_file, T_normal, 'T_normal')
+    save_vector_to_mcmc_file(nc_file, T_tumor, 'T_tumor')
+    save_vector_to_mcmc_file(nc_file, T_vessel, 'T_vessel')
+    write_ini_file_to_nc_file(nc_file, params['NAME_CONFIGFILE_TEMPLATE'])
+    close_nc_file(nc_file)
+
     MDL.db.close()
+    print()
     print('Done.')
 
 if __name__ == "__main__":
