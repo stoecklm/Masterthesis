@@ -23,6 +23,7 @@ from postProcessing import calc_non_vessels_temperatures
 from postProcessing import region_array_from_file
 from postProcessing import surface_vessels_array_from_file
 
+from helperFunctions import save_1d_mcmc_fit_results_as_netcdf
 from helperFunctions import temperature_array_from_result
 
 ## Einflussgroessen (unabhaengig von der Simulation)
@@ -48,7 +49,7 @@ def parse_pymc_from_config_file(params):
 
     print('Done.')
 
-def create_database_name(tested_variable, params):
+def create_testcase_name(params):
     case = params['NAME_CONFIGFILE_TEMPLATE'].split('.')[0]
     case = case.split('_')[0]
     config = configparser.ConfigParser()
@@ -57,10 +58,9 @@ def create_database_name(tested_variable, params):
 
     n_nodes = config['Geometry'].get('N_NODES')
     current_time = time.strftime("%Y%m%d%H%M%S", time.localtime())
-    db_name = tested_variable + '_' + case + '_' + n_nodes + '_' \
-              + current_time + '.pickle'
+    name = TESTED_VARIABLES + '_' + case + '_' + n_nodes + '_' + current_time
 
-    return db_name
+    return name
 
 def fitSimulation(targetValues):
     #T_blood = pymc.Uniform('T_blood', 36.7, 37.0, value=37.0)
@@ -77,8 +77,7 @@ def fitSimulation(targetValues):
         print('##### ScaFES iteration: {} #####'.format(count))
 
         # Set normal, tumor, vessel,  perfusion to respective values.
-        tested_variables = TESTED_VARIABLES
-        params['NAME_CONFIGFILE'] = 'pymc_' + tested_variables + '.ini'
+        params['NAME_CONFIGFILE'] = 'pymc_' + TESTED_VARIABLES + '.ini'
         params['NAME_RESULTFILE'] = ''
         config = configparser.ConfigParser()
         config.optionxform = str
@@ -150,8 +149,8 @@ def main():
         print('Aborting.')
         exit()
 
-    tested_variables = TESTED_VARIABLES
-    db_name = create_database_name(tested_variables, params)
+    name = create_testcase_name(params)
+    db_name = name + '.pickle'
     parse_pymc_from_config_file(params)
 
     sample_iterations = params['ITERATIONS']
@@ -184,6 +183,12 @@ def main():
     print()
     print('Number of ScaFES calls:', count)
     print()
+
+    variable_1D = MDL.trace('T_blood')[:]
+    l2_norm = np.linalg.norm(np.subtract(MDL.trace('callScaFES')[:],
+                                         targetValues), 2, axis=1)
+    save_1d_mcmc_fit_results_as_netcdf(l2_norm, variable_1D,
+                                       'l2_norm_' + name + '.nc')
 
     MDL.db.close()
     print('Done.')

@@ -7,7 +7,6 @@ import matplotlib
 matplotlib.use('Agg')
 import pymc
 import numpy as np # use numpy 1.11.3.. newer version break pymc
-import netCDF4 as nc
 
 from startSimulation import parse_config_file
 from startSimulation import check_variables
@@ -24,6 +23,7 @@ from postProcessing import calc_non_vessels_temperatures
 from postProcessing import region_array_from_file
 from postProcessing import surface_vessels_array_from_file
 
+from helperFunctions import save_1d_mcmc_fit_results_as_netcdf
 from helperFunctions import temperature_array_from_result
 
 ## Einflussgroessen (unabhaengig von der Simulation)
@@ -61,18 +61,6 @@ def create_testcase_name(params):
     name = TESTED_VARIABLES + '_' + case + '_' + n_nodes + '_' + current_time
 
     return name
-
-def save_as_netcdf(l2_norm, variable, filename):
-    print('Save data to {}.'.format(filename))
-    nc_file = nc.Dataset(filename, 'w', format='NETCDF3_CLASSIC')
-    nc_file.createDimension('iterations', l2_norm.shape[0])
-    values = nc_file.createVariable('L2_Norm', 'f8', ('iterations'))
-    values[:] = l2_norm[:]
-    values = nc_file.createVariable(TESTED_VARIABLES, 'f8', ('iterations'))
-    values[:] = variable[:]
-    nc_file.close()
-
-    print('Done.')
 
 def fitSimulation(targetValues):
     #lambda_bt = pymc.Uniform('lambda_bt', 0.45, 0.6, value=0.5)
@@ -196,8 +184,11 @@ def main():
     print('Number of ScaFES calls:', count)
     print()
 
-    l2_norm = np.linalg.norm(np.subtract(MDL.trace('callScaFES')[:], targetValues), 2, axis=1)
-    save_as_netcdf(l2_norm, MDL.trace('lambda_bt')[:], 'l2_norm_' + name + '.nc')
+    variable_1D = MDL.trace('lambda_bt')[:]
+    l2_norm = np.linalg.norm(np.subtract(MDL.trace('callScaFES')[:],
+                                         targetValues), 2, axis=1)
+    save_1d_mcmc_fit_results_as_netcdf(l2_norm, variable_1D,
+                                       'l2_norm_' + name + '.nc')
 
     MDL.db.close()
     print('Done.')
