@@ -79,7 +79,9 @@ def fitSimulation(targetValues):
         print()
         print('##### ScaFES iteration: {} #####'.format(count))
 
-        params['NAME_CONFIGFILE'] = 'pymc_' + TESTED_VARIABLES + '.ini'
+        case = params['NAME_CONFIGFILE_TEMPLATE'].split('.')[0]
+        case = case.split('_')[0]
+        params['NAME_CONFIGFILE'] = case + '-pymc-' + TESTED_VARIABLES + '.ini'
         params['NAME_RESULTFILE'] = ''
         config = configparser.ConfigParser()
         config.optionxform = str
