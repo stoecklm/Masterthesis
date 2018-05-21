@@ -917,7 +917,10 @@ def call_simulation(params, run_script):
         exit()
 
     # Get time of newest netCDF file BEFORE simulation.
-    files_nc_before = glob.glob('./' + params['NAME_EXECUTABLE'] + '*.nc')
+    inifile = params['NAME_CONFIGFILE'].split('.')[0]
+    inifile = inifile.split('_')[0]
+    searchpath = './' + params['NAME_EXECUTABLE'] + '_' + inifile + '_' + '*.nc'
+    files_nc_before = glob.glob(searchpath)
     if len(files_nc_before) > 0:
         latest_file_nc_before = max(files_nc_before, key=os.path.getctime)
         latest_file_nc_before_time = os.path.getctime(latest_file_nc_before)
@@ -940,7 +943,7 @@ def call_simulation(params, run_script):
         exit()
 
     # Get time of newest netCDF file AFTER simulation.
-    files_nc_after = glob.glob(params['NAME_EXECUTABLE'] + '*.nc')
+    files_nc_after = glob.glob(searchpath)
     if len(files_nc_after) > 0:
         latest_file_nc_after = max(files_nc_after, key=os.path.getctime)
         latest_file_nc_after_time = os.path.getctime(latest_file_nc_after)
