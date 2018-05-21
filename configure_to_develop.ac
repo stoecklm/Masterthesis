@@ -769,6 +769,7 @@ AC_CONFIG_FILES([examples/MRIDataPBHEqnFDM/RUN_HELPER.sh],
 AC_CONFIG_FILES(examples/MRIDataPBHEqnFDM/Parameters.ini)
 AC_CONFIG_LINKS([examples/MRIDataPBHEqnFDM/calcDiff.py:examples/MRIDataPBHEqnFDM/calcDiff.py])
 AC_CONFIG_LINKS([examples/MRIDataPBHEqnFDM/checkResults.py:examples/MRIDataPBHEqnFDM/checkResults.py])
+AC_CONFIG_LINKS([examples/MRIDataPBHEqnFDM/plotMCMCResults.py:examples/MRIDataPBHEqnFDM/plotMCMCResults.py])
 AC_CONFIG_LINKS([examples/MRIDataPBHEqnFDM/plotSurface.py:examples/MRIDataPBHEqnFDM/plotSurface.py])
 AC_CONFIG_LINKS([examples/MRIDataPBHEqnFDM/postProcessing.py:examples/MRIDataPBHEqnFDM/postProcessing.py])
 AC_CONFIG_LINKS([examples/MRIDataPBHEqnFDM/readMRIData.py:examples/MRIDataPBHEqnFDM/readMRIData.py])
