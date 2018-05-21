@@ -936,6 +936,8 @@ def call_simulation(params, run_script):
         print('Done.')
     else:
         print('* ERROR: Simulation returned error code {0}.'.format(returncode))
+        print('Aborting.')
+        exit()
 
     # Get time of newest netCDF file AFTER simulation.
     files_nc_after = glob.glob(params['NAME_EXECUTABLE'] + '*.nc')

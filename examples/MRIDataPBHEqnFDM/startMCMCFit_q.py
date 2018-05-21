@@ -79,20 +79,24 @@ def fitSimulation(targetValues):
         create_init_file(params)
         set_environment_variables(params)
         call_simulation(params, params['RUN_SCRIPT'])
+        if params['NAME_RESULTFILE'] != '':
+            # Compute temperatures of normal, tumor, vessel tisue.
+            temp = temperature_array_from_result(params['NAME_RESULTFILE'])
+            tumor = region_array_from_file(params['NAME_REGION_FILE'])
+            vessels = surface_vessels_array_from_file(params['NAME_VESSELS_FILE'])
 
-        # Compute temperatures of normal, tumor, vessel tisue.
-        temp = temperature_array_from_result(params['NAME_RESULTFILE'])
-        tumor = region_array_from_file(params['NAME_REGION_FILE'])
-        vessels = surface_vessels_array_from_file(params['NAME_VESSELS_FILE'])
-
-        T_tumor,_,_,_ = calc_tumor_near_surface_temperatures(temp, tumor)
-        if params['USE_VESSELS_SEGMENTATION'] == True:
-            temp = temp[-1,:,:]
-            T_vessel,_,_,_ = calc_vessels_temperatures(temp, vessels)
-            T_normal,_,_,_ = calc_non_vessels_temperatures(temp, vessels)
+            T_tumor,_,_,_ = calc_tumor_near_surface_temperatures(temp, tumor)
+            if params['USE_VESSELS_SEGMENTATION'] == True:
+                temp = temp[-1,:,:]
+                T_vessel,_,_,_ = calc_vessels_temperatures(temp, vessels)
+                T_normal,_,_,_ = calc_non_vessels_temperatures(temp, vessels)
+            else:
+                T_vessel = -1.0
+                T_normal = -1.0
         else:
-            T_vessel = -1.0
-            T_normal = -1.0
+            print('* ERROR: No result file written.')
+            print('Aborting.')
+            exit()
 
         return [T_normal, T_tumor, T_vessel]
 
