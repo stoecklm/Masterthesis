@@ -37,8 +37,8 @@ def read_2d_tested_variables(filepath):
     nc_file = nc.Dataset(filepath)
     iterations = nc_file.dimensions['iterations'].size
 
-    possible_names = ['omega', 'rho_c', 'q_brain']
-    found_name = False
+    possible_names = ['omega', 'rho_c', 'q']
+    found_var = False
     for name in possible_names:
         try:
             nc_variable_1 = nc_file.variables[name + '_brain']
@@ -67,7 +67,7 @@ def read_tested_variables_from_netcdf_file(filepath):
     iterations = nc_file.dimensions['iterations'].size
 
     possible_names = ['lambda_bt', 'T_blood', 'h']
-    found_name = False
+    found_var = False
     for name in possible_names:
         try:
             nc_variable = nc_file.variables[name]
@@ -89,6 +89,53 @@ def read_tested_variables_from_netcdf_file(filepath):
         data_from_file_1, name_1, data_from_file_2, name_2 =  read_2d_tested_variables(filepath)
 
     return data_from_file_1, name_1, data_from_file_2, name_2
+
+def plot_2d_l2_norm(var_1, name_1, var_2, name_2, l2_norm, results_name):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection = "3d")
+    xpos = var_1
+    ypos = var_2
+    dx = np.ones(var_1.shape)*1000
+    dy = np.ones(var_1.shape)*1000
+    zpos = np.zeros(var_1.shape)
+    dz = l2_norm - l2_norm.min()
+    ax.set_zlim3d(0, l2_norm.max()-l2_norm.min())
+    ax.bar3d(xpos, ypos, zpos, dx, dy, dz, color='#00ceaa', shade=True)
+    plt.savefig(results_name + '_l2_norm.eps')
+
+def plot_2d_temperatures(var_1, name_1, var_2, name_2, temp, results_name, name, color):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection = "3d")
+    xpos = var_1
+    ypos = var_2
+    dx = np.ones(var_1.shape)*1000
+    dy = np.ones(var_1.shape)*1000
+    zpos = np.zeros(var_1.shape)
+    dz = temp - temp.min()
+    ax.set_xlabel(name_1)
+    ax.set_ylabel(name_2)
+    ax.set_zlim3d(0, temp.max()-temp.min())
+    ax.bar3d(xpos, ypos, zpos, dx, dy, dz, color=color, shade=True, zsort='max')
+    plt.savefig(results_name + '_' + name + '.eps')
+
+def plot_all_temperatures(temp_1, temp_2, temp_3, var_1, var_2):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection = "3d")
+    xpos_1 = var_1 - 1000/3
+    xpos_2 = var_1 + 1000/3
+    xpos_3 = var_1
+    ypos = var_2
+    dx = np.ones(var_1.shape)*300/3
+    dy = np.ones(var_1.shape)*1000
+    zpos = np.zeros(var_1.shape)
+    dz_1 = temp_1
+    dz_2 = temp_2
+    dz_3 = temp_3
+    ax.bar3d(xpos_1, ypos, zpos, dx, dy, dz_1, color='blue', shade=True)
+    ax.bar3d(xpos_2, ypos, zpos, dx, dy, dz_2, color='green', shade=True)
+    ax.bar3d(xpos_3, ypos, zpos, dx, dy, dz_3, color='red', shade=True)
+    plt.savefig('test.eps')
+
 
 def main():
     if len(sys.argv) > 1:
@@ -129,7 +176,12 @@ def main():
         plt.savefig(results_name + '_T.eps')
         plt.close()
     else:
-        pass
+        plot_2d_l2_norm(var_1, name_1, var_2, name_2, l2_norm, results_name)
+        plot_2d_temperatures(var_1, name_1, var_2, name_2, T_tumor, results_name, 'T_tumor', 'orange')
+        plot_2d_temperatures(var_1, name_1, var_2, name_2, T_normal, results_name, 'T_normal', 'darkorchid')
+        plot_2d_temperatures(var_1, name_1, var_2, name_2, T_vessel, results_name, 'T_vessel', 'lightseagreen')
+        plot_all_temperatures(T_tumor, T_normal, T_vessel, var_1, var_2)
+
 
 if __name__ == '__main__':
     main()
