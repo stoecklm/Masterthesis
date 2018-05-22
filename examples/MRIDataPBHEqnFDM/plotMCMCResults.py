@@ -90,33 +90,30 @@ def read_tested_variables_from_netcdf_file(filepath):
 
     return data_from_file_1, name_1, data_from_file_2, name_2
 
-def plot_2d_l2_norm(var_1, name_1, var_2, name_2, l2_norm, results_name):
+def plot_2d(var_1, name_1, var_2, name_2, data, results_name, name, color):
+    print('Save figure to {}.'.format(results_name + '_' + name + '.eps'))
     fig = plt.figure()
     ax = fig.add_subplot(111, projection = "3d")
     xpos = var_1
     ypos = var_2
-    dx = np.ones(var_1.shape)*1000
-    dy = np.ones(var_1.shape)*1000
-    zpos = np.zeros(var_1.shape)
-    dz = l2_norm - l2_norm.min()
-    ax.set_zlim3d(0, l2_norm.max()-l2_norm.min())
-    ax.bar3d(xpos, ypos, zpos, dx, dy, dz, color='#00ceaa', shade=True)
-    plt.savefig(results_name + '_l2_norm.eps')
-
-def plot_2d_temperatures(var_1, name_1, var_2, name_2, temp, results_name, name, color):
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection = "3d")
-    xpos = var_1
-    ypos = var_2
-    dx = np.ones(var_1.shape)*1000
-    dy = np.ones(var_1.shape)*1000
-    zpos = np.zeros(var_1.shape)
-    dz = temp - temp.min()
+    zpos = np.zeros(var_1.shape) + (data.min() * 0.999)
+    dx = (var_1.max() - var_1.min())/20
+    dy = (var_2.max() - var_2.min())/20
+    dx = np.ones(var_1.shape)*dx
+    dy = np.ones(var_1.shape)*dy
+    dz = data - (data.min() * 0.999)
     ax.set_xlabel(name_1)
     ax.set_ylabel(name_2)
-    ax.set_zlim3d(0, temp.max()-temp.min())
+    ax.set_zlabel(name)
+    ax.set_zlim3d(data.min()*0.999, data.max())
     ax.bar3d(xpos, ypos, zpos, dx, dy, dz, color=color, shade=True, zsort='max')
     plt.savefig(results_name + '_' + name + '.eps')
+
+def plot_2d_l2_norm(var_1, name_1, var_2, name_2, l2_norm, results_name):
+    plot_2d(var_1, name_1, var_2, name_2, l2_norm, results_name, 'l2_norm', '#1f77b4')
+
+def plot_2d_temperatures(var_1, name_1, var_2, name_2, temp, results_name, name, color):
+    plot_2d(var_1, name_1, var_2, name_2, temp, results_name, name, color)
 
 def plot_all_temperatures(temp_1, temp_2, temp_3, var_1, var_2):
     fig = plt.figure()
@@ -180,7 +177,7 @@ def main():
         plot_2d_temperatures(var_1, name_1, var_2, name_2, T_tumor, results_name, 'T_tumor', 'orange')
         plot_2d_temperatures(var_1, name_1, var_2, name_2, T_normal, results_name, 'T_normal', 'darkorchid')
         plot_2d_temperatures(var_1, name_1, var_2, name_2, T_vessel, results_name, 'T_vessel', 'lightseagreen')
-        plot_all_temperatures(T_tumor, T_normal, T_vessel, var_1, var_2)
+        #plot_all_temperatures(T_tumor, T_normal, T_vessel, var_1, var_2)
 
 
 if __name__ == '__main__':
