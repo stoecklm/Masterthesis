@@ -1,4 +1,5 @@
 import configparser
+import glob
 import os
 import sys
 
@@ -105,6 +106,20 @@ def fitSimulation(targetValues):
             print('Aborting.')
             exit()
 
+        global dat_file_name
+        with open(dat_file_name, 'a') as backupfile:
+            backupfile.write(str(omega_brain) + '\t' \
+                             + str(omega_tumor) + '\t' \
+                             + str(T_normal) + '\t' \
+                             + str(T_tumor) + '\t' \
+                             + str(T_vessel) + '\n')
+
+        if (count % 25 == 0):
+            searchpath = './' + params['NAME_EXECUTABLE'] + '-' + case + '-*.*'
+            log_files = glob.glob(searchpath)
+            for f in log_files:
+                os.remove(f)
+
         return [T_normal, T_tumor, T_vessel]
 
     y = pymc.Normal('simulated temperatures', mu=callScaFES, tau=1,
@@ -152,6 +167,16 @@ def main():
     print('Target values: [T_normal, T_tumor, T_vessel]')
     print('Target values for this dataset: {}.'.format(targetValues))
 
+    # Create backup file.
+    global dat_file_name
+    dat_file_name = name + '.dat'
+    with open(dat_file_name, 'w') as backupfile:
+        backupfile.write('#omega_brain\t' + \
+                         'omega_tumor\t' + \
+                         'T_normal\t' + \
+                         'T_tumor\t' + \
+                         'T_vessel\n')
+
     # Apply MCMC sampler.
     MDL = pymc.MCMC(fitSimulation(targetValues), db='pickle',
                     dbname=db_name)
@@ -197,6 +222,8 @@ def main():
     save_vector_to_mcmc_file(nc_file, T_vessel, 'T_vessel')
     write_ini_file_to_nc_file(nc_file, params['NAME_CONFIGFILE_TEMPLATE'])
     close_nc_file(nc_file)
+
+    print('Backup file written to {}.'.format(dat_file_name))
 
     MDL.db.close()
     print()
