@@ -1,4 +1,5 @@
 import configparser
+import glob
 import os
 import sys
 
@@ -44,7 +45,7 @@ def fitSimulation(targetValues):
     #omega_tumor = pymc.Uniform('omega_tumor', 0.0005, 0.017, value=0.00975)
     omega_tumor = pymc.Uniform('omega_tumor', 0.0003, 0.020, value=0.00975)
     #omega_vessel = pymc.Uniform('omega_vessel', 0.0014, 0.014, value=0.004)
-    omega_vessel = pymc.Uniform('omega_vessel', 0.001, 0.017, value=0.004)
+    omega_vessel = pymc.Uniform('omega_vessel', 0.001, 0.017, value=0.001)
     #T_blood = pymc.Uniform('T_blood', 36.7, 37.0, value=37.0)
     T_blood = pymc.Uniform('T_blood', 30.0, 38.0, value=35.0)
     #q_brain = pymc.Uniform('q_brain', 5725, 25000, value=25000)
@@ -142,6 +143,28 @@ def fitSimulation(targetValues):
             print('Aborting.')
             exit()
 
+        global dat_file_name
+        with open(dat_file_name, 'a') as backupfile:
+            backupfile.write(str(omega_brain) + '\t' \
+                             + str(omega_tumor) + '\t' \
+                             + str(omega_vessel) + '\t' \
+                             + str(T_blood) + '\t' \
+                             + str(q_brain) + '\t' \
+                             + str(q_tumor) + '\t' \
+                             + str(lambda_bt) + '\t' \
+                             + str(rho_c_brain) + '\t' \
+                             + str(rho_c_tumor) + '\t' \
+                             + str(h) + '\t' \
+                             + str(T_normal) + '\t' \
+                             + str(T_tumor) + '\t' \
+                             + str(T_vessel) + '\n')
+
+        if (count % 25 == 0):
+            searchpath = './' + params['NAME_EXECUTABLE'] + '-' + case + '-*.*'
+            log_files = glob.glob(searchpath)
+            for f in log_files:
+                os.remove(f)
+
         return [T_normal, T_tumor, T_vessel]
 
     y = pymc.Normal('simulated temperatures', mu=callScaFES, tau=1,
@@ -188,6 +211,24 @@ def main():
     targetValues = [params['T_NORMAL'], params['T_TUMOR'], params['T_VESSEL']]
     print('Target values: [T_normal, T_tumor, T_vessel]')
     print('Target values for this dataset: {}.'.format(targetValues))
+
+    # Create backup file.
+    global dat_file_name
+    dat_file_name = name + '.dat'
+    with open(dat_file_name, 'w') as backupfile:
+        backupfile.write('#omega_brain\t' + \
+                         'omega_tumor\t' + \
+                         'omega_vessel\t' + \
+                         'T_blood\t' + \
+                         'q_brain\t' + \
+                         'q_tumor\t' + \
+                         'lambda_bt\t' + \
+                         'rho_c_brain\t' + \
+                         'rho_c_tumor\t' + \
+                         'h\t' + \
+                         'T_normal\t' + \
+                         'T_tumor\t' + \
+                         'T_vessel\n')
 
     # Apply MCMC sampler.
     MDL = pymc.MCMC(fitSimulation(targetValues), db='pickle',
@@ -264,6 +305,8 @@ def main():
     save_vector_to_mcmc_file(nc_file, T_vessel, 'T_vessel')
     write_ini_file_to_nc_file(nc_file, params['NAME_CONFIGFILE_TEMPLATE'])
     close_nc_file(nc_file)
+
+    print('Backup file written to {}.'.format(dat_file_name))
 
     MDL.db.close()
     print()
