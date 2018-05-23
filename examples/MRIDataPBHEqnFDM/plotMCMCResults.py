@@ -110,7 +110,7 @@ def plot_2d(var_1, name_1, var_2, name_2, data, results_name, name, color):
     plt.savefig(results_name + '_' + name + '.eps')
 
 def plot_2d_l2_norm(var_1, name_1, var_2, name_2, l2_norm, results_name):
-    plot_2d(var_1, name_1, var_2, name_2, l2_norm, results_name, 'l2_norm', '#1f77b4')
+    plot_2d(var_1, name_1, var_2, name_2, l2_norm, results_name, 'l2_norm', 'skyblue')
 
 def plot_2d_temperatures(var_1, name_1, var_2, name_2, temp, results_name, name, color):
     plot_2d(var_1, name_1, var_2, name_2, temp, results_name, name, color)
@@ -134,19 +134,33 @@ def plot_all_temperatures(temp_1, temp_2, temp_3, var_1, var_2):
     plt.savefig('test.eps')
 
 def results_2d(l2_norm, var_1, name_1, var_2, name_2, T_normal, T_tumor, T_vessel, results_name):
+    print()
+    print('L2-norm interval: [ {} ... {} ]'.format(l2_norm.min(), l2_norm.max()))
+    print('{} interval: [ {} ... {} ]'.format(name_1, var_1.min(), var_1.max()))
+    print('{} interval: [ {} ... {} ]'.format(name_2, var_2.min(), var_2.max()))
+    print()
     print('L2-norm\t\t{}\t\t{}\t\tT_normal\t\tT_tumor\t\tT_vessel'.format(name_1, name_2))
     for min_index in l2_norm.argsort()[:10]:
         print('{:02.3f}\t\t{:02.3f}\t\t{:02.3f}\t\t{:02.3f}\t\t{:02.3f}\t\t{:02.3f}'.format(l2_norm[min_index], var_1[min_index], var_2[min_index], T_normal[min_index], T_tumor[min_index], T_vessel[min_index]))
     with open(results_name + '_results.dat', 'w') as results_file:
+        results_file.write('#L2-norm interval: [ {} ... {} ]\n'.format(l2_norm.min(), l2_norm.max()))
+        results_file.write('#{} interval: [ {} ... {} ]\n'.format(name_1, var_1.min(), var_1.max()))
+        results_file.write('#{} interval: [ {} ... {} ]\n'.format(name_2, var_2.min(), var_2.max()))
         results_file.write('#L2-norm\t{}\t{}\tT_normal\tT_tumor\tT_vessel\n'.format(name_1, name_2))
         for min_index in l2_norm.argsort()[:10]:
             results_file.write('{:02.3f}\t{:02.3f}\t{:02.3f}\t{:02.3f}\t{:02.3f}\t{:02.3f}\n'.format(l2_norm[min_index], var_1[min_index], var_2[min_index], T_normal[min_index], T_tumor[min_index], T_vessel[min_index]))
 
 def results_1d(l2_norm, var_1, name_1, T_normal, T_tumor, T_vessel, results_name):
+    print()
+    print('L2-norm interval: [ {} ... {} ]'.format(l2_norm.min(), l2_norm.max()))
+    print('{} interval: [ {} ... {} ]'.format(name_1, var_1.min(), var_1.max()))
+    print()
     print('L2-norm\t\t{}\t\tT_normal\t\tT_tumor\t\tT_vessel'.format(name_1))
     for min_index in l2_norm.argsort()[:10]:
         print('{:02.3f}\t\t{:02.3f}\t\t{:02.3f}\t\t{:02.3f}\t\t{:02.3f}'.format(l2_norm[min_index], var_1[min_index], T_normal[min_index], T_tumor[min_index], T_vessel[min_index]))
     with open(results_name + '_results.dat', 'w') as results_file:
+        results_file.write('#L2-norm interval: [ {} ... {} ]\n'.format(l2_norm.min(), l2_norm.max()))
+        results_file.write('#{} interval: [ {} ... {} ]\n'.format(name_1, var_1.min(), var_1.max()))
         results_file.write('#L2-norm\t{}\tT_normal\tT_tumor\tT_vessel\n'.format(name_1))
         for min_index in l2_norm.argsort()[:10]:
             results_file.write('{:02.3f}\t{:02.3f}\t{:02.3f}\t{:02.3f}\t{:02.3f}\n'.format(l2_norm[min_index], var_1[min_index], T_normal[min_index], T_tumor[min_index], T_vessel[min_index]))
@@ -193,7 +207,7 @@ def main():
     else:
         plot_2d_l2_norm(var_1, name_1, var_2, name_2, l2_norm, results_name)
         plot_2d_temperatures(var_1, name_1, var_2, name_2, T_tumor, results_name, 'T_tumor', 'orange')
-        plot_2d_temperatures(var_1, name_1, var_2, name_2, T_normal, results_name, 'T_normal', 'darkorchid')
+        plot_2d_temperatures(var_1, name_1, var_2, name_2, T_normal, results_name, 'T_normal', 'palevioletred')
         plot_2d_temperatures(var_1, name_1, var_2, name_2, T_vessel, results_name, 'T_vessel', 'lightseagreen')
         #plot_all_temperatures(T_tumor, T_normal, T_vessel, var_1, var_2)
         results_2d(l2_norm, var_1, name_1, var_2, name_2, T_normal, T_tumor, T_vessel, results_name)
