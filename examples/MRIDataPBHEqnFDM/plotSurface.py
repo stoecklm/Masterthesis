@@ -30,7 +30,7 @@ def plot_3d_surface(a, params, title, filepath):
     ax.set_xlabel('x in m')
     ax.set_ylabel('y in m')
     # Title.
-    fig.suptitle('Surface Temperature in deg C for\n' + title, fontsize=12)
+    #fig.suptitle('Surface Temperature in deg C for\n' + title, fontsize=12)
     # Plot surface.
     surf = ax.plot_surface(x, y, a, cmap=CMAP,
                            linewidth=0, antialiased=False)
@@ -47,7 +47,7 @@ def plot_3d_surface(a, params, title, filepath):
     ax.invert_zaxis()
     # Save plot to file.
     print('Save figure to {}.'.format(filepath))
-    plt.savefig(filepath)
+    plt.savefig(filepath, bbox_inches='tight')
     plt.gcf().clear()
     plt.close()
 
@@ -72,7 +72,7 @@ def plot_heatmap(a, params, title, filepath):
                             color='r', fill=False, linestyle='dashed')
         ax.add_artist(circle)
     # Title.
-    fig.suptitle('Heatmap in deg C for\n' + title, fontsize=12)
+    #fig.suptitle('Heatmap in deg C for\n' + title, fontsize=12)
     # Label for axis.
     ax.set_xlabel('x in m')
     ax.set_ylabel('y in m')
@@ -85,7 +85,7 @@ def plot_heatmap(a, params, title, filepath):
     plt.gca().set_aspect('equal', adjustable='box')
     # Save plot to file.
     print('Save figure to {}.'.format(filepath))
-    plt.savefig(filepath)
+    plt.savefig(filepath, bbox_inches='tight')
     plt.gcf().clear()
     plt.close()
 
@@ -109,7 +109,7 @@ def plot_heatmap_scaled(temp, params, title, filepath):
                                    DIM[1]))
     fig, ax = plt.subplots()
     heatmap = ax.pcolormesh(x, y, temp, cmap=CMAP, rasterized=True)
-    fig.suptitle('Heatmap in deg C for\n' + title, fontsize=12)
+    #fig.suptitle('Heatmap in deg C for\n' + title, fontsize=12)
     ax.set_xlabel('x in m')
     ax.set_ylabel('y in m')
     ticks = np.linspace(temp.min(), temp.max(), 11)
@@ -118,7 +118,7 @@ def plot_heatmap_scaled(temp, params, title, filepath):
     cbar.set_label('\nTemperature in °C')
     plt.gca().set_aspect('equal', adjustable='box')
     print('Save figure to {}.'.format(filepath))
-    plt.savefig(filepath)
+    plt.savefig(filepath, bbox_inches='tight')
     plt.gcf().clear()
     plt.close()
 
@@ -140,7 +140,7 @@ def plot_tumor(a, params, title, filepath):
                              fill=False, linestyle='dashed')
         ax.add_artist(circle)
     # Title.
-    fig.suptitle('Heatmap in deg C for\n' + title, fontsize=12)
+    #fig.suptitle('Heatmap in deg C for\n' + title, fontsize=12)
     # Customize z axis.
     ax.set_xlabel('x in m')
     ax.set_ylabel('z in m')
@@ -153,7 +153,7 @@ def plot_tumor(a, params, title, filepath):
     plt.gca().set_aspect('equal', adjustable='box')
     # Save plot to file.
     print('Save figure to {}.'.format(filepath))
-    plt.savefig(filepath)
+    plt.savefig(filepath, bbox_inches='tight')
     plt.gcf().clear()
     plt.close()
 
@@ -179,7 +179,7 @@ def plot_thermo(case, folder):
     plt.gca().set_aspect('equal', adjustable='box')
     # Save plot to file.
     print('Save figure to {}.'.format(filepath))
-    plt.savefig(filepath)
+    plt.savefig(filepath, bbox_inches='tight')
     plt.gcf().clear()
     plt.close()
 
