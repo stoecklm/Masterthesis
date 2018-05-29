@@ -39,8 +39,9 @@ def plot_3d_surface(a, params, title, filepath):
     ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
     # Add a color bar which maps values to colors.
     ticks = np.linspace(a.min(), a.max(), 11)
-    fig.colorbar(surf, ticks=ticks, orientation='vertical', shrink=0.75,
-                 aspect=20)
+    cbar = fig.colorbar(surf, ticks=ticks, orientation='vertical', shrink=0.75,
+                        aspect=20)
+    cbar.set_label('\nTemperature in °C')
     # Invert z axis since the relevant part is colder than the other part
     # and therefore hard to see.
     ax.invert_zaxis()
@@ -77,8 +78,9 @@ def plot_heatmap(a, params, title, filepath):
     ax.set_ylabel('y in m')
     # Add a color bar which maps values to colors.
     ticks = np.linspace(a.min(), a.max(), 11)
-    fig.colorbar(heatmap, ticks=ticks, orientation='vertical', shrink=0.75,
-                 aspect=20)
+    cbar = fig.colorbar(heatmap, ticks=ticks, orientation='vertical',
+                        shrink=0.75, aspect=20)
+    cbar.set_label('\nTemperature in °C')
     # Equal gridsize.
     plt.gca().set_aspect('equal', adjustable='box')
     # Save plot to file.
@@ -111,8 +113,9 @@ def plot_heatmap_scaled(temp, params, title, filepath):
     ax.set_xlabel('x in m')
     ax.set_ylabel('y in m')
     ticks = np.linspace(temp.min(), temp.max(), 11)
-    fig.colorbar(heatmap, ticks=ticks, orientation='vertical', shrink=0.75,
-                 aspect=20)
+    cbar = fig.colorbar(heatmap, ticks=ticks, orientation='vertical',
+                        shrink=0.75, aspect=20)
+    cbar.set_label('\nTemperature in °C')
     plt.gca().set_aspect('equal', adjustable='box')
     print('Save figure to {}.'.format(filepath))
     plt.savefig(filepath)
@@ -143,8 +146,9 @@ def plot_tumor(a, params, title, filepath):
     ax.set_ylabel('z in m')
     # Add a color bar which maps values to colors.
     ticks = np.linspace(a.min(), a.max(), 11)
-    fig.colorbar(heatmap, ticks=ticks, orientation='vertical', shrink=0.75,
-                 aspect=20)
+    cbar = fig.colorbar(heatmap, ticks=ticks, orientation='vertical',
+                        shrink=0.75, aspect=20)
+    cbar.set_label('\nTemperature in °C')
     # Equal gridsize.
     plt.gca().set_aspect('equal', adjustable='box')
     # Save plot to file.
