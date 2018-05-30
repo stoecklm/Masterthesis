@@ -138,7 +138,10 @@ def tumor_temperatures(filepath, region_filepath, do_print=True, do_write=True):
 
 def calc_tumor_near_surface_temperatures(temp, tumor):
     dim2 = np.any(tumor, axis=(1, 2))
-    min2, max2 = np.where(dim2)[0][[0, -1]]
+    try:
+        min2, max2 = np.where(dim2)[0][[0, -1]]
+    except IndexError:
+        return -1.0, -1.0, -1.0, -1.0
 
     depth = DEPTH
 
