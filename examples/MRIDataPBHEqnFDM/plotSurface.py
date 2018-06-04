@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator
 from matplotlib.ticker import FormatStrFormatter
+from matplotlib.ticker import MaxNLocator
+from matplotlib.colors import BoundaryNorm
 import numpy as np
 import numpy.ma as ma
 
@@ -122,6 +124,40 @@ def plot_heatmap_scaled(temp, params, title, filepath):
     plt.gcf().clear()
     plt.close()
 
+def plot_heatmap_thermo_scaled(temp, params, title, filepath, csv_min, csv_max):
+    TICKS = np.linspace(csv_min, csv_max, 10)
+    LEVELS = MaxNLocator(nbins=1000).tick_values(csv_min, csv_max)
+    NORM = BoundaryNorm(LEVELS, ncolors=CMAP.N, clip=True)
+    surface = surface_array_from_file(params['NAME_INITFILE'])
+    skull = surface[-1,:,:]
+    if np.count_nonzero(skull == 1) != 0:
+        temp[np.where(skull == 0)] = float('nan')
+        temp = ma.masked_where(np.isnan(temp), temp)
+    else:
+        print('No open surface specified.')
+
+    COORD_NODE_FIRST = params['COORD_NODE_FIRST']
+    COORD_NODE_LAST = params['COORD_NODE_LAST']
+    DIM = params['N_NODES']
+    TUMOR_CENTER = params['TUMOR_CENTER']
+    RADIUS = params['PARAMETERS']['DIAMETER']/2
+    x, y = np.meshgrid(np.linspace(COORD_NODE_FIRST[0], COORD_NODE_LAST[0],
+                                   DIM[0]),
+                       np.linspace(COORD_NODE_FIRST[1], COORD_NODE_LAST[1],
+                                   DIM[1]))
+    fig, ax = plt.subplots()
+    heatmap = ax.pcolormesh(x, y, temp, cmap=CMAP, norm=NORM, rasterized=True)
+    ax.set_xlabel('x in m')
+    ax.set_ylabel('y in m')
+    cbar = fig.colorbar(heatmap, ticks=TICKS, orientation='vertical',
+                        shrink=0.75, aspect=20)
+    cbar.set_label('\nTemperature in °C')
+    plt.gca().set_aspect('equal', adjustable='box')
+    print('Save figure to {}.'.format(filepath))
+    plt.savefig(filepath, bbox_inches='tight')
+    plt.gcf().clear()
+    plt.close()
+
 def plot_tumor(a, params, title, filepath):
     COORD_NODE_FIRST = params['COORD_NODE_FIRST']
     COORD_NODE_LAST = params['COORD_NODE_LAST']
@@ -183,6 +219,8 @@ def plot_thermo(case, folder):
     plt.gcf().clear()
     plt.close()
 
+    return c.min(), c.max()
+
 def plot_surface(filepath, params):
     print('Plotting {0}.'.format(filepath))
 
@@ -194,6 +232,7 @@ def plot_surface(filepath, params):
     filepath_surface = filepath + '_surface.eps'
     filepath_heatmap = filepath + '_heatmap.eps'
     filepath_heatmap_scaled = filepath + '_heatmap_scaled.eps'
+    filepath_heatmap_thermo_scaled = filepath + '_heatmap_thermo_scaled.eps'
     filepath_tumor = filepath + '_tumor.eps'
 
     # Surface data.
@@ -202,14 +241,18 @@ def plot_surface(filepath, params):
     plot_3d_surface(temperature, params, title, filepath_surface)
     plot_heatmap(temperature, params, title, filepath_heatmap)
     plot_heatmap_scaled(temperature, params, title, filepath_heatmap_scaled)
+    if params['MRI_DATA_CASE'] != '':
+        csv_min, csv_max = plot_thermo(params['MRI_DATA_CASE'],
+                                       params['MRI_DATA_FOLDER'])
+        plot_heatmap_thermo_scaled(temperature, params, title,
+                                   filepath_heatmap_thermo_scaled, csv_min,
+                                   csv_max)
 
     # x-z-plane data.
     temperature = np.zeros((dim2, dim0))
     temperature[:,:] = T[:,int(dim1/2),:]
     plot_tumor(temperature, params, title, filepath_tumor)
 
-    if params['MRI_DATA_CASE'] != '':
-        plot_thermo(params['MRI_DATA_CASE'], params['MRI_DATA_FOLDER'])
 
     print('Done.')
 
