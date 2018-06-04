@@ -329,6 +329,36 @@ def non_vessels_temperatures(filepath_nc, filepath_vessels, do_print=True, do_wr
 
     return temp_mean
 
+def calc_l2_norm(filepath_nc, T_normal, T_tumor, T_vessel,
+                 T_normal_thermo, T_tumor_thermo, T_vessel_thermo):
+    print()
+    print('Calc L2-norm of {0}.'.format(filepath_nc))
+    if T_normal_thermo == -1.0:
+        print('No target values specified.')
+    else:
+        scafes_values = np.asarray([T_normal, T_tumor, T_vessel])
+        target_values = np.asarray([T_normal_thermo, T_tumor_thermo, T_vessel_thermo])
+        l2_norm = np.linalg.norm(np.subtract(scafes_values, target_values), 2)
+        print('Target values:', target_values)
+        print('T_normal: {:02.3f}.'.format(T_normal))
+        print('T_tumor: {:02.3f}.'.format(T_tumor))
+        print('T_vessel: {:02.3f}.'.format(T_vessel))
+        print('L2-norm: {:02.3f}.'.format(l2_norm))
+        filepath = os.path.splitext(filepath_nc)[0] + '_results.dat'
+        config = configparser.ConfigParser()
+        config['L2-norm'] = {}
+        config['L2-norm']['Target values'] = str(target_values)
+        config['L2-norm']['T_normal'] = str(T_normal)
+        config['L2-norm']['T_tumor'] = str(T_tumor)
+        config['L2-norm']['T_vessel'] = str(T_vessel)
+        config['L2-norm']['L2-norm'] = str(l2_norm)
+
+        print('Write results to {0}.'.format(filepath))
+
+        with open(filepath, 'a') as configfile:
+            config.write(configfile)
+    print('Done.')
+
 
 def main():
     filepath = ''

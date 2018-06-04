@@ -29,6 +29,7 @@ from postProcessing import domain_temperatures
 from postProcessing import csv_result_temperatures
 from postProcessing import vessels_temperatures
 from postProcessing import non_vessels_temperatures
+from postProcessing import calc_l2_norm
 
 def parse_config_file(params):
     print('Parsing {0}.'.format(params['NAME_CONFIGFILE']))
@@ -136,6 +137,17 @@ def parse_config_file(params):
     except KeyError:
         pass
     params['PARAMETERS'] = parameters
+    # PyMC section.
+    try:
+        params['ITERATIONS'] = config['PyMC'].getint('ITERATIONS', fallback=5)
+        params['BURNS'] = config['PyMC'].getint('BURNS', fallback=1)
+        params['T_NORMAL'] = config['PyMC'].getfloat('T_NORMAL', fallback=-1.0)
+        params['T_TUMOR'] = config['PyMC'].getfloat('T_TUMOR', fallback=-1.0)
+        params['T_VESSEL'] = config['PyMC'].getfloat('T_VESSEL', fallback=-1.0)
+    except KeyError:
+        params['T_NORMAL'] = -1.0
+        params['T_TUMOR'] = -1.0
+        params['T_VESSEL'] = -1.0
 
     print('Done.')
 
@@ -1001,19 +1013,22 @@ def main():
                                   params['NAME_INITFILE'])
         tumor_temperatures(params['NAME_RESULTFILE'],
                            params['NAME_REGION_FILE'])
-        tumor_near_surface_temperatures(params['NAME_RESULTFILE'],
-                                        params['NAME_REGION_FILE'])
+        T_tumor = tumor_near_surface_temperatures(params['NAME_RESULTFILE'],
+                                                  params['NAME_REGION_FILE'])
         brain_temperatures(params['NAME_RESULTFILE'],
                            params['NAME_REGION_FILE'])
         domain_temperatures(params['NAME_RESULTFILE'])
         if params['USE_VESSELS_SEGMENTATION'] == True:
-            vessels_temperatures(params['NAME_RESULTFILE'],
-                                 params['NAME_VESSELS_FILE'])
-            non_vessels_temperatures(params['NAME_RESULTFILE'],
-                                     params['NAME_VESSELS_FILE'])
+            T_vessel = vessels_temperatures(params['NAME_RESULTFILE'],
+                                            params['NAME_VESSELS_FILE'])
+            T_normal = non_vessels_temperatures(params['NAME_RESULTFILE'],
+                                               params['NAME_VESSELS_FILE'])
         if params['MRI_DATA_CASE'] != '':
             csv_result_temperatures(params['NAME_RESULTFILE'],
                                     params['MRI_DATA_FOLDER'])
+        calc_l2_norm(params['NAME_RESULTFILE'], T_normal, T_tumor, T_vessel,
+                     params['T_NORMAL'], params['T_TUMOR'], params['T_VESSEL'])
+
 
 if __name__ == '__main__':
     main()
