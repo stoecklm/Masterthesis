@@ -34,8 +34,8 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
     /** constant h. Ambient convetion. */
     const CT H; /* W/(m^2 K) */
 
-    /** constant T_inf. Air temperature. */
-    const CT T_INF; /* K */
+    /** constant T_amb. Ambient temperature. */
+    const CT T_AMB; /* K */
 
     /** constant q_bc. Heat flux at surface inside the brain. */
     const CT Q_BC; /* W/(m^2) */
@@ -96,7 +96,7 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
                                                               checkConvergence),
         ptree(ptree_),
         H(ptree.get<CT>("Parameters.H")),
-        T_INF(ptree.get<CT>("Parameters.T_INF")),
+        T_AMB(ptree.get<CT>("Parameters.T_INF")),
         Q_BC(ptree.get<CT>("Parameters.Q_BC")),
         Q_SKULL(ptree.get<CT>("Parameters.Q_SKULL")),
         EPSILON(ptree.get<CT>("Parameters.EPSILON"))
@@ -146,7 +146,7 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
                      int const& /*timestep*/) {
         CT rho = this->knownDf(0, idxNode);
         CT c = this->knownDf(1, idxNode);
-        CT lambda = this->knownDf(2, idxNode);
+        CT k = this->knownDf(2, idxNode);
         CT rho_blood = this->knownDf(3, idxNode);
         CT c_blood = this->knownDf(4, idxNode);
         CT omega = this->knownDf(5, idxNode);
@@ -156,7 +156,7 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
         /* Discrete Pennes Bioheat Equation for updating inner nodes. */
         vNew[0](idxNode) = vOld[0](idxNode);
         for (std::size_t pp = 0; pp < DIM; ++pp) {
-            vNew[0](idxNode) += this->tau() * (lambda/(rho*c))
+            vNew[0](idxNode) += this->tau() * (k/(rho*c))
                                 * (vOld[0](this->connect(idxNode, 2*pp))
                                    + vOld[0](this->connect(idxNode, 2*pp+1))
                                    - 2.0 * vOld[0](idxNode))
@@ -179,38 +179,37 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
                       int const& /*timestep*/) {
         CT rho = this->knownDf(0, idxNode);
         CT c = this->knownDf(1, idxNode);
-        CT lambda = this->knownDf(2, idxNode);
+        CT k = this->knownDf(2, idxNode);
         CT rho_blood = this->knownDf(3, idxNode);
         CT c_blood = this->knownDf(4, idxNode);
         CT omega = this->knownDf(5, idxNode);
         CT T_blood = this->knownDf(6, idxNode);
         CT q = this->knownDf(7, idxNode);
-        int surface = this->knownDf(8, idxNode);
+        int trepanationArea = this->knownDf(8, idxNode);
 
-
-        /* Discrete Pennes Bioheat Equation modified for updating border nodes. */
+        /* Discrete Pennes Bioheat Equation with boundary conditions. */
         vNew[0](idxNode) = vOld[0](idxNode);
         for (std::size_t pp = 0; pp < DIM; ++pp) {
-            /* Last node/edge/surface in highest dimension will be convection
-             * boundary condition. */
             if (idxNode.elem(pp) == (this->nNodes(pp)-1)) {
             /* vOld[0](this->connect(idxNode, 2*pp+1) needs to be replaced. */
                 if (pp == (DIM-1)) {
-                    if (surface == 1) {
+                /* Last node/edge/surface in highest dimension will be brain surface. */
+                    if (trepanationArea == 1) {
                     /* Open skull: Cauchy boundary condition and
                      * thermal radiation boundary condition. */
                         CT tempOld = vNew[0](idxNode) + 273.15;
                         CT tempOldPow4 = tempOld * tempOld * tempOld * tempOld;
-                        CT tempAmb = T_INF + 273.15;
+                        CT tempAmb = T_AMB + 273.15;
                         CT tempAmbPow4 = tempAmb * tempAmb * tempAmb * tempAmb;
 
-                        vNew[0](idxNode) += this->tau() * (lambda/(rho*c))
+                        vNew[0](idxNode) += this->tau() * (k/(rho*c))
                                             * (vOld[0](this->connect(idxNode, 2*pp))
-                                            /* + vOld[0](this->connect(idxNode, 2*pp+1) */
+                                            /* vOld[0](this->connect(idxNode, 2*pp+1)
+                                             * is replaced by                         */
                                                + vOld[0](this->connect(idxNode, 2*pp))
-                                               - ((2.0*this->gridsize(pp)/lambda)
-                                                  * H * (vOld[0](idxNode) - T_INF))
-                                               - ((2.0*this->gridsize(pp)/lambda)
+                                               - ((2.0*this->gridsize(pp)/k)
+                                                  * H * (vOld[0](idxNode) - T_AMB))
+                                               - ((2.0*this->gridsize(pp)/k)
                                                   * EPSILON * SIGMA
                                                   * (tempOldPow4 - tempAmbPow4))
                                             /********************************************/
@@ -218,11 +217,12 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
                                             / (this->gridsize(pp) * this->gridsize(pp));
                     } else {
                     /* Closed skull: Neumann boundary condition. */
-                        vNew[0](idxNode) += this->tau() * (lambda/(rho*c))
+                        vNew[0](idxNode) += this->tau() * (k/(rho*c))
                                             * (vOld[0](this->connect(idxNode, 2*pp))
-                                            /* + vOld[0](this->connect(idxNode, 2*pp+1)) */
+                                            /* vOld[0](this->connect(idxNode, 2*pp+1))
+                                               is replaced by                          */
                                                + vOld[0](this->connect(idxNode, 2*pp))
-                                               - ((2.0*this->gridsize(pp)/lambda)
+                                               - ((2.0*this->gridsize(pp)/k)
                                                   * (-1.0 * Q_SKULL))
                                             /*********************************************/
                                                - 2.0 * vOld[0](idxNode))
@@ -230,11 +230,12 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
                     }
                 } else {
                 /* Neumann boundary condition. */
-                    vNew[0](idxNode) += this->tau() * (lambda/(rho*c))
+                    vNew[0](idxNode) += this->tau() * (k/(rho*c))
                                         * (vOld[0](this->connect(idxNode, 2*pp))
-                                        /* + vOld[0](this->connect(idxNode, 2*pp+1)) */
+                                        /* vOld[0](this->connect(idxNode, 2*pp+1))
+                                           is replaced by                            */
                                            + vOld[0](this->connect(idxNode, 2*pp))
-                                           - ((2.0*this->gridsize(pp)/lambda)
+                                           - ((2.0*this->gridsize(pp)/k)
                                               * (-1.0 * Q_BC))
                                         /*********************************************/
                                            - 2.0 * vOld[0](idxNode))
@@ -243,10 +244,11 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
             } else if (idxNode.elem(pp) == 0){
             /* vOld[0](this->connect(idxNode, 2*pp) needs to be replaced.
              * Neumann boundary condition. */
-                vNew[0](idxNode) += this->tau() * (lambda/(rho*c))
-                                    /* + vOld[0](this->connect(idxNode, 2*pp)) */
+                vNew[0](idxNode) += this->tau() * (k/(rho*c))
+                                    /* vOld[0](this->connect(idxNode, 2*pp))
+                                       is replaced by                          */
                                     * (vOld[0](this->connect(idxNode, 2*pp+1))
-                                       + ((2.0*this->gridsize(pp)/lambda) * Q_BC)
+                                       + ((2.0*this->gridsize(pp)/k) * Q_BC)
                                     /*******************************************/
                                        + vOld[0](this->connect(idxNode, 2*pp+1))
                                        - 2.0 * vOld[0](idxNode))
@@ -254,7 +256,7 @@ class MRIDataPBHEqnFDM : public ScaFES::Problem<MRIDataPBHEqnFDM<CT,DIM>, CT, DI
             } else {
             /* No value needs to be replaced.
              * Use central differencing scheme. */
-                vNew[0](idxNode) += this->tau() * (lambda/(rho*c))
+                vNew[0](idxNode) += this->tau() * (k/(rho*c))
                                     * (vOld[0](this->connect(idxNode, 2*pp))
                                        + vOld[0](this->connect(idxNode, 2*pp+1))
                                        - 2.0 * vOld[0](idxNode))

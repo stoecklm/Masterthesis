@@ -15,14 +15,14 @@ int main(int argc, char *argv[]) {
     ScaFES::Parameters paramsCl(argc, argv);
     ScaFES::GridGlobal<DIM> gg(paramsCl);
     std::vector<std::string> nameDatafield(10);
-    nameDatafield[0] = "rho";        /* density brain or tumor. */
-    nameDatafield[1] = "c";          /* heat capacity. */
-    nameDatafield[2] = "lambda";     /* conductivity brain or tumor. */
+    nameDatafield[0] = "rho";        /* density. */
+    nameDatafield[1] = "c";          /* specific heat capacity. */
+    nameDatafield[2] = "lambda";     /* conductivity. */
     nameDatafield[3] = "rho_blood";  /* density blood. */
     nameDatafield[4] = "c_blood";    /* heat capacity. */
-    nameDatafield[5] = "omega";      /* blood perfusion rate brain or tumor. */
+    nameDatafield[5] = "omega";      /* blood perfusion rate. */
     nameDatafield[6] = "T_blood";    /* blood temperature. */
-    nameDatafield[7] = "q";          /* metabolic heat rate brain or tumor. */
+    nameDatafield[7] = "q";          /* metabolic heat rate. */
     nameDatafield[8] = "surface";    /* vector to specify open skull. */
     nameDatafield[9] = "T";          /* Temperature. */
     std::vector<int> stencilWidth(10, 0);
