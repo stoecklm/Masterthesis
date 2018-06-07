@@ -1023,6 +1023,9 @@ def main():
                                             params['NAME_VESSELS_FILE'])
             T_normal = non_vessels_temperatures(params['NAME_RESULTFILE'],
                                                params['NAME_VESSELS_FILE'])
+        else:
+            T_vessel = -1.0
+            T_normal = -1.0
         if params['MRI_DATA_CASE'] != '':
             csv_result_temperatures(params['NAME_RESULTFILE'],
                                     params['MRI_DATA_FOLDER'])

@@ -333,8 +333,16 @@ def calc_l2_norm(filepath_nc, T_normal, T_tumor, T_vessel,
                  T_normal_thermo, T_tumor_thermo, T_vessel_thermo):
     print()
     print('Calc L2-norm of {0}.'.format(filepath_nc))
-    if T_normal_thermo == -1.0:
+    if T_normal_thermo == -1.0 or \
+       T_tumor_thermo == -1.0 or \
+       T_vessel_thermo == -1.0:
         print('No target values specified.')
+    elif T_vessel == -1.0:
+        print('No vessels specified.')
+    elif T_normal == -1.0:
+        print('No normal region specified.')
+    elif T_tumor == -1.0:
+        print('No tumor specified.')
     else:
         scafes_values = np.asarray([T_normal, T_tumor, T_vessel])
         target_values = np.asarray([T_normal_thermo, T_tumor_thermo, T_vessel_thermo])
