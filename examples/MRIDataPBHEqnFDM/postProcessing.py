@@ -288,7 +288,11 @@ def vessels_temperatures(filepath_nc, filepath_vessels, do_print=True, do_write=
 
     temp = surface_temperature_array_from_result(filepath_nc)
     vessels = surface_vessels_array_from_file(filepath_vessels)
-    temp_mean, temp_max, temp_min, temp_std_dev = calc_vessels_temperatures(temp, vessels)
+    if np.count_nonzero(vessels == 1) != 0:
+        temp_mean, temp_max, temp_min, temp_std_dev = calc_vessels_temperatures(temp, vessels)
+    else:
+        print('* WARNING: No vessels in vessels file found.')
+        temp_mean, temp_max, temp_min, temp_std_dev = -1.0, -1.0, -1.0, -1.0
 
     if do_print == True:
         print_results('vessels', temp_mean, temp_max, temp_min, temp_std_dev)
@@ -315,7 +319,11 @@ def non_vessels_temperatures(filepath_nc, filepath_vessels, do_print=True, do_wr
 
     temp = surface_temperature_array_from_result(filepath_nc)
     vessels = surface_vessels_array_from_file(filepath_vessels)
-    temp_mean, temp_max, temp_min, temp_std_dev = calc_non_vessels_temperatures(temp, vessels)
+    if np.count_nonzero(vessels == 0) != 0:
+        temp_mean, temp_max, temp_min, temp_std_dev = calc_non_vessels_temperatures(temp, vessels)
+    else:
+        print('* WARNING: No non-vessels in vessels file found.')
+        temp_mean, temp_max, temp_min, temp_std_dev = -1.0, -1.0, -1.0, -1.0
 
     if do_print == True:
         print_results('non-vessels', temp_mean, temp_max, temp_min, temp_std_dev)

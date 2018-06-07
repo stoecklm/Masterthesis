@@ -596,9 +596,11 @@ def create_vessels_array(params, surface):
     num_elem = dim0 * dim1 * dim2
     # Special Case: No trepanation domain is set,
     # but vessel segmentation is read.
-    # Vessel will be used on the surface of the whole domain.
     if np.count_nonzero(surface) == 0:
-        surface[-1,:,:] = 1
+        print('* WARNING: No trepanation area is set, but vessel segmentation is read.')
+        print('  Vessels can only be created in trepanation area.')
+        print('  File will contain no vessels.')
+        surface[-1,:,:] = 0
     # Normal case: trepanation domain is set.
     # - 1 = grid node outside of trepanation domain
     # 0 = grid node inside trepanation domain, no vessel
