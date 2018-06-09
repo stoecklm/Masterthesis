@@ -196,6 +196,7 @@ def plot_tumor(a, params, title, filepath):
 def plot_thermo(case, folder):
     filepath = case + '_thermo.eps'
     a = np.genfromtxt(os.path.join(folder, 'thermo.csv'), delimiter=',')
+    a[np.isnan(a)] = 0
     rows = np.any(a, axis=1)
     cols = np.any(a, axis=0)
     rmin, rmax = np.where(rows)[0][[0, -1]]
@@ -209,10 +210,13 @@ def plot_thermo(case, folder):
     c = ma.masked_where(np.isnan(b), b)
     ticks = np.linspace(c.min(), c.max(), 11)
     heatmap = ax.pcolormesh(x, y, c, cmap=CMAP, rasterized=True)
-    fig.colorbar(heatmap, ticks=ticks, orientation='vertical', shrink=0.75,
-                 aspect=20)
+    cbar = fig.colorbar(heatmap, ticks=ticks, orientation='vertical',
+                        shrink=0.75, aspect=20)
+    cbar.set_label('\nTemperature in °C')
     # Equal gridsize.
     plt.gca().set_aspect('equal', adjustable='box')
+    plt.tick_params(axis='both', which='both', bottom='off', top='off',
+                    labelbottom='off', right='off', left='off', labelleft='off')
     # Save plot to file.
     print('Save figure to {}.'.format(filepath))
     plt.savefig(filepath, bbox_inches='tight')
