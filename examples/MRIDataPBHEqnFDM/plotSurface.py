@@ -215,8 +215,8 @@ def plot_thermo(case, folder):
     cbar.set_label('\nTemperature in °C')
     # Equal gridsize.
     plt.gca().set_aspect('equal', adjustable='box')
-    plt.tick_params(axis='both', which='both', bottom='off', top='off',
-                    labelbottom='off', right='off', left='off', labelleft='off')
+    plt.tick_params(axis='both', which='both', bottom=False, top=False,
+                    labelbottom=False, right=False, left=False, labelleft=False)
     # Save plot to file.
     print('Save figure to {}.'.format(filepath))
     plt.savefig(filepath, bbox_inches='tight')
