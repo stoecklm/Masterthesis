@@ -39,7 +39,13 @@ def parse_config_file(params):
     config.optionxform = str
     config.read(params['NAME_CONFIGFILE'])
     # Get values from section 'Dimension'.
-    params['SPACE_DIM'] = config['Dimension'].getint('SPACE_DIM', fallback=3)
+    try:
+        params['SPACE_DIM'] = config['Dimension'].getint('SPACE_DIM', fallback=3)
+    except KeyError:
+        print('* ERROR:', params['NAME_CONFIGFILE'], 'does not contain section \'Dimension\'.')
+        print(' ', params['NAME_CONFIGFILE'], 'may not be a config file.')
+        print('Aborting.')
+        exit()
     # Get values from section 'Geometry'.
     # Coordinates of first node.
     COORD_NODE_FIRST = config['Geometry'].get('COORD_NODE_FIRST')
@@ -979,8 +985,15 @@ def main():
     # Check if path to configfile is provided and if file exists.
     if len(sys.argv) > 1:
         if os.path.isfile(sys.argv[1]) == True:
-            params['NAME_CONFIGFILE'] = sys.argv[1]
-            run_script = 'RUN_HELPER.sh'
+            if sys.argv[1].endswith('.ini'):
+                params['NAME_CONFIGFILE'] = sys.argv[1]
+                run_script = 'RUN_HELPER.sh'
+            else:
+                print('* ERROR:', sys.argv[1], 'may not be a config file.')
+                print('Aborting.')
+                exit()
+        elif os.path.isdir(sys.argv[1]) == True:
+            print('* ERROR:', sys.argv[1], 'is not a file.')
         else:
             print('* ERROR:', sys.argv[1], 'does not exist.')
         if len(sys.argv) > 2:
