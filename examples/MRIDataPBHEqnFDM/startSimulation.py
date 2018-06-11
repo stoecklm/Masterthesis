@@ -94,6 +94,10 @@ def parse_config_file(params):
     params['MRI_DATA_CASE'] = mri_case.split('_')[0]
     if params['MRI_DATA_CASE'] != '':
         mri_folder = glob.glob(params['MRI_DATA_CASE'] + '*/')
+        if len(mri_folder) == 0:
+            print('* ERROR: Folder for case', params['MRI_DATA_CASE'], 'does not exist.')
+            print('Aborting.')
+            exit()
         params['MRI_DATA_FOLDER'] = mri_folder[0]
     else:
         params['MRI_DATA_FOLDER'] = ''
