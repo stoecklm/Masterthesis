@@ -130,6 +130,7 @@ def read_tumor_point(folderpath):
     else:
         filepath = os.path.join(folderpath, 'OpenIGTLink.fcsv')
     xyz = [0, 0, 0]
+    contains_tumor = False
     with open(filepath, newline='') as csvfile:
         reader = csv.reader(csvfile, delimiter=',', quotechar='|')
         for row in reader:
@@ -143,6 +144,7 @@ def read_tumor_point(folderpath):
                     y = float(row[2])
                     z = float(row[3])
                     xyz = [x, y, z]
+                    contains_tumor = True
                 except AttributeError:
                     pass
             except IndexError:
@@ -150,7 +152,7 @@ def read_tumor_point(folderpath):
 
     print('Done.')
     tumor = np.asarray(xyz)
-    return tumor
+    return tumor, contains_tumor
 
 # https://gist.github.com/amroamroamro/1db8d69b4b65e8bc66a6
 def plot_lin_plane_fitting(points, filename):
@@ -318,7 +320,7 @@ def main():
     iop = read_intra_op_points(filepath)
     print('Set of IntraOp points:')
     print(iop)
-    t = read_tumor_point(filepath)
+    t, _ = read_tumor_point(filepath)
     print('Tumor point:')
     print(t)
     plot_points(iop, os.path.join(folderpath, 'org_points'))

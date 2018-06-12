@@ -724,12 +724,18 @@ def create_surface_from_mri(params, nc_file, BRAIN_VALUE, TUMOR_VALUE,
 
     filepath = params['MRI_DATA_FOLDER']
     iop = read_intra_op_points(filepath)
-    t = read_tumor_point(filepath)
+    t, contains_tumor = read_tumor_point(filepath)
+    if contains_tumor == False:
+        print('* ERROR: No tumor coordinates in intraoperative data of case', params['MRI_DATA_FOLDER'], 'found.')
+        print('  Tumor geometry is not build from MRI data.')
+        print('  Tumor center is necessary for building trepanation area correctly.')
+        print('  Try other cases or use synthetic data.')
+        print('Aborting.')
+        exit()
     for point in iop:
         point[...] = switch_space(point)
     t = switch_space(t)
     iop, t = rotate_points(iop, t)
-
     if params['USE_MRI_FILE'] == False:
         iop, t = move_points(iop, t, t)
         path = get_interpolated_path(iop)
