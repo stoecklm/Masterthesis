@@ -27,10 +27,10 @@ cd $BUILDFOLDER
 --with-boost-libdir='/usr/local/opt/boost@1.57/lib' \
 --with-boost-serialization \
 --enable-boost-mpi="yes" \
---with-netcdf='/usr/local/opt/parallel-netcdf' \
+--with-netcdf='/usr/local/opt/netcdf' \
 --with-hdf5='/usr/local/opt/hdf5/' \
 --enable-netcdf="yes" \
---enable-adolc="yes" \
+--enable-adolc="no" \
 --with-adolc='/usr/local/opt/adol-c' \
 --enable-gmock="yes" \
 --with-gmock='/usr/local/opt/gmock' \
