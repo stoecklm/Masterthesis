@@ -1,6 +1,5 @@
 import configparser
 import os
-from shutil import copyfile
 import sys
 
 import netCDF4 as nc
@@ -34,7 +33,6 @@ def save_as_netcdf(data, filename):
     print('Done.')
 
 def data_as_binary_data(data):
-    binary_data = np.zeros(data.shape)
     binary_data = np.where(data > 1.0, 1, 0)
 
     return binary_data
