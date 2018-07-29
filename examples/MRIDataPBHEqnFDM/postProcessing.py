@@ -377,27 +377,9 @@ def calc_l2_norm(filepath_nc, T_normal, T_tumor, T_vessel,
 
 
 def main():
-    filepath = ''
-    # Check if path to netCDF file (i.e. results) is provided,
-    # if file exists and if file has .nc extension.
-    if len(sys.argv) > 1:
-        if os.path.isfile(sys.argv[1]) == True:
-            if os.path.splitext(sys.argv[1])[1] == '.nc':
-                filepath = sys.argv[1]
-            else:
-                print(sys.argv[1], 'does not have .nc extension.')
-        else:
-            print(sys.argv[1], 'does not exist.')
-    else:
-        print('No command line argument for netCDF file provided.')
-
-    if filepath == '':
-        print('Usage: python3', sys.argv[0], '<PATH/TO/FILE>')
-        print('Aborting.')
-        exit()
-
-    surface_temperatures(filepath)
-    tumor_temperatures(filepath)
+    print('Script will be called by startSimulation.py.')
+    print('Aborting.')
+    exit()
 
 if __name__ == '__main__':
     main()
