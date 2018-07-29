@@ -1,5 +1,4 @@
 import csv
-import math
 import os
 import re
 import sys
@@ -227,11 +226,6 @@ def lin_plane_fitting(points):
     Y = points[:,1]
     Z = points[:,2]
     data = np.c_[X,Y,Z]
-    # regular grid covering the domain of the data
-    mn = np.min(data, axis=0)
-    mx = np.max(data, axis=0)
-    X,Y = np.meshgrid(np.linspace(mn[0], mx[0], 20),
-                      np.linspace(mn[1], mx[1], 20))
     # best-fit linear plane
     A = np.c_[data[:,0], data[:,1], np.ones(data.shape[0])]
     C,_,_,_ = scipy.linalg.lstsq(A, data[:,2])    # coefficients
@@ -313,8 +307,6 @@ def main():
         print('No command line argument for folder provided.')
         print('Running test.')
         filepath = 'test'
-
-    case = filepath.split('_')[0]
 
     # Original data.
     iop = read_intra_op_points(filepath)
