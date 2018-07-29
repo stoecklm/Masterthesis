@@ -22,7 +22,7 @@ def save_as_netcdf(data, filepath):
     nc_file = nc.Dataset(filepath, 'w', format='NETCDF3_CLASSIC')
     nc_file.createDimension('time')
     for dim in range(0, len(data.shape)):
-        nNodes = nc_file.createDimension('nNodes_' + str(dim), data.shape[2-dim])
+        nc_file.createDimension('nNodes_' + str(dim), data.shape[2-dim])
     nNodes = []
     nNodes.append('time')
     for dim in range(len(data.shape), 0, -1):
@@ -139,25 +139,19 @@ def diff_of_weird_file_dimensions(temp_1, temp_2, filepath):
     dim0_2, dim1_2, dim2_2 = reversed(temp_2.shape)
 
     if dim0_1 > dim0_2:
-        dim0_dense = dim0_1
         dim0_sparse = dim0_2
     else:
         dim0_sparse = dim0_1
-        dim0_dense = dim0_2
 
     if dim1_1 > dim1_2:
-        dim1_dense = dim1_1
         dim1_sparse = dim1_2
     else:
         dim1_sparse = dim1_1
-        dim1_dense = dim1_2
 
     if dim2_1 > dim2_2:
         dim2_dense = dim2_1
-        dim2_sparse = dim2_2
     else:
         dim2_sparse = dim2_1
-        dim2_dense = dim2_2
 
     temp_1_interpolator = get_regular_grid_interpolator(temp_1)
     temp_2_interpolator = get_regular_grid_interpolator(temp_2)
