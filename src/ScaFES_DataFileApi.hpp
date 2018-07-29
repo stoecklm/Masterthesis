@@ -718,7 +718,8 @@ void DataFile<TT, DIM>::init(std::vector<TT*>& elemData)
         status = ::nc_open_par(this->mNameDataFile.c_str(), NC_NOWRITE | NC_MPIIO,
                              this->mMyWorld.myWorld(), info, &(this->mIdFile));
     #else
-        std::cout << "\nWARNING: Read file in serial." << std::endl;
+        std::cerr << std::endl << "WARNING: Read file in serial." << std::endl
+                  << std::endl;
         status = ::nc_open(this->mNameDataFile.c_str(), NC_NOWRITE, &(this->mIdFile));
     #endif
 #else
